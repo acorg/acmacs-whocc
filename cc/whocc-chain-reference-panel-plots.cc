@@ -10,6 +10,7 @@
 #pragma GCC diagnostic pop
 
 #include "acmacs-base/stream.hh"
+#include "acmacs-chart/ace.hh"
 
 // ----------------------------------------------------------------------
 
@@ -20,7 +21,28 @@ class Options
     std::string output_filename;
 };
 
-int get_args(int argc, const char *argv[], Options& aOptions);
+class ChartData;
+
+static int get_args(int argc, const char *argv[], Options& aOptions);
+static void process_source(ChartData& aData, std::string filename);
+
+// ----------------------------------------------------------------------
+
+class ChartData
+{
+ public:
+    inline ChartData() {}
+    size_t add_antigen(const Antigen& aAntigen);
+    size_t add_serum(const Serum& aSerum);
+
+ private:
+    std::vector<std::string> mTables;
+    std::vector<std::string> mSera;
+    std::vector<std::string> mAntigens;
+
+    friend std::ostream& operator << (std::ostream& out, const ChartData& aData);
+
+};
 
 // ----------------------------------------------------------------------
 
@@ -30,7 +52,10 @@ int main(int argc, const char *argv[])
     int exit_code = get_args(argc, argv, options);
     if (exit_code == 0) {
         try {
-            std::cout << options.source_charts << std::endl;
+            ChartData data;
+            for (const auto& source_name: options.source_charts)
+                process_source(data, source_name);
+            std::cout << data << std::endl;
         }
         catch (std::exception& err) {
             std::cerr << err.what() << std::endl;
@@ -42,7 +67,7 @@ int main(int argc, const char *argv[])
 
 // ----------------------------------------------------------------------
 
-int get_args(int argc, const char *argv[], Options& aOptions)
+static int get_args(int argc, const char *argv[], Options& aOptions)
 {
     using namespace boost::program_options;
     options_description desc("Options");
@@ -78,6 +103,58 @@ int get_args(int argc, const char *argv[], Options& aOptions)
     }
 
 } // get_args
+
+// ----------------------------------------------------------------------
+
+void process_source(ChartData& aData, std::string filename)
+{
+    std::unique_ptr<Chart> chart{import_chart(filename)};
+      // chart->find_homologous_antigen_for_sera();
+    std::vector<size_t> ref_antigens;
+    chart->antigens().reference_indices(ref_antigens);
+    std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens
+    for (size_t antigen_index_in_chart: ref_antigens) {
+        antigens[antigen_index_in_chart] = aData.add_antigen(chart->antigen(antigen_index_in_chart));
+    }
+    for (const Serum& serum: chart->sera()) {
+    }
+
+} // process_source
+
+// ======================================================================
+
+size_t ChartData::add_antigen(const Antigen& aAntigen)
+{
+    const std::string name = aAntigen.full_name();
+    const auto pos = std::find(mAntigens.begin(), mAntigens.end(), name);
+    if (pos == mAntigens.end())
+        mAntigens.push_back(name);
+    return static_cast<size_t>(pos - mAntigens.begin());
+
+} // ChartData::add_antigen
+
+// ----------------------------------------------------------------------
+
+size_t ChartData::add_serum(const Serum& aSerum)
+{
+    const std::string name = aSerum.full_name_without_passage();
+    const auto pos = std::find(mSera.begin(), mSera.end(), name);
+    if (pos == mSera.end())
+        mSera.push_back(name);
+    return static_cast<size_t>(pos - mSera.begin());
+
+} // ChartData::add_serum
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator << (std::ostream& out, const ChartData& aData)
+{
+    return out << "Sera:" << aData.mSera.size() << " Antigens:" << aData.mAntigens.size();
+
+} // operator <<
+
+// ----------------------------------------------------------------------
+
 
 // ----------------------------------------------------------------------
 /// Local Variables:
