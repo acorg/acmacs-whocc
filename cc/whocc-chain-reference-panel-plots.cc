@@ -2,7 +2,7 @@
 // Colors: Green is the median, yellow is 1 log from the median and red is >1 log from the median.
 
 #include <string>
-// #include <cstdlib>
+#include <iomanip>
 
 #pragma GCC diagnostic push
 #include "acmacs-base/boost-diagnostics.hh"
@@ -28,17 +28,36 @@ static void process_source(ChartData& aData, std::string filename);
 
 // ----------------------------------------------------------------------
 
+class TiterData
+{
+ public:
+    inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable, const Titer& aTiter) : antigen(aAntigen), serum(aSerum), table(aTable), titer(aTiter) {}
+
+    size_t antigen;
+    size_t serum;
+    size_t table;
+    Titer titer;
+};
+
 class ChartData
 {
  public:
     inline ChartData() {}
     size_t add_antigen(const Antigen& aAntigen);
     size_t add_serum(const Serum& aSerum);
+    size_t add_table(const Chart& aChart);
+    inline void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); }
+    void sort_titers_by_serum_antigen();
+
+    inline size_t number_of_tables() const { return mTables.size(); }
+    inline size_t longest_serum_name() const { return std::max_element(mSera.begin(), mSera.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
+    inline size_t longest_antigen_name() const { return std::max_element(mAntigens.begin(), mAntigens.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
 
  private:
     std::vector<std::string> mTables;
     std::vector<std::string> mSera;
     std::vector<std::string> mAntigens;
+    std::vector<TiterData> mTiters;
 
     friend std::ostream& operator << (std::ostream& out, const ChartData& aData);
 
@@ -55,6 +74,7 @@ int main(int argc, const char *argv[])
             ChartData data;
             for (const auto& source_name: options.source_charts)
                 process_source(data, source_name);
+            data.sort_titers_by_serum_antigen();
             std::cout << data << std::endl;
         }
         catch (std::exception& err) {
@@ -108,15 +128,20 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
 
 void process_source(ChartData& aData, std::string filename)
 {
+    std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     std::unique_ptr<Chart> chart{import_chart(filename)};
+    size_t table_no = aData.add_table(*chart);
       // chart->find_homologous_antigen_for_sera();
     std::vector<size_t> ref_antigens;
     chart->antigens().reference_indices(ref_antigens);
-    std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens
     for (size_t antigen_index_in_chart: ref_antigens) {
         antigens[antigen_index_in_chart] = aData.add_antigen(chart->antigen(antigen_index_in_chart));
     }
-    for (const Serum& serum: chart->sera()) {
+    for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
+        const size_t serum_index_in_data = aData.add_serum(chart->serum(serum_no));
+        for (const auto& antigen: antigens) {
+            aData.add_titer(antigen.second, serum_index_in_data, table_no, chart->titers().get(antigen.first, serum_no));
+        }
     }
 
 } // process_source
@@ -147,9 +172,52 @@ size_t ChartData::add_serum(const Serum& aSerum)
 
 // ----------------------------------------------------------------------
 
+size_t ChartData::add_table(const Chart& aChart)
+{
+    mTables.push_back(aChart.chart_info().make_name());
+    return mTables.size() - 1;
+
+} // ChartData::add_table
+
+// ----------------------------------------------------------------------
+
+void ChartData::sort_titers_by_serum_antigen()
+{
+    auto order = [](const auto& a, const auto& b) -> bool {
+        if (a.serum != b.serum)
+            return a.serum < b.serum;
+        if (a.antigen != b.antigen)
+            return a.antigen < b.antigen;
+        return a.table < b.table;
+    };
+    std::sort(mTiters.begin(), mTiters.end(), order);
+
+} // ChartData::sort_titers_by_serum_antigen
+
+// ----------------------------------------------------------------------
+
 std::ostream& operator << (std::ostream& out, const ChartData& aData)
 {
-    return out << "Sera:" << aData.mSera.size() << " Antigens:" << aData.mAntigens.size();
+    out << "Tables:" << aData.mTables.size() << " Sera:" << aData.mSera.size() << " Antigens:" << aData.mAntigens.size() << " Titers:" << aData.mTiters.size() << std::endl;
+    const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name()), titer_width = 6;
+    for (size_t serum_no = 0; serum_no < aData.mSera.size(); ++serum_no) {
+        size_t next_table = aData.number_of_tables();
+        size_t current_antigen = aData.mAntigens.size();
+        for (auto serum_pos = std::find_if(aData.mTiters.begin(), aData.mTiters.end(), [&](const auto& e) { return e.serum == serum_no; }); serum_pos != aData.mTiters.end() && serum_pos->serum == serum_no; ++serum_pos) {
+            if (current_antigen != serum_pos->antigen) {
+                for (; next_table < aData.number_of_tables(); ++next_table)
+                    out << std::setw(titer_width) << std::right << "*";
+                out << std::endl << std::setw(serum_field_size) << std::left << aData.mSera[serum_no] << "  " << std::setw(antigen_field_size) << aData.mAntigens[serum_pos->antigen] << " ";
+                current_antigen = serum_pos->antigen;
+                next_table = 0;
+            }
+            for (; next_table < serum_pos->table; ++next_table)
+                out << std::setw(titer_width) << std::right << "*";
+            out << std::setw(titer_width) << std::right << serum_pos->titer;
+            ++next_table;
+        }
+    }
+    return out;
 
 } // operator <<
 
