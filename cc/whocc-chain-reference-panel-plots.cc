@@ -51,6 +51,9 @@ class TiterData
 class ChartData
 {
  public:
+    using titer_iterator = std::vector<TiterData>::const_iterator;
+    using range = std::pair<titer_iterator, titer_iterator>;
+
     inline ChartData() {}
     size_t add_antigen(const Antigen& aAntigen);
     size_t add_serum(const Serum& aSerum);
@@ -63,7 +66,8 @@ class ChartData
     inline std::string serum(size_t serum_no) const { return mSera[serum_no]; }
     inline size_t longest_serum_name() const { return std::max_element(mSera.begin(), mSera.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
     inline size_t longest_antigen_name() const { return std::max_element(mAntigens.begin(), mAntigens.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
-    std::pair<std::vector<TiterData>::const_iterator, std::vector<TiterData>::const_iterator> find_range(size_t aSerum, size_t aAntigen) const;
+    range find_range(size_t aSerum, size_t aAntigen) const;
+    Titer median(const range& aRange) const;
 
  private:
     std::vector<std::string> mTables;
@@ -208,7 +212,7 @@ void ChartData::sort_titers_by_serum_antigen()
 
 // ----------------------------------------------------------------------
 
-std::pair<std::vector<TiterData>::const_iterator, std::vector<TiterData>::const_iterator> ChartData::find_range(size_t aSerum, size_t aAntigen) const
+ChartData::range ChartData::find_range(size_t aSerum, size_t aAntigen) const
 {
     return std::make_pair(std::lower_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, 0)), std::upper_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, number_of_tables())));
 
@@ -216,10 +220,21 @@ std::pair<std::vector<TiterData>::const_iterator, std::vector<TiterData>::const_
 
 // ----------------------------------------------------------------------
 
+Titer ChartData::median(const ChartData::range& aRange) const
+{
+    std::vector<Titer> titers;
+    std::transform(aRange.first, aRange.second, std::back_inserter(titers), [](const auto& e) { return e.titer; });
+    std::sort(titers.begin(), titers.end());
+    return Titer(); // (titers.size() % 2) ? titers[titers.size() / 2] : (titers[titers.size() / 2].similarity() + titers[titers.size() / 2 - 1].similarity()) / 2;
+
+} // ChartData::median
+
+// ----------------------------------------------------------------------
+
 std::ostream& operator << (std::ostream& out, const ChartData& aData)
 {
     out << "Tables:" << aData.mTables.size() << " Sera:" << aData.mSera.size() << " Antigens:" << aData.mAntigens.size() << " Titers:" << aData.mTiters.size() << std::endl;
-    const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name()), titer_width = 6;
+    const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name()), titer_width = 7;
 
     for (size_t serum_no = 0; serum_no < aData.mSera.size(); ++serum_no) {
         for (size_t antigen_no = 0; antigen_no < aData.mAntigens.size(); ++antigen_no) {
