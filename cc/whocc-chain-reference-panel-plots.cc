@@ -32,6 +32,15 @@ class TiterData
 {
  public:
     inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable, const Titer& aTiter) : antigen(aAntigen), serum(aSerum), table(aTable), titer(aTiter) {}
+    inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable) : antigen(aAntigen), serum(aSerum), table(aTable) {}
+    inline bool operator < (const TiterData& a) const
+        {
+            if (serum != a.serum)
+                return serum < a.serum;
+            if (antigen != a.antigen)
+                return antigen < a.antigen;
+            return table < a.table;
+        }
 
     size_t antigen;
     size_t serum;
@@ -50,8 +59,11 @@ class ChartData
     void sort_titers_by_serum_antigen();
 
     inline size_t number_of_tables() const { return mTables.size(); }
+    inline std::string antigen(size_t antigen_no) const { return mAntigens[antigen_no]; }
+    inline std::string serum(size_t serum_no) const { return mSera[serum_no]; }
     inline size_t longest_serum_name() const { return std::max_element(mSera.begin(), mSera.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
     inline size_t longest_antigen_name() const { return std::max_element(mAntigens.begin(), mAntigens.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
+    std::pair<std::vector<TiterData>::const_iterator, std::vector<TiterData>::const_iterator> find_range(size_t aSerum, size_t aAntigen) const;
 
  private:
     std::vector<std::string> mTables;
@@ -140,6 +152,7 @@ void process_source(ChartData& aData, std::string filename)
     for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
         const size_t serum_index_in_data = aData.add_serum(chart->serum(serum_no));
         for (const auto& antigen: antigens) {
+            // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) << std::endl;
             aData.add_titer(antigen.second, serum_index_in_data, table_no, chart->titers().get(antigen.first, serum_no));
         }
     }
@@ -152,9 +165,12 @@ size_t ChartData::add_antigen(const Antigen& aAntigen)
 {
     const std::string name = aAntigen.full_name();
     const auto pos = std::find(mAntigens.begin(), mAntigens.end(), name);
-    if (pos == mAntigens.end())
+    size_t result = static_cast<size_t>(pos - mAntigens.begin());
+    if (pos == mAntigens.end()) {
         mAntigens.push_back(name);
-    return static_cast<size_t>(pos - mAntigens.begin());
+        result = mAntigens.size() - 1;
+    }
+    return result;
 
 } // ChartData::add_antigen
 
@@ -164,9 +180,12 @@ size_t ChartData::add_serum(const Serum& aSerum)
 {
     const std::string name = aSerum.full_name_without_passage();
     const auto pos = std::find(mSera.begin(), mSera.end(), name);
-    if (pos == mSera.end())
+    size_t result = static_cast<size_t>(pos - mSera.begin());
+    if (pos == mSera.end()) {
         mSera.push_back(name);
-    return static_cast<size_t>(pos - mSera.begin());
+        result = mSera.size() - 1;
+    }
+    return result;
 
 } // ChartData::add_serum
 
@@ -183,16 +202,17 @@ size_t ChartData::add_table(const Chart& aChart)
 
 void ChartData::sort_titers_by_serum_antigen()
 {
-    auto order = [](const auto& a, const auto& b) -> bool {
-        if (a.serum != b.serum)
-            return a.serum < b.serum;
-        if (a.antigen != b.antigen)
-            return a.antigen < b.antigen;
-        return a.table < b.table;
-    };
-    std::sort(mTiters.begin(), mTiters.end(), order);
+    std::sort(mTiters.begin(), mTiters.end());
 
 } // ChartData::sort_titers_by_serum_antigen
+
+// ----------------------------------------------------------------------
+
+std::pair<std::vector<TiterData>::const_iterator, std::vector<TiterData>::const_iterator> ChartData::find_range(size_t aSerum, size_t aAntigen) const
+{
+    return std::make_pair(std::lower_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, 0)), std::upper_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, number_of_tables())));
+
+} // ChartData::find_range
 
 // ----------------------------------------------------------------------
 
@@ -200,29 +220,27 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
 {
     out << "Tables:" << aData.mTables.size() << " Sera:" << aData.mSera.size() << " Antigens:" << aData.mAntigens.size() << " Titers:" << aData.mTiters.size() << std::endl;
     const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name()), titer_width = 6;
+
     for (size_t serum_no = 0; serum_no < aData.mSera.size(); ++serum_no) {
-        size_t next_table = aData.number_of_tables();
-        size_t current_antigen = aData.mAntigens.size();
-        for (auto serum_pos = std::find_if(aData.mTiters.begin(), aData.mTiters.end(), [&](const auto& e) { return e.serum == serum_no; }); serum_pos != aData.mTiters.end() && serum_pos->serum == serum_no; ++serum_pos) {
-            if (current_antigen != serum_pos->antigen) {
-                for (; next_table < aData.number_of_tables(); ++next_table)
-                    out << std::setw(titer_width) << std::right << "*";
-                out << std::endl << std::setw(serum_field_size) << std::left << aData.mSera[serum_no] << "  " << std::setw(antigen_field_size) << aData.mAntigens[serum_pos->antigen] << " ";
-                current_antigen = serum_pos->antigen;
-                next_table = 0;
+        for (size_t antigen_no = 0; antigen_no < aData.mAntigens.size(); ++antigen_no) {
+            auto range = aData.find_range(serum_no, antigen_no);
+            if (range.first->antigen == antigen_no && range.first->serum == serum_no) {
+                out << std::setw(serum_field_size) << std::left << aData.mSera[serum_no] << "  " << std::setw(antigen_field_size) << aData.mAntigens[antigen_no] << " ";
+                for (size_t table_no = 0; table_no < aData.number_of_tables(); ++ table_no) {
+                    if (range.first != range.second && range.first->table == table_no) {
+                        out << std::setw(titer_width) << std::right << range.first->titer;
+                        ++range.first;
+                    }
+                    else
+                        out << std::setw(titer_width) << std::right << "*";
+                }
+                out << std::endl;
             }
-            for (; next_table < serum_pos->table; ++next_table)
-                out << std::setw(titer_width) << std::right << "*";
-            out << std::setw(titer_width) << std::right << serum_pos->titer;
-            ++next_table;
         }
     }
     return out;
 
 } // operator <<
-
-// ----------------------------------------------------------------------
-
 
 // ----------------------------------------------------------------------
 /// Local Variables:
