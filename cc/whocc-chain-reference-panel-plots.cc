@@ -222,6 +222,8 @@ size_t ChartData::add_table(const Chart& aChart)
 {
     mLab = aChart.chart_info().lab();
     mVirusType = aChart.chart_info().virus_type();
+    if (mVirusType == "B")
+        mVirusType += "/" + aChart.chart_info().lineage().substr(0, 3);
     mAssay = aChart.chart_info().assay();
     if (mFirstDate.empty() || aChart.chart_info().date() < mFirstDate)
         mFirstDate = aChart.chart_info().date();
