@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iomanip>
+#include <cmath>
 
 #pragma GCC diagnostic push
 #include "acmacs-base/boost-diagnostics.hh"
@@ -11,6 +12,7 @@
 
 #include "acmacs-base/stream.hh"
 #include "acmacs-chart/ace.hh"
+#include "acmacs-draw/surface-cairo.hh"
 
 // ----------------------------------------------------------------------
 
@@ -54,8 +56,8 @@ class AntigenSerumData
     inline AntigenSerumData() {}
     inline bool empty() const { return titer_per_table.empty(); }
 
-    std::pair<Titer,size_t> median;
-    std::vector<std::pair<Titer, size_t>> titer_per_table;
+    std::pair<Titer, int> median;
+    std::vector<std::pair<Titer, int>> titer_per_table;
     friend std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData);
 };
 
@@ -72,6 +74,7 @@ class ChartData
     inline void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
 
     void make_antigen_serum_data();
+    void plot(std::string output_filename);
 
     inline size_t number_of_antigens() const { return mAntigens.size(); }
     inline size_t number_of_sera() const { return mSera.size(); }
@@ -97,7 +100,7 @@ class ChartData
 
 };
 
-// ----------------------------------------------------------------------
+// ======================================================================
 
 int main(int argc, const char *argv[])
 {
@@ -110,6 +113,7 @@ int main(int argc, const char *argv[])
                 process_source(data, source_name);
             data.make_antigen_serum_data();
             std::cout << data << std::endl;
+            data.plot(options.output_filename);
         }
         catch (std::exception& err) {
             std::cerr << err.what() << std::endl;
@@ -226,6 +230,7 @@ void ChartData::make_antigen_serum_data()
 {
     sort_titers_by_serum_antigen();
 
+    mAllTiters.insert(Titer());
     size_t level = 0;
     for (const auto& titer: mAllTiters)
         mTiterLevel[titer] = level++;
@@ -291,19 +296,54 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
     out << "Titers: " << aData.mAllTiters << std::endl;
     // out << "Titers: " << aData.mTiterLevel << std::endl;
 
-    const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name());
+    // const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name());
 
-    for (size_t antigen_no = 0; antigen_no < aData.number_of_antigens(); ++antigen_no) {
-        for (size_t serum_no = 0; serum_no < aData.number_of_sera(); ++serum_no) {
-            const auto& ag_sr_data = aData.mAntigenSerumData[antigen_no][serum_no];
-            if (!ag_sr_data.empty()) {
-                out << std::setw(serum_field_size) << std::left << aData.mSera[serum_no] << "  " << std::setw(antigen_field_size) << aData.mAntigens[antigen_no] << " " << ag_sr_data << std::endl;
-            }
-        }
-    }
+    // for (size_t antigen_no = 0; antigen_no < aData.number_of_antigens(); ++antigen_no) {
+    //     for (size_t serum_no = 0; serum_no < aData.number_of_sera(); ++serum_no) {
+    //         const auto& ag_sr_data = aData.mAntigenSerumData[antigen_no][serum_no];
+    //         if (!ag_sr_data.empty()) {
+    //             out << std::setw(serum_field_size) << std::left << aData.mSera[serum_no] << "  " << std::setw(antigen_field_size) << aData.mAntigens[antigen_no] << " " << ag_sr_data << std::endl;
+    //         }
+    //     }
+    // }
+
     return out;
 
 } // operator <<
+
+// ======================================================================
+
+void ChartData::plot(std::string output_filename)
+{
+    const size_t ns = number_of_sera(), na = number_of_antigens();
+    const double hstep = number_of_tables() + 2, vstep = hstep;
+    const double cell_top_title_height = 1.5, voffset_base = 1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mAllTiters.size() - 1);
+    const Viewport cell_viewport{Size{hstep, vstep}};
+
+    PdfCairo surface(output_filename, ns * hstep, na * vstep, ns * hstep);
+    for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
+        for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
+            const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
+            Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep}, Scaled{hstep}, cell_viewport, false);
+            cell.border("black", Pixels{0.2});
+            cell.text({cell_top_title_height, cell_top_title_height}, mSera[serum_no], "black", Scaled{cell_top_title_height});
+            cell.text({cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], "black", Scaled{cell_top_title_height}, TextStyle(), Rotation{-M_PI_2});
+                // cell.text({10, 10}, std::to_string(serum_no), "red", Pixels{10});
+                // cell.text({0, 20}, std::to_string(antigen_no), "blue", Pixels{10});
+            double table_no = 2;
+            for (const auto& element: ag_sr_data.titer_per_table) {
+                if (element.second) { // do not draw level 0 element (i.e. dont-care titer)
+                      // cell.line({table_no, 0}, {table_no, vstep}, "grey80", Pixels{0.01});
+                    const int distance_from_median = std::abs(ag_sr_data.median.second - element.second);
+                    Color circle_color = distance_from_median == 0 ? "green3" : (distance_from_median == 1 ? "yellow3" : "red");
+                    cell.circle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{1}, AspectNormal, NoRotation, "transparent", Pixels{0}, circle_color);
+                }
+                ++table_no;
+            }
+        }
+    }
+
+} // ChartData::plot
 
 // ----------------------------------------------------------------------
 /// Local Variables:
