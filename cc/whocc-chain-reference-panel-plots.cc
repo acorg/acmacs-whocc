@@ -328,16 +328,16 @@ void ChartData::plot(std::string output_filename)
 {
     const size_t ns = number_of_sera(), na = number_of_antigens();
     const double hstep = number_of_tables() + 2, vstep = hstep, title_height = vstep;
-    const double cell_top_title_height = 1.5, voffset_base = 1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mAllTiters.size() - 1);
+    const double cell_top_title_height = 1.3, voffset_base = 1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mAllTiters.size() - 1);
     const Viewport cell_viewport{Size{hstep, vstep}};
 
     PdfCairo surface(output_filename, ns * hstep, na * vstep + title_height, ns * hstep);
-    std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate;
+    std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(number_of_sera()) + " antigens:" + std::to_string(number_of_antigens());
     surface.text({title_height, title_height * 0.7}, title, "black", Scaled{title_height * 0.8});
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
             const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
-            Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, false);
+            Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, true);
             cell.border("black", Pixels{0.2});
             cell.text({cell_top_title_height, cell_top_title_height}, mSera[serum_no], "black", Scaled{cell_top_title_height});
             cell.text({cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], "black", Scaled{cell_top_title_height}, TextStyle(), Rotation{-M_PI_2});
