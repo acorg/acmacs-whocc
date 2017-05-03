@@ -223,7 +223,7 @@ size_t ChartData::add_table(const Chart& aChart)
     mLab = aChart.chart_info().lab();
     mVirusType = aChart.chart_info().virus_type();
     if (mVirusType == "B")
-        mVirusType += "/" + aChart.chart_info().lineage().substr(0, 3);
+        mVirusType += "/" + aChart.lineage().substr(0, 3);
     mAssay = aChart.chart_info().assay();
     if (mFirstDate.empty() || aChart.chart_info().date() < mFirstDate)
         mFirstDate = aChart.chart_info().date();
@@ -329,8 +329,9 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
 void ChartData::plot(std::string output_filename)
 {
     const size_t ns = number_of_sera(), na = number_of_antigens();
-    const double hstep = number_of_tables() + 2, vstep = hstep, title_height = vstep;
-    const double cell_top_title_height = 1.3, voffset_base = 1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mAllTiters.size() - 1);
+    const double cell_top_title_height = 1.3;
+    const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep;
+    const double voffset_base = 1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mAllTiters.size() - 1);
     const Viewport cell_viewport{Size{hstep, vstep}};
 
     PdfCairo surface(output_filename, ns * hstep, na * vstep + title_height, ns * hstep);
@@ -341,8 +342,17 @@ void ChartData::plot(std::string output_filename)
             const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
             Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, true);
             cell.border("black", Pixels{0.2});
+              // serum name
             cell.text({cell_top_title_height, cell_top_title_height}, mSera[serum_no], "black", Scaled{cell_top_title_height});
+              // antigen name
             cell.text({cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], "black", Scaled{cell_top_title_height}, TextStyle(), Rotation{-M_PI_2});
+              // titer value marks
+            for (const auto& element: mTiterLevel) {
+                if (element.second) {
+                    cell.text({hstep - cell_top_title_height * 2, vstep - voffset_base - element.second * voffset_per_level}, element.first, "black", Scaled{cell_top_title_height / 2});
+                }
+            }
+
                 // cell.text({10, 10}, std::to_string(serum_no), "red", Pixels{10});
                 // cell.text({0, 20}, std::to_string(antigen_no), "blue", Pixels{10});
             double table_no = 2;
