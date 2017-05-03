@@ -280,7 +280,10 @@ Titer ChartData::median(const ChartData::range& aRange) const
     std::vector<Titer> titers;
     std::transform(aRange.first, aRange.second, std::back_inserter(titers), [](const auto& e) { return e.titer; });
     std::sort(titers.begin(), titers.end());
-    return (titers.size() % 2) ? titers[titers.size() / 2] : titers[titers.size() / 2 - 1];
+      // ignore dont-cares when finding median
+    const auto first = std::find_if_not(titers.begin(), titers.end(), [](const auto& titer) { return titer.is_dont_care(); });
+    const auto offset = (titers.end() - first) / 2 - ((titers.end() - first) % 2 ? 0 : 1);
+    return *(first + offset);
 
 } // ChartData::median
 
