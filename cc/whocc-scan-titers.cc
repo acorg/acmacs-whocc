@@ -12,7 +12,8 @@ namespace fs = boost::filesystem;
 
 // ----------------------------------------------------------------------
 
-void scan(const fs::path& source_dir, std::vector<fs::path>& ace_files);
+void find_ace_files(const fs::path& source_dir, std::vector<fs::path>& ace_files);
+void scan_titers(const fs::path& filename, std::set<Titer>& titers);
 
 // ----------------------------------------------------------------------
 
@@ -31,10 +32,12 @@ int main(int argc, const char *argv[])
     if (exit_code == 0) {
         try {
             std::vector<fs::path> ace_files;
-            scan(fs::path(options.source_dir), ace_files);
-            std::cout << ace_files.size() << std::endl;
-            for (const auto& p: ace_files)
-                std::cout << p << std::endl;
+            find_ace_files(fs::path(options.source_dir), ace_files);
+            std::cout << "Total .ace files found: " << ace_files.size() << std::endl;
+            std::set<Titer> titers;
+            for (const auto& filename: ace_files)
+                scan_titers(filename, titers);
+            std::cout << titers << std::endl;
         }
         catch (std::exception& err) {
             std::cerr << err.what() << std::endl;
@@ -81,21 +84,31 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
 
 // ----------------------------------------------------------------------
 
-void scan(const fs::path& source_dir, std::vector<fs::path>& ace_files)
+void find_ace_files(const fs::path& source_dir, std::vector<fs::path>& ace_files)
 {
     if (!fs::is_directory(source_dir))
         throw std::runtime_error(source_dir.string() + " is not a directory");
     for (fs::directory_entry& dirent: fs::directory_iterator(source_dir)) {
         if (fs::is_directory(dirent.status()))
-            scan(dirent.path(), ace_files);
+            find_ace_files(dirent.path(), ace_files);
         else if (is_regular_file(dirent.status()) && dirent.path().extension().string() == ".ace")
             ace_files.push_back(dirent.path());
     }
 
-} // scan
+} // find_ace_files
 
 // ----------------------------------------------------------------------
 
+void scan_titers(const fs::path& filename, std::set<Titer>& titers)
+{
+    std::unique_ptr<Chart> chart{import_chart(filename.string())};
+    for (size_t antigen_no = 0; antigen_no < chart->antigens().size(); ++antigen_no) {
+        for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
+            titers.insert(chart->titers().get(antigen_no, serum_no));
+        }
+    }
+
+} // scan_titers
 
 // ----------------------------------------------------------------------
 /// Local Variables:
