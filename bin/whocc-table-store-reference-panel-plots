@@ -13,14 +13,15 @@ sLabs = ["CDC", "MELB", "NIID", "NIMR"]
 # ======================================================================
 
 def main(args):
-    h3_sources = walk_h3(args.source_dir, "H3")
-    pprint.pprint(h3_sources)
-    # h1_sources = walk_h3(args.source_dir, "H1PDM")
+    sources = walk_h3(args.source_dir, "H3") # subtype -> lab -> rbc/neut -> [filename]
+    sources.update(walk_h3(args.source_dir, "H1PDM"))
+    sources.update(walk_b(args.source_dir))
+    pprint.pprint(sources)
 
 # ----------------------------------------------------------------------
 
 def walk_h3(source_dir, subtype):
-    return {lab: walk_h3_lab(Path(source_dir, subtype, lab)) for lab in sLabs}
+    return {subtype: {lab: walk_h3_lab(Path(source_dir, subtype, lab)) for lab in sLabs}}
 
 sReH3name = re.compile(r"a-h\dn\d-(?P<lab>[a-z]+)-(?P<rbc>[a-z\-]+)(?P<date>[0-9\-_]+)\.ace")
 
@@ -29,16 +30,40 @@ def walk_h3_lab(source_dir):
     for filename in source_dir.glob("*.ace"):
         m = sReH3name.match(filename.name)
         if m:
-            rbc = m["rbc"][:-1]
+            rbc = m.group("rbc")[:-1]
             result.setdefault(rbc, []).append(filename)
+        else:
+            raise ValueError("Cannot match: " + str(filename))
+    for names in result.values():
+        names.sort()
+    return result
+
+# ----------------------------------------------------------------------
+
+sReBname = re.compile(r"b-(?P<lab>[a-z]+)-(?P<rbc>[a-z\-]+)(?P<date>[0-9]+)(?P<yamagata>[\-_]\d+)?\.ace")
+
+def walk_b(source_dir):
+    result = {} # {"B": {lab: [] for lab in sLabs}, "BV": {lab: [] for lab in sLabs}, "BY": {lab: [] for lab in sLabs}}
+    for filename in Path(source_dir, "B", "CDC").glob("*.ace"):
+        m = sReBname.match(filename.name)
+        if m:
+            rbc = m.group("rbc")[:-1]
+            if m.group("date") < "20130501":
+                subtype = "B"
+            elif m.group("yamagata"):
+                subtype = "BY"
+            else:
+                subtype = "BV"
+            result.setdefault(subtype, {}).setdefault("CDC", {}).setdefault(rbc, []).append(filename)
         else:
             raise ValueError("Cannot match: " + str(filename))
     return result
 
 # ======================================================================
 
+import argparse, traceback
+
 try:
-    import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
     parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
