@@ -20,7 +20,7 @@ def main(args):
     sort_sources(sources)
     # count_sources(sources)
     # pprint.pprint(sources)
-    plotted_data = plot_soures(sources, Path(args.output_dir))
+    plotted_data = plot_soures(sources, args.chunk_size, Path(args.output_dir))
     make_index(plotted_data, Path(args.output_dir))
 
 # ----------------------------------------------------------------------
@@ -91,35 +91,33 @@ def count_sources(sources):
 
 # ----------------------------------------------------------------------
 
-def plot_soures(sources, output_dir):
+def plot_soures(sources, chunk_size, output_dir):
     plotted_data = {}
     for subtype, v1 in sources.items():
         for lab, v2 in v1.items():
             for rbc, v3 in v2.items():
                 if len(v3) > 9:
-                    plots = plot_source_set(key="-".join([subtype, lab, rbc]), sources=v3, output_dir=output_dir)
+                    plots = plot_source_set(key="-".join([subtype, lab, rbc]), sources=v3, chunk_size=chunk_size, output_dir=output_dir)
                     plotted_data.setdefault(subtype, {}).setdefault(lab, {})[rbc] = plots
     # pprint.pprint(plotted_data)
     return plotted_data
 
 # ----------------------------------------------------------------------
 
-def plot_source_set(key, sources, output_dir):
+def plot_source_set(key, sources, chunk_size, output_dir):
     module_logger.info('{} {} {} - {}'.format(key, len(sources), sources[0].name, sources[-1].name))
-    chunks = make_chunks(sources)
+    chunks = make_chunks(sources, chunk_size)
     plots = [plot_chunk(key, chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
     return plots
 
 # ----------------------------------------------------------------------
 
-sMaxPlotSize = 100
-
-def make_chunks(sources):
+def make_chunks(sources, chunk_size):
     chunks = []
-    common = int(sMaxPlotSize * 0.25)
-    for start in range(0, 10000, sMaxPlotSize - common):
+    common = int(chunk_size * 0.25)
+    for start in range(0, 10000, chunk_size - common):
         if not chunks or (len(sources) - start) > common:
-            chunks.append(sources[start:start + sMaxPlotSize])
+            chunks.append(sources[start : start+chunk_size])
         else:
             break
     return chunks
@@ -189,6 +187,7 @@ try:
 
     parser.add_argument('--source', action='store', dest='source_dir', default="/syn/eu/ac/ace-store")
     parser.add_argument('--output', action='store', dest='output_dir', default="/syn/eu/www/who/reference-panel-plots")
+    parser.add_argument('--chunk', action='store', dest='chunk_size', default=40)
 
     args = parser.parse_args()
     if args.verbose:
