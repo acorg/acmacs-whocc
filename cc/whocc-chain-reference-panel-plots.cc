@@ -335,8 +335,14 @@ void ChartData::plot(std::string output_filename)
     const Viewport cell_viewport{Size{hstep, vstep}};
 
     PdfCairo surface(output_filename, ns * hstep, na * vstep + title_height, ns * hstep);
+
     std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(number_of_sera()) + " antigens:" + std::to_string(number_of_antigens());
-    surface.text({title_height, title_height * 0.7}, title, "black", Scaled{title_height * 0.8});
+    double title_font_size = title_height * 0.8;
+    const auto title_size = surface.text_size(title, Scaled{title_font_size});
+    if (title_size.width > (ns * hstep))
+        title_font_size *= (ns * hstep) / title_size.width * 0.95;
+    surface.text({title_height, title_height * 0.7}, title, "black", Scaled{title_font_size});
+
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
             const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
