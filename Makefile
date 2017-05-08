@@ -40,6 +40,7 @@ all: check-acmacsd-root $(patsubst %,$(DIST)/%,$(PROGRAMS))
 
 install: all
 	ln -sf $(DIST)/* $(ACMACSD_ROOT)/bin
+	ln -sf $(abspath bin)/* $(ACMACSD_ROOT)/bin
 
 test: install
 	@#test/test
