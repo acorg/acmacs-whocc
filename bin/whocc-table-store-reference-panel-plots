@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- Python -*-
 
-import sys, os, re, pprint
+import sys, os, re, pprint, subprocess
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
@@ -13,12 +13,15 @@ sLabs = ["CDC", "MELB", "NIID", "NIMR"]
 # ======================================================================
 
 def main(args):
+    os.environ["LD_LIBRARY_PATH"] = str(Path("~/AD/lib").expanduser())
     sources = walk_h3(args.source_dir, "H3") # subtype -> lab -> rbc/neut -> [filename]
     sources.update(walk_h3(args.source_dir, "H1PDM"))
     sources.update(walk_b(args.source_dir))
     sort_sources(sources)
-    count_sources(sources)
+    # count_sources(sources)
     # pprint.pprint(sources)
+    plotted_data = plot_soures(sources, Path(args.output_dir))
+    make_index(plotted_data, Path(args.output_dir))
 
 # ----------------------------------------------------------------------
 
@@ -85,6 +88,92 @@ def sort_sources(sources):
 def count_sources(sources):
     counted = {subtype: {lab: {rbc: len(v3) for rbc, v3 in v2.items()} for lab, v2 in v1.items()} for subtype, v1 in sources.items()}
     pprint.pprint(counted)
+
+# ----------------------------------------------------------------------
+
+def plot_soures(sources, output_dir):
+    plotted_data = {}
+    for subtype, v1 in sources.items():
+        for lab, v2 in v1.items():
+            for rbc, v3 in v2.items():
+                if len(v3) > 9:
+                    plots = plot_source_set(key="-".join([subtype, lab, rbc]), sources=v3, output_dir=output_dir)
+                    plotted_data.setdefault(subtype, {}).setdefault(lab, {})[rbc] = plots
+    # pprint.pprint(plotted_data)
+    return plotted_data
+
+# ----------------------------------------------------------------------
+
+def plot_source_set(key, sources, output_dir):
+    module_logger.info('{} {} {} - {}'.format(key, len(sources), sources[0].name, sources[-1].name))
+    chunks = make_chunks(sources)
+    plots = [plot_chunk(key, chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
+    return plots
+
+# ----------------------------------------------------------------------
+
+sMaxPlotSize = 100
+
+def make_chunks(sources):
+    chunks = []
+    common = int(sMaxPlotSize * 0.25)
+    for start in range(0, 10000, sMaxPlotSize - common):
+        if not chunks or (len(sources) - start) > common:
+            chunks.append(sources[start:start + sMaxPlotSize])
+        else:
+            break
+    return chunks
+
+# ----------------------------------------------------------------------
+
+sReNameGetDate = re.compile(r".+-(\d{8}(?:[\-_]\d+)?)\.ace$")
+
+def plot_chunk(key, index, sources, output_dir):
+    m1 = sReNameGetDate.match(sources[0].name)
+    m2 = sReNameGetDate.match(sources[-1].name)
+    if not m1 or not m2:
+        raise ValueError("Date extraction failed: {!r} {!r}".format(sources[0].name, sources[-1].name))
+    d1 = m1.group(1)
+    d2 = m2.group(1)
+    module_logger.info('chunk {} {} - {}'.format(len(sources), d1, d2))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_filename = "{}-{:02d}-{}-{}.pdf".format(key, index, d1, d2)
+    subprocess.check_call("~/AD/bin/whocc-chain-reference-panel-plots '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources)), shell=True)
+    return {"name": output_filename, "d1": d1, "d2": d2, "num": len(sources)}
+
+# ----------------------------------------------------------------------
+
+sHtmlTemplate = """<html>
+<head>
+  <style>
+   h2 {{ margin-left: 1em; }}
+   h3 {{ margin-left: 2em; }}
+   ol {{ margin-left: 3em; }}
+  </style>
+</head>
+<body>
+  <h1>WHO CCs tables. Reference panel plots</h1>
+  {content}
+</body>
+</html>
+"""
+
+def make_index(plotted_data, output_dir):
+
+    def make_entries(v3):
+        return "<li>" + "</li>\n<li>".join("<a href=\"{}\">{} - {} ({})</a>".format(entry["name"], entry["d1"], entry["d2"], entry["num"]) for entry in v3) + "</li>"
+
+    def make_rbc(v2):
+        return "\n".join("<h3>{}</h3>\n<ol>{}</ol>".format(rbc.upper(), make_entries(v2[rbc])) for rbc in sorted(v2))
+
+    def make_labs(v1):
+        return "\n".join("<h2>{}</h2>{}".format(lab, make_rbc(v1[lab])) for lab in sorted(v1))
+
+    # pprint.pprint(plotted_data)
+    content = "\n<hr>\n".join("<h1>{}</h1>\n{}".format(subtype, make_labs(plotted_data[subtype])) for subtype in sorted(plotted_data, reverse=True))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with output_dir.joinpath("index.html").open("w") as f:
+        f.write(sHtmlTemplate.format(content=content))
 
 # ======================================================================
 
