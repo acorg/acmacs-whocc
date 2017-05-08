@@ -16,7 +16,9 @@ def main(args):
     sources = walk_h3(args.source_dir, "H3") # subtype -> lab -> rbc/neut -> [filename]
     sources.update(walk_h3(args.source_dir, "H1PDM"))
     sources.update(walk_b(args.source_dir))
-    pprint.pprint(sources)
+    sort_sources(sources)
+    count_sources(sources)
+    # pprint.pprint(sources)
 
 # ----------------------------------------------------------------------
 
@@ -35,8 +37,6 @@ def walk_h3_lab(source_dir):
                 result.setdefault(rbc, []).append(filename)
         else:
             raise ValueError("Cannot match: " + str(filename))
-    for names in result.values():
-        names.sort()
     return result
 
 # ----------------------------------------------------------------------
@@ -44,21 +44,47 @@ def walk_h3_lab(source_dir):
 sReBname = re.compile(r"b-(?P<lab>[a-z]+)-(?P<rbc>[a-z\-]+)(?P<date>[0-9]+)(?P<yamagata>[\-_]\d+)?\.ace")
 
 def walk_b(source_dir):
-    result = {} # {"B": {lab: [] for lab in sLabs}, "BV": {lab: [] for lab in sLabs}, "BY": {lab: [] for lab in sLabs}}
-    for filename in Path(source_dir, "B", "CDC").glob("*.ace"):
-        m = sReBname.match(filename.name)
-        if m:
-            rbc = m.group("rbc")[:-1]
-            if m.group("date") < "20130501":
-                subtype = "B"
-            elif m.group("yamagata"):
-                subtype = "BY"
+    result = {}
+    # CDC, NIID, NIMR
+    for lab, mix_end in [["CDC", "20130501"], ["NIID", "20100501"], ["NIMR", "0000"]]:
+        for filename in Path(source_dir, "B", lab).glob("*.ace"):
+            m = sReBname.match(filename.name)
+            if m:
+                rbc = m.group("rbc")[:-1]
+                if m.group("date") < mix_end:
+                    subtype = "B"
+                elif m.group("yamagata"):
+                    subtype = "BY"
+                else:
+                    subtype = "BV"
+                result.setdefault(subtype, {}).setdefault(lab, {}).setdefault(rbc, []).append(filename)
             else:
-                subtype = "BV"
-            result.setdefault(subtype, {}).setdefault("CDC", {}).setdefault(rbc, []).append(filename)
-        else:
-            raise ValueError("Cannot match: " + str(filename))
+                raise ValueError("Cannot match: " + str(filename))
+    # MELB
+    for subtype, lineage in [["BV", "victoria"], ["BY", "yamagata"]]:
+        for filename in Path(source_dir, "B", "MELB", lineage).glob("*.ace"):
+            m = sReBname.match(filename.name)
+            if m:
+                rbc = m.group("rbc")[:-1]
+                result.setdefault(subtype, {}).setdefault("MELB", {}).setdefault(rbc, []).append(filename)
+            else:
+                raise ValueError("Cannot match: " + str(filename))
     return result
+
+# ----------------------------------------------------------------------
+
+def sort_sources(sources):
+    if isinstance(sources, list):
+        sources.sort()
+    elif isinstance(sources, dict):
+        for value in sources.values():
+            sort_sources(value)
+
+# ----------------------------------------------------------------------
+
+def count_sources(sources):
+    counted = {subtype: {lab: {rbc: len(v3) for rbc, v3 in v2.items()} for lab, v2 in v1.items()} for subtype, v1 in sources.items()}
+    pprint.pprint(counted)
 
 # ======================================================================
 
