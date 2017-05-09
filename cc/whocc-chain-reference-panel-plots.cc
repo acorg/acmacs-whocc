@@ -335,6 +335,25 @@ void ChartData::plot(std::string output_filename)
         aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, TextStyle(), aRotation);
     };
 
+    auto titer_value = [](Titer aTiter) {
+        double val = aTiter.similarity();
+        if (aTiter.is_less_than())
+            val -= 1;
+        else if (aTiter.is_more_than())
+            val += 1;
+        return val;
+    };
+
+    auto color_for_titer = [&titer_value](Titer aTiter, double aMedianValue) -> Color {
+        const double dist = std::abs(titer_value(aTiter) - aMedianValue);
+        if (dist < 1)
+            return "green3";
+        else if (dist < 2)
+            return "yellow3";
+        else
+            return "red";
+    };
+
     const size_t ns = number_of_sera(), na = number_of_antigens();
     const double cell_top_title_height = 1.3;
     const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep;
@@ -349,6 +368,7 @@ void ChartData::plot(std::string output_filename)
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
             const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
+            const double median_value = titer_value(ag_sr_data.median.first);
             Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, true);
             cell.border("black", Pixels{0.2});
               // serum name
@@ -362,15 +382,19 @@ void ChartData::plot(std::string output_filename)
                 }
             }
 
-                // cell.text({10, 10}, std::to_string(serum_no), "red", Pixels{10});
-                // cell.text({0, 20}, std::to_string(antigen_no), "blue", Pixels{10});
             double table_no = 2;
             for (const auto& element: ag_sr_data.titer_per_table) {
                 if (element.second) { // do not draw level 0 element (i.e. dont-care titer)
                       // cell.line({table_no, 0}, {table_no, vstep}, "grey80", Pixels{0.01});
-                    const int distance_from_median = std::abs(ag_sr_data.median.second - element.second);
-                    Color circle_color = distance_from_median == 0 ? "green3" : (distance_from_median == 1 ? "yellow3" : "red");
-                    cell.circle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{1}, AspectNormal, NoRotation, "transparent", Pixels{0}, circle_color);
+
+                    const Color symbol_color = color_for_titer(element.first, median_value);
+                    if (element.first.is_less_than())
+                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, Rotation{M_PI}, "transparent", Pixels{0}, symbol_color);
+                    else if (element.first.is_more_than())
+                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, NoRotation, "transparent", Pixels{0}, symbol_color);
+                    else
+                        cell.circle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{1}, AspectNormal, NoRotation, "transparent", Pixels{0}, symbol_color);
+
                 }
                 ++table_no;
             }
