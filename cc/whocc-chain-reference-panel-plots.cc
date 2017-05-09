@@ -328,6 +328,13 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
 
 void ChartData::plot(std::string output_filename)
 {
+    auto text = [](Surface& aSurface, const Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) {
+        const auto size = aSurface.text_size(aText, Scaled{aFontSize});
+        if (size.width > aMaxWidth)
+            aFontSize *= aMaxWidth / size.width;
+        aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, TextStyle(), aRotation);
+    };
+
     const size_t ns = number_of_sera(), na = number_of_antigens();
     const double cell_top_title_height = 1.3;
     const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep;
@@ -337,11 +344,7 @@ void ChartData::plot(std::string output_filename)
     PdfCairo surface(output_filename, ns * hstep, na * vstep + title_height, ns * hstep);
 
     std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(number_of_sera()) + " antigens:" + std::to_string(number_of_antigens());
-    double title_font_size = title_height * 0.8;
-    const auto title_size = surface.text_size(title, Scaled{title_font_size});
-    if (title_size.width > (ns * hstep))
-        title_font_size *= (ns * hstep) / title_size.width * 0.95;
-    surface.text({title_height, title_height * 0.7}, title, "black", Scaled{title_font_size});
+    text(surface, {title_height, title_height * 0.7}, title, "black", NoRotation, title_height * 0.8, ns * hstep - title_height * 2);
 
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
@@ -349,9 +352,9 @@ void ChartData::plot(std::string output_filename)
             Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, true);
             cell.border("black", Pixels{0.2});
               // serum name
-            cell.text({cell_top_title_height, cell_top_title_height}, mSera[serum_no], "black", Scaled{cell_top_title_height});
+            text(cell, {cell_top_title_height * 1.2, cell_top_title_height}, mSera[serum_no], "black", NoRotation, cell_top_title_height, (hstep - cell_top_title_height * 1.5));
               // antigen name
-            cell.text({cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], "black", Scaled{cell_top_title_height}, TextStyle(), Rotation{-M_PI_2});
+            text(cell, {cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], "black", Rotation{-M_PI_2}, cell_top_title_height, (vstep - voffset_base * 1.5));
               // titer value marks
             for (const auto& element: mTiterLevel) {
                 if (element.second) {
