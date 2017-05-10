@@ -359,26 +359,27 @@ void ChartData::plot(std::string output_filename)
     const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep;
     const double voffset_base = 1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mAllTiters.size() - 1);
     const Viewport cell_viewport{Size{hstep, vstep}};
+    const Color transparent{"transparent"}, black{"black"};
 
     PdfCairo surface(output_filename, ns * hstep, na * vstep + title_height, ns * hstep);
 
     std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(number_of_sera()) + " antigens:" + std::to_string(number_of_antigens());
-    text(surface, {title_height, title_height * 0.7}, title, "black", NoRotation, title_height * 0.8, ns * hstep - title_height * 2);
+    text(surface, {title_height, title_height * 0.7}, title, black, NoRotation, title_height * 0.8, ns * hstep - title_height * 2);
 
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
             const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
             const double median_value = titer_value(ag_sr_data.median.first);
             Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, true);
-            cell.border("black", Pixels{0.2});
+            cell.border(black, Pixels{0.2});
               // serum name
-            text(cell, {cell_top_title_height * 1.2, cell_top_title_height}, mSera[serum_no], "black", NoRotation, cell_top_title_height, (hstep - cell_top_title_height * 1.5));
+            text(cell, {cell_top_title_height * 1.2, cell_top_title_height}, mSera[serum_no], black, NoRotation, cell_top_title_height, (hstep - cell_top_title_height * 1.5));
               // antigen name
-            text(cell, {cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], "black", Rotation{-M_PI_2}, cell_top_title_height, (vstep - voffset_base * 1.5));
+            text(cell, {cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, cell_top_title_height, (vstep - voffset_base * 1.5));
               // titer value marks
             for (const auto& element: mTiterLevel) {
                 if (element.second) {
-                    cell.text({hstep - cell_top_title_height * 2, vstep - voffset_base - element.second * voffset_per_level}, element.first, "black", Scaled{cell_top_title_height / 2});
+                    cell.text({hstep - cell_top_title_height * 2, vstep - voffset_base - element.second * voffset_per_level}, element.first, black, Scaled{cell_top_title_height / 2});
                 }
             }
 
@@ -389,11 +390,13 @@ void ChartData::plot(std::string output_filename)
 
                     const Color symbol_color = color_for_titer(element.first, median_value);
                     if (element.first.is_less_than())
-                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, Rotation{M_PI}, "transparent", Pixels{0}, symbol_color);
+                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, Rotation{M_PI}, transparent, Pixels{0}, symbol_color);
                     else if (element.first.is_more_than())
-                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, NoRotation, "transparent", Pixels{0}, symbol_color);
-                    else
-                        cell.circle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{1}, AspectNormal, NoRotation, "transparent", Pixels{0}, symbol_color);
+                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, NoRotation, transparent, Pixels{0}, symbol_color);
+                    else {
+                          // cell.circle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{1}, AspectNormal, NoRotation, transparent, Pixels{0}, symbol_color);
+                        cell.rectangle_filled({table_no - 0.5, vstep - voffset_base -  voffset_per_level * element.second - voffset_per_level * 0.5}, {1, voffset_per_level}, transparent, Pixels{0}, symbol_color);
+                    }
 
                 }
                 ++table_no;
