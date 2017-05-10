@@ -241,9 +241,12 @@ void ChartData::make_antigen_serum_data()
     sort_titers_by_serum_antigen();
 
     mAllTiters.insert(Titer());
-    size_t level = 0;
-    for (const auto& titer: mAllTiters)
-        mTiterLevel[titer] = level++;
+    size_t level = mAllTiters.size() - 1;
+    for (const auto& titer: mAllTiters) {
+        mTiterLevel[titer] = level;
+        --level;
+    }
+    std::cerr << "mTiterLevel: " << mTiterLevel << std::endl;
 
     for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         mAntigenSerumData.emplace_back(number_of_sera());
@@ -356,8 +359,8 @@ void ChartData::plot(std::string output_filename)
 
     const size_t ns = number_of_sera(), na = number_of_antigens();
     const double cell_top_title_height = 1.3;
-    const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep;
-    const double voffset_base = 1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mAllTiters.size() - 1);
+    const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep * 0.5;
+    const double voffset_base = 0.1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mTiterLevel.size() - 1); // excluding *
     const Viewport cell_viewport{Size{hstep, vstep}};
     const Color transparent{"transparent"}, black{"black"};
 
@@ -378,24 +381,29 @@ void ChartData::plot(std::string output_filename)
             text(cell, {cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, cell_top_title_height, (vstep - voffset_base * 1.5));
               // titer value marks
             for (const auto& element: mTiterLevel) {
-                if (element.second) {
-                    cell.text({hstep - cell_top_title_height * 2, vstep - voffset_base - element.second * voffset_per_level}, element.first, black, Scaled{cell_top_title_height / 2});
-                }
+                cell.text({hstep - cell_top_title_height * 2, cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level * 0.5}, element.first, black, Scaled{cell_top_title_height / 2});
             }
 
             double table_no = 2;
             for (const auto& element: ag_sr_data.titer_per_table) {
-                if (element.second) { // do not draw level 0 element (i.e. dont-care titer)
+                if (!element.first.is_dont_care()) { // do not draw dont-care titer
                       // cell.line({table_no, 0}, {table_no, vstep}, "grey80", Pixels{0.01});
 
                     const Color symbol_color = color_for_titer(element.first, median_value);
-                    if (element.first.is_less_than())
-                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, Rotation{M_PI}, transparent, Pixels{0}, symbol_color);
-                    else if (element.first.is_more_than())
-                        cell.triangle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{0.8}, AspectNormal, NoRotation, transparent, Pixels{0}, symbol_color);
+                    if (element.first.is_less_than()) {
+                        cell.triangle_filled({table_no - 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level},
+                                             {table_no + 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level},
+                                             {table_no,       cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level},
+                                             transparent, Pixels{0}, symbol_color);
+                    }
+                    else if (element.first.is_more_than()) {
+                        cell.triangle_filled({table_no - 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level},
+                                             {table_no + 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level},
+                                             {table_no,       cell_top_title_height + voffset_base + element.second * voffset_per_level},
+                                             transparent, Pixels{0}, symbol_color);
+                    }
                     else {
-                          // cell.circle_filled({table_no, vstep - voffset_base - element.second * voffset_per_level}, Pixels{1}, AspectNormal, NoRotation, transparent, Pixels{0}, symbol_color);
-                        cell.rectangle_filled({table_no - 0.5, vstep - voffset_base -  voffset_per_level * element.second - voffset_per_level * 0.5}, {1, voffset_per_level}, transparent, Pixels{0}, symbol_color);
+                        cell.rectangle_filled({table_no - 0.5, cell_top_title_height + voffset_base + voffset_per_level * element.second}, {1, voffset_per_level}, transparent, Pixels{0}, symbol_color);
                     }
 
                 }
