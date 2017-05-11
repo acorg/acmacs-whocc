@@ -15,7 +15,7 @@
 #include "acmacs-draw/surface-cairo.hh"
 
 // sNumberOfAllTiters, sAllTiters, sMedianTiterColors
-// transparent, black, green, yellow, red
+// transparent, black, green, yellow, red, homologous_background
 #include "whocc-reference-panel-plot-colors.hh"
 
 // ----------------------------------------------------------------------
@@ -88,6 +88,7 @@ struct AgSr
 
     std::string name;
     bool enabled;
+    std::vector<size_t> homologous;
 };
 
 class ChartData
@@ -111,8 +112,9 @@ class ChartData
     inline size_t number_of_enabled_antigens() const { return std::accumulate(mAntigens.begin(), mAntigens.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
     inline size_t number_of_enabled_sera() const { return std::accumulate(mSera.begin(), mSera.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
     inline size_t number_of_tables() const { return mTables.size(); }
-    inline std::string antigen(size_t antigen_no) const { return mAntigens[antigen_no]; }
-    inline std::string serum(size_t serum_no) const { return mSera[serum_no]; }
+    inline const AgSr& antigen(size_t antigen_no) const { return mAntigens[antigen_no]; }
+    inline const AgSr& serum(size_t serum_no) const { return mSera[serum_no]; }
+    inline AgSr& serum(size_t serum_no) { return mSera[serum_no]; }
     inline size_t longest_serum_name() const { return std::max_element(mSera.begin(), mSera.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
     inline size_t longest_antigen_name() const { return std::max_element(mAntigens.begin(), mAntigens.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
     range find_range(size_t aSerum, size_t aAntigen) const;
@@ -229,7 +231,7 @@ void process_source(ChartData& aData, std::string filename)
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     std::unique_ptr<Chart> chart{import_chart(filename)};
     size_t table_no = aData.add_table(*chart);
-      // chart->find_homologous_antigen_for_sera();
+    chart->find_homologous_antigen_for_sera();
     std::vector<size_t> ref_antigens;
     chart->antigens().reference_indices(ref_antigens);
     for (size_t antigen_index_in_chart: ref_antigens) {
@@ -240,6 +242,9 @@ void process_source(ChartData& aData, std::string filename)
         for (const auto& antigen: antigens) {
             // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) << std::endl;
             aData.add_titer(antigen.second, serum_index_in_data, table_no, chart->titers().get(antigen.first, serum_no));
+        }
+        for (size_t homologous_antigen: chart->serum(serum_no).homologous()) {
+            aData.serum(serum_index_in_data).homologous.push_back(antigens[homologous_antigen]);
         }
     }
 
@@ -492,8 +497,8 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
 {
     const double logged_titer_step = (aParameters.vstep - aParameters.voffset_base - aParameters.cell_top_title_height) / mYAxisLabels.size();
 
-    const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
-    const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
+    if (std::find(mSera[serum_no].homologous.begin(), mSera[serum_no].homologous.end(), antigen_no) != mSera[serum_no].homologous.end())
+        aCell.background(homologous_background);     // homologous antigen and serum
     aCell.border(black, Pixels{0.2});
       // serum name
     text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], black, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
@@ -509,6 +514,8 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
         ++titer_label_vpos;
     }
 
+    const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
+    const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
     double table_no = 2;
     for (const auto& element: ag_sr_data.titer_per_table) {
         if (!element.first.is_dont_care()) { // do not draw dont-care titer
