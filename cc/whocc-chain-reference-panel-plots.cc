@@ -387,7 +387,7 @@ void ChartData::plot(std::string output_filename)
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
             Surface& cell = surface.subsurface({serum_no * cell_parameters.hstep, antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
-              // plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
+              //plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
             plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters);
         }
     }
@@ -413,25 +413,24 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surf
     double table_no = 2;
     for (const auto& element: ag_sr_data.titer_per_table) {
         if (!element.first.is_dont_care()) { // do not draw dont-care titer
-              // aCell.line({table_no, 0}, {table_no, vstep}, "grey80", Pixels{0.01});
-
+            const double symbol_top = aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level;
+            const double symbol_bottom = symbol_top + aParameters.voffset_per_level;
             const Color symbol_color = color_for_titer(element.first, median_index);
             if (element.first.is_less_than()) {
-                aCell.triangle_filled({table_no - 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level},
-                                      {table_no + 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level},
-                                      {table_no,       aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level},
+                aCell.triangle_filled({table_no - 0.5, symbol_top},
+                                      {table_no + 0.5, symbol_top},
+                                      {table_no,       symbol_bottom},
                                       transparent, Pixels{0}, symbol_color);
             }
             else if (element.first.is_more_than()) {
-                aCell.triangle_filled({table_no - 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level},
-                                      {table_no + 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level},
-                                      {table_no,       aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level},
+                aCell.triangle_filled({table_no - 0.5, symbol_bottom},
+                                      {table_no + 0.5, symbol_bottom},
+                                      {table_no,       symbol_top},
                                       transparent, Pixels{0}, symbol_color);
             }
             else {
-                aCell.rectangle_filled({table_no - 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + aParameters.voffset_per_level * element.second}, {1, aParameters.voffset_per_level}, transparent, Pixels{0}, symbol_color);
+                aCell.rectangle_filled({table_no - 0.5, symbol_top}, {1, aParameters.voffset_per_level}, transparent, Pixels{0}, symbol_color);
             }
-
         }
         ++table_no;
     }
@@ -451,6 +450,7 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
     text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], black, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
       // antigen name
     text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
+
       // titer value marks
     size_t titer_label_vpos = 0;
     for (const auto& titer_label: mYAxisLabels) {
@@ -458,6 +458,32 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
                         aParameters.cell_top_title_height + aParameters.voffset_base + titer_label_vpos * logged_titer_step + logged_titer_step * 0.5},
                    titer_label, black, Scaled{aParameters.cell_top_title_height * 0.7});
         ++titer_label_vpos;
+    }
+
+    double table_no = 2;
+    for (const auto& element: ag_sr_data.titer_per_table) {
+        if (!element.first.is_dont_care()) { // do not draw dont-care titer
+            const double titer = element.first.similarity_with_thresholded();
+            const double symbol_top = aParameters.cell_top_title_height + aParameters.voffset_base + (titer + 1) * logged_titer_step;
+            const double symbol_bottom = symbol_top + logged_titer_step;
+            const Color symbol_color = color_for_titer(element.first, median_index);
+            if (element.first.is_less_than()) {
+                aCell.triangle_filled({table_no - 0.5, symbol_top},
+                                      {table_no + 0.5, symbol_top},
+                                      {table_no,       symbol_bottom},
+                                      transparent, Pixels{0}, symbol_color);
+            }
+            else if (element.first.is_more_than()) {
+                aCell.triangle_filled({table_no - 0.5, symbol_bottom},
+                                      {table_no + 0.5, symbol_bottom},
+                                      {table_no,       symbol_top},
+                                      transparent, Pixels{0}, symbol_color);
+            }
+            else {
+                aCell.rectangle_filled({table_no - 0.5, symbol_top}, {1, logged_titer_step}, transparent, Pixels{0}, symbol_color);
+            }
+        }
+        ++table_no;
     }
 
 } // ChartData::plot_antigen_serum_cell_with_fixed_titer_range
