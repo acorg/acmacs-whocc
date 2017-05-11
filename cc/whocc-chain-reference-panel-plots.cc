@@ -83,7 +83,8 @@ class ChartData
     using titer_iterator = std::vector<TiterData>::const_iterator;
     using range = std::pair<titer_iterator, titer_iterator>;
 
-    inline ChartData() {}
+    inline ChartData() : mYAxisLabels{"5", "10", "20", "40", "80", "160", "320", "640", "1280", "2560", "5120", "10240", "20480", "40960"} {}
+
     size_t add_antigen(const Antigen& aAntigen);
     size_t add_serum(const Serum& aSerum);
     size_t add_table(const Chart& aChart);
@@ -111,6 +112,7 @@ class ChartData
     std::map<Titer, size_t> mTiterLevel;
     std::vector<std::vector<AntigenSerumData>> mAntigenSerumData;
     std::string mLab, mVirusType, mAssay, mFirstDate, mLastDate;
+    std::vector<std::string> mYAxisLabels;
 
     friend std::ostream& operator << (std::ostream& out, const ChartData& aData);
     inline void sort_titers_by_serum_antigen() { std::sort(mTiters.begin(), mTiters.end()); }
@@ -138,6 +140,7 @@ class ChartData
         }
 
     void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
+    void plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
 };
 
 // ======================================================================
@@ -384,7 +387,8 @@ void ChartData::plot(std::string output_filename)
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
             Surface& cell = surface.subsurface({serum_no * cell_parameters.hstep, antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
-            plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
+              // plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
+            plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters);
         }
     }
 
@@ -433,6 +437,33 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surf
     }
 
 } // ChartData::plot_antigen_serum_cell
+
+// ----------------------------------------------------------------------
+
+void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters)
+{
+    const double logged_titer_step = (aParameters.vstep - aParameters.voffset_base - aParameters.cell_top_title_height) / mYAxisLabels.size();
+
+    const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
+    const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
+    aCell.border(black, Pixels{0.2});
+      // serum name
+    text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], black, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
+      // antigen name
+    text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
+      // titer value marks
+    size_t titer_label_vpos = 0;
+    for (const auto& titer_label: mYAxisLabels) {
+        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2,
+                        aParameters.cell_top_title_height + aParameters.voffset_base + titer_label_vpos * logged_titer_step + logged_titer_step * 0.5},
+                   titer_label, black, Scaled{aParameters.cell_top_title_height * 0.7});
+        ++titer_label_vpos;
+    }
+
+} // ChartData::plot_antigen_serum_cell_with_fixed_titer_range
+
+// ----------------------------------------------------------------------
+
 
 // ----------------------------------------------------------------------
 /// Local Variables:
