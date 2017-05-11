@@ -65,6 +65,18 @@ class AntigenSerumData
     friend std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData);
 };
 
+struct CellParameters
+{
+    inline CellParameters(size_t aNumberOfTables, size_t aNumberOfTiters)
+        : cell_top_title_height(1.3), hstep(aNumberOfTables + 2.0), vstep(hstep), voffset_base(0.1), voffset_per_level((vstep - voffset_base * 2 - cell_top_title_height) / (aNumberOfTiters - 1)) {}
+
+    double cell_top_title_height;
+    double hstep;
+    double vstep;
+    double voffset_base;
+    double voffset_per_level;
+};
+
 class ChartData
 {
  public:
@@ -103,6 +115,29 @@ class ChartData
     friend std::ostream& operator << (std::ostream& out, const ChartData& aData);
     inline void sort_titers_by_serum_antigen() { std::sort(mTiters.begin(), mTiters.end()); }
 
+    inline size_t titer_index_in_sAllTiters(Titer aTiter) const
+        {
+            const auto iter = std::find(std::begin(sAllTiters), std::end(sAllTiters), aTiter);
+            return static_cast<size_t>(iter - std::begin(sAllTiters));
+        }
+
+    inline Color color_for_titer(Titer aTiter, size_t aMedianIndex) const
+        {
+            const auto titer_index = titer_index_in_sAllTiters(aTiter);
+            if (aMedianIndex == sNumberOfAllTiters || titer_index == sNumberOfAllTiters)
+                std::cerr << "Invalid median or titer index: " << aMedianIndex << " " << titer_index << std::endl;
+            return sMedianTiterColors[aMedianIndex][titer_index];
+        }
+
+    inline void text(Surface& aSurface, const Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
+        {
+            const auto size = aSurface.text_size(aText, Scaled{aFontSize});
+            if (size.width > aMaxWidth)
+                aFontSize *= aMaxWidth / size.width;
+            aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, TextStyle(), aRotation);
+        }
+
+    void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
 };
 
 // ======================================================================
@@ -335,84 +370,69 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
 
 void ChartData::plot(std::string output_filename)
 {
-    auto text = [](Surface& aSurface, const Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) {
-        const auto size = aSurface.text_size(aText, Scaled{aFontSize});
-        if (size.width > aMaxWidth)
-            aFontSize *= aMaxWidth / size.width;
-        aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, TextStyle(), aRotation);
-    };
-
-    auto titer_index_in_sAllTiters = [](Titer aTiter) -> size_t {
-        const auto iter = std::find(std::begin(sAllTiters), std::end(sAllTiters), aTiter);
-        // std::cerr << "titer_index_in_sAllTiters \"" << aTiter << "\": " << (iter - std::begin(sAllTiters)) << std::endl;
-        // if (iter == std::end(sAllTiters))
-        //     throw std::runtime_error("Cannot find titer \"" + aTiter + "\" in sAllTiters");
-        return static_cast<size_t>(iter - std::begin(sAllTiters));
-    };
-
-    auto color_for_titer = [&titer_index_in_sAllTiters](Titer aTiter, size_t aMedianIndex) -> Color {
-          // std::cerr << "color_for_titer \"" << aTiter << "\"" << std::endl;
-        const auto titer_index = titer_index_in_sAllTiters(aTiter);
-        if (aMedianIndex == sNumberOfAllTiters || titer_index == sNumberOfAllTiters)
-            std::cerr << "Invalid median or titer index: " << aMedianIndex << " " << titer_index << std::endl;
-        return sMedianTiterColors[aMedianIndex][titer_index];
-    };
-
     const size_t ns = number_of_sera(), na = number_of_antigens();
-    const double cell_top_title_height = 1.3;
-    const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep * 0.5;
-    const double voffset_base = 0.1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mTiterLevel.size() - 1); // excluding *
-    const Viewport cell_viewport{Size{hstep, vstep}};
+    CellParameters cell_parameters{number_of_tables(), mTiterLevel.size()};
+    const double title_height = cell_parameters.vstep * 0.5;
 
-    PdfCairo surface(output_filename, ns * hstep, na * vstep + title_height, ns * hstep);
+    const Viewport cell_viewport{Size{cell_parameters.hstep, cell_parameters.vstep}};
+
+    PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
 
     std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(number_of_sera()) + " antigens:" + std::to_string(number_of_antigens());
-    text(surface, {title_height, title_height * 0.7}, title, black, NoRotation, title_height * 0.8, ns * hstep - title_height * 2);
+    text(surface, {title_height, title_height * 0.7}, title, black, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
 
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
-            const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
-            const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
-            Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, true);
-            cell.border(black, Pixels{0.2});
-              // serum name
-            text(cell, {cell_top_title_height * 1.2, cell_top_title_height}, mSera[serum_no], black, NoRotation, cell_top_title_height, (hstep - cell_top_title_height * 1.5));
-              // antigen name
-            text(cell, {cell_top_title_height, vstep - voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, cell_top_title_height, (vstep - voffset_base * 1.5));
-              // titer value marks
-            for (const auto& element: mTiterLevel) {
-                cell.text({hstep - cell_top_title_height * 2, cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level * 0.5}, element.first, black, Scaled{cell_top_title_height / 2});
-            }
-
-            double table_no = 2;
-            for (const auto& element: ag_sr_data.titer_per_table) {
-                if (!element.first.is_dont_care()) { // do not draw dont-care titer
-                      // cell.line({table_no, 0}, {table_no, vstep}, "grey80", Pixels{0.01});
-
-                    const Color symbol_color = color_for_titer(element.first, median_index);
-                    if (element.first.is_less_than()) {
-                        cell.triangle_filled({table_no - 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level},
-                                             {table_no + 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level},
-                                             {table_no,       cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level},
-                                             transparent, Pixels{0}, symbol_color);
-                    }
-                    else if (element.first.is_more_than()) {
-                        cell.triangle_filled({table_no - 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level},
-                                             {table_no + 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level + voffset_per_level},
-                                             {table_no,       cell_top_title_height + voffset_base + element.second * voffset_per_level},
-                                             transparent, Pixels{0}, symbol_color);
-                    }
-                    else {
-                        cell.rectangle_filled({table_no - 0.5, cell_top_title_height + voffset_base + voffset_per_level * element.second}, {1, voffset_per_level}, transparent, Pixels{0}, symbol_color);
-                    }
-
-                }
-                ++table_no;
-            }
+            Surface& cell = surface.subsurface({serum_no * cell_parameters.hstep, antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
+            plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
         }
     }
 
 } // ChartData::plot
+
+// ----------------------------------------------------------------------
+
+void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters)
+{
+    const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
+    const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
+    aCell.border(black, Pixels{0.2});
+      // serum name
+    text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], black, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
+      // antigen name
+    text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
+      // titer value marks
+    for (const auto& element: mTiterLevel) {
+        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, element.first, black, Scaled{aParameters.cell_top_title_height / 2});
+    }
+
+    double table_no = 2;
+    for (const auto& element: ag_sr_data.titer_per_table) {
+        if (!element.first.is_dont_care()) { // do not draw dont-care titer
+              // aCell.line({table_no, 0}, {table_no, vstep}, "grey80", Pixels{0.01});
+
+            const Color symbol_color = color_for_titer(element.first, median_index);
+            if (element.first.is_less_than()) {
+                aCell.triangle_filled({table_no - 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level},
+                                      {table_no + 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level},
+                                      {table_no,       aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level},
+                                      transparent, Pixels{0}, symbol_color);
+            }
+            else if (element.first.is_more_than()) {
+                aCell.triangle_filled({table_no - 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level},
+                                      {table_no + 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level},
+                                      {table_no,       aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level},
+                                      transparent, Pixels{0}, symbol_color);
+            }
+            else {
+                aCell.rectangle_filled({table_no - 0.5, aParameters.cell_top_title_height + aParameters.voffset_base + aParameters.voffset_per_level * element.second}, {1, aParameters.voffset_per_level}, transparent, Pixels{0}, symbol_color);
+            }
+
+        }
+        ++table_no;
+    }
+
+} // ChartData::plot_antigen_serum_cell
 
 // ----------------------------------------------------------------------
 /// Local Variables:
