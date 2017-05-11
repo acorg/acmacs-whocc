@@ -454,7 +454,7 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
       // titer value marks
     size_t titer_label_vpos = 0;
     for (const auto& titer_label: mYAxisLabels) {
-        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2,
+        aCell.text_right_aligned({aParameters.hstep - aParameters.cell_top_title_height * 0.2,
                         aParameters.cell_top_title_height + aParameters.voffset_base + titer_label_vpos * logged_titer_step + logged_titer_step * 0.5},
                    titer_label, black, Scaled{aParameters.cell_top_title_height * 0.7});
         ++titer_label_vpos;
