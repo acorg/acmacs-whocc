@@ -59,6 +59,7 @@ class AntigenSerumData
  public:
     inline AntigenSerumData() {}
     inline bool empty() const { return titer_per_table.empty(); }
+    inline size_t number_of_tables() const { return std::accumulate(titer_per_table.begin(), titer_per_table.end(), 0U, [](size_t acc, auto& element) { return element.first.is_dont_care() ? acc : (acc + 1); }); }
 
     std::pair<Titer, int> median;
     std::vector<std::pair<Titer, int>> titer_per_table;
@@ -75,6 +76,18 @@ struct CellParameters
     double vstep;
     double voffset_base;
     double voffset_per_level;
+};
+
+struct AgSr
+{
+    inline AgSr(std::string aName) : name(aName), enabled(true) {}
+    inline operator std::string() const { return name; }
+    inline size_t size() const { return name.size(); }
+    inline bool operator==(const AgSr& a) const { return name == a.name; }
+    inline bool operator==(std::string a) const { return name == a; }
+
+    std::string name;
+    bool enabled;
 };
 
 class ChartData
@@ -95,6 +108,8 @@ class ChartData
 
     inline size_t number_of_antigens() const { return mAntigens.size(); }
     inline size_t number_of_sera() const { return mSera.size(); }
+    inline size_t number_of_enabled_antigens() const { return std::accumulate(mAntigens.begin(), mAntigens.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
+    inline size_t number_of_enabled_sera() const { return std::accumulate(mSera.begin(), mSera.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
     inline size_t number_of_tables() const { return mTables.size(); }
     inline std::string antigen(size_t antigen_no) const { return mAntigens[antigen_no]; }
     inline std::string serum(size_t serum_no) const { return mSera[serum_no]; }
@@ -105,8 +120,8 @@ class ChartData
 
  private:
     std::vector<std::string> mTables;
-    std::vector<std::string> mSera;
-    std::vector<std::string> mAntigens;
+    std::vector<AgSr> mSera;
+    std::vector<AgSr> mAntigens;
     std::vector<TiterData> mTiters;
     std::set<Titer> mAllTiters;
     std::map<Titer, size_t> mTiterLevel;
@@ -141,6 +156,8 @@ class ChartData
 
     void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
     void plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
+
+    void disable_antigens_sera(size_t aThreshold = 4);
 };
 
 // ======================================================================
@@ -236,7 +253,7 @@ size_t ChartData::add_antigen(const Antigen& aAntigen)
     const auto pos = std::find(mAntigens.begin(), mAntigens.end(), name);
     size_t result = static_cast<size_t>(pos - mAntigens.begin());
     if (pos == mAntigens.end()) {
-        mAntigens.push_back(name);
+        mAntigens.emplace_back(name);
         result = mAntigens.size() - 1;
     }
     return result;
@@ -251,7 +268,7 @@ size_t ChartData::add_serum(const Serum& aSerum)
     const auto pos = std::find(mSera.begin(), mSera.end(), name);
     size_t result = static_cast<size_t>(pos - mSera.begin());
     if (pos == mSera.end()) {
-        mSera.push_back(name);
+        mSera.emplace_back(name);
         result = mSera.size() - 1;
     }
     return result;
@@ -309,8 +326,33 @@ void ChartData::make_antigen_serum_data()
             }
         }
     }
+    disable_antigens_sera(4);
 
 } // ChartData::make_antigen_serum_data
+
+// ----------------------------------------------------------------------
+
+void ChartData::disable_antigens_sera(size_t aThreshold)
+{
+    for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
+        size_t max_number_of_tables = 0;
+        for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
+            max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
+        }
+        mAntigens[antigen_no].enabled = max_number_of_tables > aThreshold;
+        // std::cerr << "AG " << mAntigens[antigen_no].name << " tables: " << max_number_of_tables << std::endl;
+    }
+
+    for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
+        size_t max_number_of_tables = 0;
+        for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
+            max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
+        }
+        mSera[serum_no].enabled = max_number_of_tables > aThreshold;
+          // std::cerr << "SR " << mSera[serum_no].name << " tables: " << max_number_of_tables << std::endl;
+    }
+
+} // ChartData::disable_antigens_sera
 
 // ----------------------------------------------------------------------
 
@@ -351,7 +393,7 @@ std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData)
 std::ostream& operator << (std::ostream& out, const ChartData& aData)
 {
     out << "Tables:" << aData.mTables.size() << " Sera:" << aData.mSera.size() << " Antigens:" << aData.mAntigens.size() << " Titers:" << aData.mTiters.size() << std::endl;
-    out << "Titers: " << aData.mAllTiters << std::endl;
+    out << "Titers: " << aData.mAllTiters; // << std::endl;
     // out << "Titers: " << aData.mTiterLevel << std::endl;
 
     // const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name());
@@ -373,7 +415,8 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
 
 void ChartData::plot(std::string output_filename)
 {
-    const size_t ns = number_of_sera(), na = number_of_antigens();
+    const size_t ns = number_of_enabled_sera(), na = number_of_enabled_antigens();
+    std::cout << "Enabled: antigens: " << na << " sera: " << ns << std::endl;
     CellParameters cell_parameters{number_of_tables(), mTiterLevel.size()};
     const double title_height = cell_parameters.vstep * 0.5;
 
@@ -381,14 +424,20 @@ void ChartData::plot(std::string output_filename)
 
     PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
 
-    std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(number_of_sera()) + " antigens:" + std::to_string(number_of_antigens());
+    std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
     text(surface, {title_height, title_height * 0.7}, title, black, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
 
-    for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
-        for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
-            Surface& cell = surface.subsurface({serum_no * cell_parameters.hstep, antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
-              //plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
-            plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters);
+    for (size_t antigen_no = 0, enabled_antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
+        if (mAntigens[antigen_no].enabled) {
+            for (size_t serum_no = 0, enabled_serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
+                if (mSera[serum_no].enabled) {
+                    Surface& cell = surface.subsurface({enabled_serum_no * cell_parameters.hstep, enabled_antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
+                      //plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
+                    plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters);
+                    ++enabled_serum_no;
+                }
+            }
+            ++enabled_antigen_no;
         }
     }
 
