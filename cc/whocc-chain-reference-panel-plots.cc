@@ -14,6 +14,10 @@
 #include "acmacs-chart/ace.hh"
 #include "acmacs-draw/surface-cairo.hh"
 
+// sNumberOfAllTiters, sAllTiters, sMedianTiterColors
+// transparent, black, green, yellow, red
+#include "whocc-reference-panel-plot-colors.hh"
+
 // ----------------------------------------------------------------------
 
 class Options
@@ -246,7 +250,7 @@ void ChartData::make_antigen_serum_data()
         mTiterLevel[titer] = level;
         --level;
     }
-    std::cerr << "mTiterLevel: " << mTiterLevel << std::endl;
+    // std::cerr << "mTiterLevel: " << mTiterLevel << std::endl;
 
     for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         mAntigenSerumData.emplace_back(number_of_sera());
@@ -338,23 +342,20 @@ void ChartData::plot(std::string output_filename)
         aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, TextStyle(), aRotation);
     };
 
-    auto titer_value = [](Titer aTiter) {
-        double val = aTiter.similarity();
-        if (aTiter.is_less_than())
-            val -= 1;
-        else if (aTiter.is_more_than())
-            val += 1;
-        return val;
+    auto titer_index_in_sAllTiters = [](Titer aTiter) -> size_t {
+        const auto iter = std::find(std::begin(sAllTiters), std::end(sAllTiters), aTiter);
+        // std::cerr << "titer_index_in_sAllTiters \"" << aTiter << "\": " << (iter - std::begin(sAllTiters)) << std::endl;
+        // if (iter == std::end(sAllTiters))
+        //     throw std::runtime_error("Cannot find titer \"" + aTiter + "\" in sAllTiters");
+        return static_cast<size_t>(iter - std::begin(sAllTiters));
     };
 
-    auto color_for_titer = [&titer_value](Titer aTiter, double aMedianValue) -> Color {
-        const double dist = std::abs(titer_value(aTiter) - aMedianValue);
-        if (dist < 1)
-            return "green3";
-        else if (dist < 2)
-            return "yellow3";
-        else
-            return "red";
+    auto color_for_titer = [&titer_index_in_sAllTiters](Titer aTiter, size_t aMedianIndex) -> Color {
+          // std::cerr << "color_for_titer \"" << aTiter << "\"" << std::endl;
+        const auto titer_index = titer_index_in_sAllTiters(aTiter);
+        if (aMedianIndex == sNumberOfAllTiters || titer_index == sNumberOfAllTiters)
+            std::cerr << "Invalid median or titer index: " << aMedianIndex << " " << titer_index << std::endl;
+        return sMedianTiterColors[aMedianIndex][titer_index];
     };
 
     const size_t ns = number_of_sera(), na = number_of_antigens();
@@ -362,7 +363,6 @@ void ChartData::plot(std::string output_filename)
     const double hstep = number_of_tables() + 2 /* + cell_top_title_height */, vstep = hstep, title_height = vstep * 0.5;
     const double voffset_base = 0.1, voffset_per_level = (vstep - voffset_base * 2 - cell_top_title_height) / (mTiterLevel.size() - 1); // excluding *
     const Viewport cell_viewport{Size{hstep, vstep}};
-    const Color transparent{"transparent"}, black{"black"};
 
     PdfCairo surface(output_filename, ns * hstep, na * vstep + title_height, ns * hstep);
 
@@ -372,7 +372,7 @@ void ChartData::plot(std::string output_filename)
     for (size_t antigen_no = 0; antigen_no < na; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < ns; ++serum_no) {
             const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
-            const double median_value = titer_value(ag_sr_data.median.first);
+            const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
             Surface& cell = surface.subsurface({serum_no * hstep, antigen_no * vstep + title_height}, Scaled{hstep}, cell_viewport, true);
             cell.border(black, Pixels{0.2});
               // serum name
@@ -389,7 +389,7 @@ void ChartData::plot(std::string output_filename)
                 if (!element.first.is_dont_care()) { // do not draw dont-care titer
                       // cell.line({table_no, 0}, {table_no, vstep}, "grey80", Pixels{0.01});
 
-                    const Color symbol_color = color_for_titer(element.first, median_value);
+                    const Color symbol_color = color_for_titer(element.first, median_index);
                     if (element.first.is_less_than()) {
                         cell.triangle_filled({table_no - 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level},
                                              {table_no + 0.5, cell_top_title_height + voffset_base + element.second * voffset_per_level},

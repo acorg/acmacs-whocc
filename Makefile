@@ -51,7 +51,7 @@ test: install
 
 # ----------------------------------------------------------------------
 
-$(DIST)/whocc-chain-reference-panel-plots: $(BUILD)/whocc-chain-reference-panel-plots.o | $(DIST)
+$(DIST)/whocc-chain-reference-panel-plots: $(BUILD)/whocc-chain-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
 	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
 
 $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
