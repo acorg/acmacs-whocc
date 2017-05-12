@@ -137,7 +137,7 @@ def plot_chunk(key, index, sources, output_dir):
     module_logger.info('chunk {} {} - {}'.format(len(sources), d1, d2))
     output_dir.mkdir(parents=True, exist_ok=True)
     output_filename = "{}-{:02d}-{}-{}.pdf".format(key, index, d1, d2)
-    subprocess.check_call("~/AD/bin/whocc-chain-reference-panel-plots '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources)), shell=True)
+    subprocess.check_call("~/AD/bin/whocc-reference-panel-plots '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources)), shell=True)
     return {"name": output_filename, "d1": d1, "d2": d2, "num": len(sources)}
 
 # ----------------------------------------------------------------------

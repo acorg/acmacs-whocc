@@ -7,7 +7,7 @@ MAKEFLAGS = -w
 
 # ----------------------------------------------------------------------
 
-PROGRAMS = whocc-chain-reference-panel-plots whocc-scan-titers
+PROGRAMS = whocc-reference-panel-plots whocc-scan-titers
 
 LIB_DIR = $(ACMACSD_ROOT)/lib
 
@@ -51,7 +51,7 @@ test: install
 
 # ----------------------------------------------------------------------
 
-$(DIST)/whocc-chain-reference-panel-plots: $(BUILD)/whocc-chain-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
+$(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
 	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
 
 $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)

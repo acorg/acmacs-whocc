@@ -506,11 +506,13 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
     text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
 
       // titer value marks
+    const double titer_label_font_size = aParameters.cell_top_title_height * 0.7;
     size_t titer_label_vpos = 0;
     for (const auto& titer_label: mYAxisLabels) {
         aCell.text_right_aligned({aParameters.hstep - aParameters.cell_top_title_height * 0.2,
-                        aParameters.cell_top_title_height + aParameters.voffset_base + titer_label_vpos * logged_titer_step + logged_titer_step * 0.5},
-                   titer_label, black, Scaled{aParameters.cell_top_title_height * 0.7});
+                          // aParameters.cell_top_title_height + aParameters.voffset_base + titer_label_vpos * logged_titer_step + logged_titer_step * 0.5},
+                        aParameters.vstep - aParameters.voffset_base - titer_label_vpos * logged_titer_step - logged_titer_step * 0.5 + titer_label_font_size * 0.3},
+                   titer_label, black, Scaled{titer_label_font_size});
         ++titer_label_vpos;
     }
 
@@ -520,7 +522,8 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
     for (const auto& element: ag_sr_data.titer_per_table) {
         if (!element.first.is_dont_care()) { // do not draw dont-care titer
             const double titer = element.first.similarity_with_thresholded();
-            const double symbol_top = aParameters.cell_top_title_height + aParameters.voffset_base + (titer + 1) * logged_titer_step;
+              // const double symbol_top = aParameters.cell_top_title_height + aParameters.voffset_base + (titer + 1) * logged_titer_step;
+            const double symbol_top = aParameters.vstep - aParameters.voffset_base - (titer + 2) * logged_titer_step;
             const double symbol_bottom = symbol_top + logged_titer_step;
             const Color symbol_color = color_for_titer(element.first, median_index);
             if (element.first.is_less_than()) {
