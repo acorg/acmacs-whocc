@@ -165,10 +165,15 @@ void TiterData::histogram(std::string filename)
     surface.line({left, bottom}, {right, bottom}, "black", Pixels{1});
     size_t x_check_mark = 0;
     for (const auto& entry: mTiters) {
-        const auto label_width = surface.text_size(entry.first, Pixels{font_size}).width;
         const double bar_left = left + x_check_mark * x_mark_step; //, bar_right = bar_left + x_mark_step;
         const double bar_height = double(entry.second) / double(max_y) * (bottom - top);
-        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + font_size}, entry.first, "black", Pixels{font_size});
+        double label_font_size = font_size;
+        double label_width = surface.text_size(entry.first, Pixels{label_font_size}).width;
+        if (label_width > x_mark_step) {
+            label_font_size *= x_mark_step / label_width;
+            label_width = x_mark_step;
+        }
+        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + font_size}, entry.first, "black", Pixels{label_font_size});
         surface.rectangle_filled({bar_left, bottom - bar_height}, {x_mark_step, bar_height}, "black", Pixels{0.5}, "orange");
         ++x_check_mark;
     }

@@ -124,14 +124,11 @@ sHtmlTemplate = """<html>
 
 def make_index(plotted_data, output_dir):
 
-    def make_entries(v3):
-        return "<li>" + "</li>\n<li>".join("<a href=\"{}\"> ({})</a>".format(entry["name"], entry["num"]) for entry in [v3]) + "</li>"
-
     def make_rbc(v2):
-        return "\n".join("<h3>{}</h3>\n<ol>{}</ol>".format(rbc.upper(), make_entries(v2[rbc])) for rbc in sorted(v2))
+        return "\n".join("<li><a href=\"{}\">{} ({})</a></li>".format(v2[rbc]["name"], rbc.upper(), v2[rbc]["num"]) for rbc in sorted(v2))
 
     def make_labs(v1):
-        return "\n".join("<h2>{}</h2>{}".format(lab, make_rbc(v1[lab])) for lab in sorted(v1))
+        return "\n".join("<h2>{}</h2><ul>{}</ul>".format(lab, make_rbc(v1[lab])) for lab in sorted(v1))
 
     # pprint.pprint(plotted_data)
     content = "\n<hr>\n".join("<h1>{}</h1>\n{}".format(subtype, make_labs(plotted_data[subtype])) for subtype in sorted(plotted_data, reverse=True))
