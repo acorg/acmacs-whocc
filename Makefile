@@ -58,7 +58,7 @@ $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
 	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs liblzma)
 
 $(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
-	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
+	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
 
 clean:
 	rm -rf $(DIST) $(BUILD)/*.o $(BUILD)/*.d
