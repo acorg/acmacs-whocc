@@ -178,7 +178,7 @@ void TiterData::histogram(std::string filename)
         const double bar_left = left + x_check_mark * x_mark_step; //, bar_right = bar_left + x_mark_step;
         const double bar_height = double(entry.second) / double(max_y) * (bottom - top);
         double label_width = surface.text_size(entry.first, Pixels{label_font_size}).width;
-        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + label_font_size}, entry.first, "black", Pixels{label_font_size});
+        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + label_font_size * 1.5}, entry.first, "black", Pixels{label_font_size});
         surface.rectangle_filled({bar_left, bottom - bar_height}, {x_mark_step, bar_height}, "black", Pixels{0.5}, "orange");
         ++x_check_mark;
     }
