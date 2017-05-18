@@ -7,7 +7,7 @@ MAKEFLAGS = -w
 
 # ----------------------------------------------------------------------
 
-PROGRAMS = whocc-reference-panel-plots whocc-scan-titers
+PROGRAMS = whocc-reference-panel-plots whocc-scan-titers whocc-histogram-of-titers
 
 LIB_DIR = $(ACMACSD_ROOT)/lib
 
@@ -56,6 +56,9 @@ $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BU
 
 $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
 	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs liblzma)
+
+$(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
+	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -lboost_program_options -lboost_system $$(pkg-config --libs liblzma)
 
 clean:
 	rm -rf $(DIST) $(BUILD)/*.o $(BUILD)/*.d
