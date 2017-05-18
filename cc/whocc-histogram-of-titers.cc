@@ -1,5 +1,6 @@
 #include <string>
 #include <map>
+#include <algorithm>
 
 #pragma GCC diagnostic push
 #include "acmacs-base/boost-diagnostics.hh"
@@ -8,6 +9,7 @@
 
 #include "acmacs-base/stream.hh"
 #include "acmacs-chart/ace.hh"
+#include "acmacs-draw/surface-cairo.hh"
 
 // ----------------------------------------------------------------------
 
@@ -22,6 +24,13 @@ class TiterData
             if (!iter_inserted.second)
                 ++iter_inserted.first->second;
         }
+
+    inline size_t max_number() const
+        {
+            return std::max_element(mTiters.begin(), mTiters.end(), [](const auto& a, const auto& b) { return a.second < b.second; })->second;
+        }
+
+    void histogram(std::string filename);
 
  private:
     std::map<Titer, size_t> mTiters;
@@ -55,6 +64,8 @@ int main(int argc, const char *argv[])
             for (const auto& source_name: options.source_charts)
                 process_source(data, source_name);
             std::cout << data << std::endl;
+            std::cout << "max: " << data.max_number() << std::endl;
+            data.histogram(options.output_filename);
         }
         catch (std::exception& err) {
             std::cerr << err.what() << std::endl;
@@ -122,6 +133,50 @@ void process_source(TiterData& aData, std::string filename)
 } // process_source
 
 // ----------------------------------------------------------------------
+
+void TiterData::histogram(std::string filename)
+{
+    const double hsize = 1000.0, vsize = hsize / 1.6;
+    PdfCairo surface(filename, hsize, vsize, hsize);
+    const double font_size = 10;
+    const size_t max_y = max_number();
+    const double y_label_max_width = surface.text_size(std::to_string(max_y), Pixels{font_size}).width;
+    const size_t y_num_check_marks = 10;
+    const double padding = 5.0;
+    const double mark_size = padding * 0.5;
+    const double bottom = vsize - padding - font_size - padding;
+    const double y_extension = 1.03;
+      // const double y_range = max_y * y_extension;
+    const double top = padding + (bottom - padding) * (y_extension - 1.0);
+    const double y_mark_step = (bottom - top) / y_num_check_marks;
+
+    const double left = padding + y_label_max_width + padding;
+    const double right = hsize - padding;
+
+    surface.line({left, padding}, {left, bottom}, "black", Pixels{1});
+    for (size_t y_check_mark = 0; y_check_mark < y_num_check_marks; ++y_check_mark) {
+        const double mark_y = bottom - (y_check_mark + 1) * y_mark_step;
+        surface.line({left - mark_size, mark_y}, {left, mark_y}, "black", Pixels{1});
+        surface.text_right_aligned({left - mark_size, mark_y + font_size / 2}, std::to_string(size_t(double(max_y) / double(y_num_check_marks) * (y_check_mark + 1))), "black", Pixels{font_size});
+    }
+
+      // const size_t x_num_check_marks = mTiters.size();
+    const double x_mark_step = (right - left) / mTiters.size();
+    surface.line({left, bottom}, {right, bottom}, "black", Pixels{1});
+    size_t x_check_mark = 0;
+    for (const auto& entry: mTiters) {
+        const auto label_width = surface.text_size(entry.first, Pixels{font_size}).width;
+        const double bar_left = left + x_check_mark * x_mark_step; //, bar_right = bar_left + x_mark_step;
+        const double bar_height = double(entry.second) / double(max_y) * (bottom - top);
+        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + font_size}, entry.first, "black", Pixels{font_size});
+        surface.rectangle_filled({bar_left, bottom - bar_height}, {x_mark_step, bar_height}, "black", Pixels{0.5}, "orange");
+        ++x_check_mark;
+    }
+
+} // TiterData::histogram
+
+// ----------------------------------------------------------------------
+
 
 // ----------------------------------------------------------------------
 /// Local Variables:
