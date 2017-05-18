@@ -170,7 +170,7 @@ void TiterData::histogram(std::string filename)
         double label_font_size = font_size;
         double label_width = surface.text_size(entry.first, Pixels{label_font_size}).width;
         if (label_width > x_mark_step) {
-            label_font_size *= x_mark_step / label_width;
+            label_font_size *= x_mark_step / label_width * 0.9;
             label_width = x_mark_step;
         }
         surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + font_size}, entry.first, "black", Pixels{label_font_size});
