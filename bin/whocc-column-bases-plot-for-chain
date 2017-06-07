@@ -17,6 +17,7 @@ PAGE_WIDTH = 100
 PAGE_HEIGHT = PAGE_WIDTH / ASPECT
 TITLE_SIZE = PAGE_HEIGHT / 20
 MARK_TEXT_SIZE = PAGE_HEIGHT / 25
+DATA_COLOR = "grey50"
 
 # ----------------------------------------------------------------------
 
@@ -34,46 +35,70 @@ def plot_pdf(data, output):
             surface.new_page()
         plot_page(surface, serum, data["sera"][serum], num_tables=data["num_tables"], max_cb=data["max_column_basis"], min_cb=data["min_column_basis"])
         new_page = True
+    if new_page:
+        surface.new_page()
+    plot_page_all(surface, data["sera"], num_tables=data["num_tables"], max_cb=data["max_column_basis"], min_cb=data["min_column_basis"])
 
 # ----------------------------------------------------------------------
 
 def plot_page(surface, serum, data, num_tables, max_cb, min_cb):
     surface.text_s(PAGE_WIDTH * 0.2, TITLE_SIZE, serum, "black", TITLE_SIZE)
     sub = surface.subsurface_s(PAGE_WIDTH * 0.1, PAGE_HEIGHT * 0.1, PAGE_WIDTH * 0.8, PAGE_WIDTH, PAGE_HEIGHT, False)
+    cb_step = y_axis(sub, max_cb, min_cb)
+    x_margin, table_step = x_axis(sub, num_tables)
+    plot_data(sub, data, x_margin, table_step, cb_step)
 
-    # Y-axis
+# ----------------------------------------------------------------------
+
+def plot_page_all(surface, data, num_tables, max_cb, min_cb):
+    surface.text_s(PAGE_WIDTH * 0.2, TITLE_SIZE, "All sera", "black", TITLE_SIZE)
+    sub = surface.subsurface_s(PAGE_WIDTH * 0.1, PAGE_HEIGHT * 0.1, PAGE_WIDTH * 0.8, PAGE_WIDTH, PAGE_HEIGHT, False)
+    cb_step = y_axis(sub, max_cb, min_cb)
+    x_margin, table_step = x_axis(sub, num_tables)
+    for serum_data in data.values():
+        plot_data(sub, serum_data, x_margin, table_step, cb_step)
+
+# ----------------------------------------------------------------------
+
+def x_axis(surface, num_tables):
+    surface.line_p(0, PAGE_HEIGHT, PAGE_WIDTH, PAGE_HEIGHT, "black", 1)
+    x_margin = PAGE_WIDTH / 50
+    table_step = (PAGE_WIDTH - x_margin * 2) / (num_tables - 1)
+    surface.line_p(PAGE_WIDTH - x_margin, PAGE_HEIGHT, PAGE_WIDTH - x_margin, PAGE_HEIGHT + PAGE_WIDTH / 100, "black", 1)
+    surface.text_s(PAGE_WIDTH - x_margin * 2, PAGE_HEIGHT + PAGE_WIDTH / 100 + MARK_TEXT_SIZE, str(num_tables) + " tables", "black", MARK_TEXT_SIZE)
+    return x_margin, table_step
+
+# ----------------------------------------------------------------------
+
+def y_axis(surface, max_cb, min_cb):
     max_cb = math.ceil(max_cb) + 1
     min_cb = math.floor(min_cb)
     cb_step = PAGE_HEIGHT / max_cb
-    sub.line_p(0, 0, 0, PAGE_HEIGHT, "black", 1)
+    surface.line_p(0, 0, 0, PAGE_HEIGHT, "black", 1)
     for cb_mark in range(1, int(max_cb)):
         x = - PAGE_WIDTH / 100
         y = PAGE_HEIGHT - cb_step * cb_mark
-        sub.line_p(0, y, x, y, "black", 1)
+        surface.line_p(0, y, x, y, "black", 1)
         if cb_mark >= min_cb:
-            sub.text_right_aligned_s(x * 1.5, y + MARK_TEXT_SIZE / 2.7, str(cb_mark), "black", MARK_TEXT_SIZE)
+            surface.text_right_aligned_s(x * 1.5, y + MARK_TEXT_SIZE / 2.7, str(cb_mark), "black", MARK_TEXT_SIZE)
+    return cb_step
 
-    # X-axis
-    sub.line_p(0, PAGE_HEIGHT, PAGE_WIDTH, PAGE_HEIGHT, "black", 1)
-    x_margin = PAGE_WIDTH / 50
-    table_step = (PAGE_WIDTH - x_margin * 2) / (num_tables - 1)
-    sub.line_p(PAGE_WIDTH - x_margin, PAGE_HEIGHT, PAGE_WIDTH - x_margin, PAGE_HEIGHT + PAGE_WIDTH / 100, "black", 1)
-    sub.text_s(PAGE_WIDTH - x_margin * 2, PAGE_HEIGHT + PAGE_WIDTH / 100 + MARK_TEXT_SIZE, str(num_tables) + " tables", "black", MARK_TEXT_SIZE)
+# ----------------------------------------------------------------------
 
-    # data
+def plot_data(surface, data, x_margin, table_step, cb_step):
     coords = []
     tables = sorted(int(t_no) for t_no in data)
     # print(tables)
     prev_t_no = None
     for t_no in tables:
         if prev_t_no is not None and prev_t_no != t_no - 1 and coords:
-            sub.path_outline(coords, "blue4", 1, False)
+            surface.path_outline(coords, DATA_COLOR, 1, False)
             coords = []
         coords.append(x_margin + t_no * table_step)
         coords.append(PAGE_HEIGHT - cb_step * data[str(t_no)])
         prev_t_no = t_no
     if coords:
-        sub.path_outline(coords, "blue4", 1, False)
+        surface.path_outline(coords, DATA_COLOR, 1, False)
 
 # ======================================================================
 
