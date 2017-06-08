@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import sys, os, cgi, cgitb, pprint
+import sys, os, cgi, cgitb, pprint, subprocess
 cgitb.enable()
 from pathlib import Path
 # cgi.test()
@@ -82,6 +82,15 @@ def index():
         "links": "\n".join("<li><a href=\"?f={f}\">{n}</a></li>".format(n=source.name, f=str(source)) for source in sources)
         }
     print(sIndexTemplate % fields)
+
+# ----------------------------------------------------------------------
+
+def make_plot(name):
+    pdf = Path(name).stem + ".pdf"
+    subprocess.check_call("(echo '===' `date` $REMOTE_ADDR '=== {name}' ; env ACMACSD_ROOT=/home/eu/AD LD_LIBRARY_PATH=/home/eu/AD/lib /home/eu/AD/bin/whocc-column-bases-plot-for-chain -s '{name}' -o '{pdf}') >>plot.log 2>&1".format(name=name, pdf=pdf), shell=True)
+    print("Content-Type: application/pdf")
+    print()
+    print(Path(pdf).open().read())
 
 # ----------------------------------------------------------------------
 
