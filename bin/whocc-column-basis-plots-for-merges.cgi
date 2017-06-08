@@ -88,9 +88,9 @@ def index():
 def make_plot(name):
     pdf = Path(name).stem + ".pdf"
     subprocess.check_call("(echo '===' `date` $REMOTE_ADDR '=== {name}' ; env ACMACSD_ROOT=/home/eu/AD LD_LIBRARY_PATH=/home/eu/AD/lib /home/eu/AD/bin/whocc-column-bases-plot-for-chain -s '{name}' -o '{pdf}') >>plot.log 2>&1".format(name=name, pdf=pdf), shell=True)
-    print("Content-Type: application/pdf")
-    print()
-    print(Path(pdf).open().read())
+    import shutil
+    sys.stdout.buffer.write(b"Content-Type: application/pdf\n\n")
+    shutil.copyfileobj(Path(pdf).open("rb"), sys.stdout.buffer)
 
 # ----------------------------------------------------------------------
 
