@@ -79,7 +79,7 @@ def index():
     print()
     sources = sorted(Path(".").glob("*.json"))
     fields = {
-        "links": "\n".join("<li><a href=\"?f={f}\">{n}</a></li>".format(n=source.name, f=str(source)) for source in sources)
+        "links": "\n".join("<li><a href=\"?f={f}\">{n}</a></li>".format(n=source.stem, f=str(source)) for source in sources)
         }
     print(sIndexTemplate % fields)
 
