@@ -28,40 +28,43 @@ DATA_COLOR = "grey50"
 
 def main(args):
     if args.output[-4:] == ".pdf":
-        plot_pdf(json.load(Path(args.source).open()), args.output)
+        plot_pdf(json.load(Path(args.source).open()), Path(args.source).stem, args.output)
 
 # ----------------------------------------------------------------------
 
-def plot_pdf(data, output):
+def plot_pdf(data, name, output):
+    subtitle = name + " " + data["m"]
     surface = PdfCairo(output, PDF_WIDTH, PDF_HEIGHT, PAGE_WIDTH)
     new_page = False
     for serum in sorted(data["sera"]):
         if new_page:
             surface.new_page()
-        plot_page(surface, serum, data["sera"][serum], num_tables=data["num_tables"], max_cb=data["max_column_basis"], min_cb=data["min_column_basis"])
+        plot_page(surface, serum, data["sera"][serum], num_tables=data["num_tables"], max_cb=data["max_column_basis"], min_cb=data["min_column_basis"], subtitle=subtitle)
         new_page = True
     if new_page:
         surface.new_page()
-    plot_page_all(surface, data["sera"], num_tables=data["num_tables"], max_cb=data["max_column_basis"], min_cb=data["min_column_basis"])
+    plot_page_all(surface, data["sera"], num_tables=data["num_tables"], max_cb=data["max_column_basis"], min_cb=data["min_column_basis"], subtitle=subtitle)
 
 # ----------------------------------------------------------------------
 
-def plot_page(surface, serum, data, num_tables, max_cb, min_cb):
+def plot_page(surface, serum, data, num_tables, max_cb, min_cb, subtitle):
     surface.text_s(PAGE_WIDTH * 0.2, TITLE_SIZE, serum, "black", TITLE_SIZE)
     sub = surface.subsurface_s(PAGE_WIDTH * 0.1, PAGE_HEIGHT * 0.1, PAGE_WIDTH * 0.8, PAGE_WIDTH, PAGE_HEIGHT, False)
     cb_step = y_axis(sub, max_cb, min_cb)
     x_margin, table_step = x_axis(sub, num_tables)
     plot_data(sub, data, x_margin, table_step, cb_step)
+    plot_subtitle(sub, subtitle)
 
 # ----------------------------------------------------------------------
 
-def plot_page_all(surface, data, num_tables, max_cb, min_cb):
+def plot_page_all(surface, data, num_tables, max_cb, min_cb, subtitle):
     surface.text_s(PAGE_WIDTH * 0.2, TITLE_SIZE, "All sera", "black", TITLE_SIZE)
     sub = surface.subsurface_s(PAGE_WIDTH * 0.1, PAGE_HEIGHT * 0.1, PAGE_WIDTH * 0.8, PAGE_WIDTH, PAGE_HEIGHT, False)
     cb_step = y_axis(sub, max_cb, min_cb)
     x_margin, table_step = x_axis(sub, num_tables)
     for serum_data in data.values():
         plot_data(sub, serum_data, x_margin, table_step, cb_step)
+    plot_subtitle(sub, subtitle)
 
 # ----------------------------------------------------------------------
 
@@ -87,6 +90,11 @@ def y_axis(surface, max_cb, min_cb):
         if cb_mark >= min_cb:
             surface.text_right_aligned_s(x * 1.5, y + MARK_TEXT_SIZE / 2.7, str(cb_mark), "black", MARK_TEXT_SIZE)
     return cb_step
+
+# ----------------------------------------------------------------------
+
+def plot_subtitle(surface, subtitle):
+    surface.text_s(0, PAGE_HEIGHT + PAGE_WIDTH / 50 + MARK_TEXT_SIZE, subtitle, "black", MARK_TEXT_SIZE)
 
 # ----------------------------------------------------------------------
 
