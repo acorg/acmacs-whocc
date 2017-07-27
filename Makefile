@@ -13,16 +13,7 @@ LIB_DIR = $(ACMACSD_ROOT)/lib
 
 # ----------------------------------------------------------------------
 
-CLANG = $(shell if g++ --version 2>&1 | grep -i llvm >/dev/null; then echo Y; else echo N; fi)
-ifeq ($(CLANG),Y)
-  WEVERYTHING = -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded
-  WARNINGS = -Wno-weak-vtables # -Wno-padded
-  STD = c++14
-else
-  WEVERYTHING = -Wall -Wextra
-  WARNINGS =
-  STD = c++14
-endif
+include $(ACMACSD_ROOT)/share/Makefile.g++
 
 OPTIMIZATION = -O3 #-fvisibility=hidden -flto
 PROFILE = # -pg
@@ -52,13 +43,13 @@ test: install
 # ----------------------------------------------------------------------
 
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
-	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
+	$(GXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
 
 $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
-	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs liblzma)
+	$(GXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs liblzma)
 
 $(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
-	g++ $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
+	$(GXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
 
 clean:
 	rm -rf $(DIST) $(BUILD)/*.o $(BUILD)/*.d
@@ -70,7 +61,7 @@ distclean: clean
 
 $(BUILD)/%.o: cc/%.cc | $(BUILD)
 	@echo $<
-	@g++ $(CXXFLAGS) -c -o $@ $<
+	@$(GXX) $(CXXFLAGS) -c -o $@ $<
 
 # ----------------------------------------------------------------------
 
