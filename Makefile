@@ -20,7 +20,7 @@ PROFILE = # -pg
 CXXFLAGS = -g -MMD $(OPTIMIZATION) $(PROFILE) -fPIC -std=$(STD) $(WEVERYTHING) $(WARNINGS) -Icc -I$(BUILD)/include -I$(ACMACSD_ROOT)/include $(PKG_INCLUDES)
 LDFLAGS = $(OPTIMIZATION) $(PROFILE)
 
-PKG_INCLUDES = $$(pkg-config --cflags cairo) $$(pkg-config --cflags liblzma)
+PKG_INCLUDES = $(shell pkg-config --cflags cairo) $(shell pkg-config --cflags liblzma)
 
 # ----------------------------------------------------------------------
 
@@ -43,19 +43,22 @@ test: install
 # ----------------------------------------------------------------------
 
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
-	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
+	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
 $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
-	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs liblzma)
+	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs liblzma)
 
 $(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
-	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $$(pkg-config --libs cairo) $$(pkg-config --libs liblzma)
+	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
 clean:
 	rm -rf $(DIST) $(BUILD)/*.o $(BUILD)/*.d
 
 distclean: clean
 	rm -rf $(BUILD)
+
+rtags:
+	make -nkB | /usr/local/bin/rc --compile - || true
 
 # ----------------------------------------------------------------------
 

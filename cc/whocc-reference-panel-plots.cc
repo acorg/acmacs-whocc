@@ -235,10 +235,10 @@ void process_source(ChartData& aData, std::string filename)
     std::vector<size_t> ref_antigens;
     chart->antigens().reference_indices(ref_antigens);
     for (size_t antigen_index_in_chart: ref_antigens) {
-        antigens[antigen_index_in_chart] = aData.add_antigen(chart->antigen(antigen_index_in_chart));
+        antigens[antigen_index_in_chart] = aData.add_antigen(static_cast<const Antigen&>(chart->antigen(antigen_index_in_chart)));
     }
     for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
-        const size_t serum_index_in_data = aData.add_serum(chart->serum(serum_no));
+        const size_t serum_index_in_data = aData.add_serum(static_cast<const Serum&>(chart->serum(serum_no)));
         for (const auto& antigen: antigens) {
             // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) << std::endl;
             aData.add_titer(antigen.second, serum_index_in_data, table_no, chart->titers().get(antigen.first, serum_no));
