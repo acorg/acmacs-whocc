@@ -57,8 +57,7 @@ clean:
 distclean: clean
 	rm -rf $(BUILD)
 
-rtags:
-	make -nkB | /usr/local/bin/rc --compile - || true
+include $(ACMACSD_ROOT)/share/Makefile.rtags
 
 # ----------------------------------------------------------------------
 
