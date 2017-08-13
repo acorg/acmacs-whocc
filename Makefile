@@ -14,6 +14,7 @@ LIB_DIR = $(ACMACSD_ROOT)/lib
 # ----------------------------------------------------------------------
 
 include $(ACMACSD_ROOT)/share/Makefile.g++
+include $(ACMACSD_ROOT)/share/Makefile.dist-build.vars
 
 OPTIMIZATION = -O3 #-fvisibility=hidden -flto
 PROFILE = # -pg
@@ -23,9 +24,6 @@ LDFLAGS = $(OPTIMIZATION) $(PROFILE)
 PKG_INCLUDES = $(shell pkg-config --cflags cairo) $(shell pkg-config --cflags liblzma)
 
 # ----------------------------------------------------------------------
-
-BUILD = build
-DIST = $(abspath dist)
 
 all: check-acmacsd-root $(patsubst %,$(DIST)/%,$(PROGRAMS))
 
@@ -51,12 +49,6 @@ $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
 $(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
 	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
-clean:
-	rm -rf $(DIST) $(BUILD)/*.o $(BUILD)/*.d
-
-distclean: clean
-	rm -rf $(BUILD)
-
 include $(ACMACSD_ROOT)/share/Makefile.rtags
 
 # ----------------------------------------------------------------------
@@ -72,11 +64,7 @@ ifndef ACMACSD_ROOT
 	$(error ACMACSD_ROOT is not set)
 endif
 
-$(DIST):
-	mkdir -p $(DIST)
-
-$(BUILD):
-	mkdir -p $(BUILD)
+include $(ACMACSD_ROOT)/share/Makefile.dist-build.rules
 
 .PHONY: check-acmacsd-root
 
