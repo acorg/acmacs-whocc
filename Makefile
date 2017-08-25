@@ -9,16 +9,15 @@ MAKEFLAGS = -w
 
 PROGRAMS = whocc-reference-panel-plots whocc-scan-titers whocc-histogram-of-titers
 
-LIB_DIR = $(ACMACSD_ROOT)/lib
-
 # ----------------------------------------------------------------------
 
-include $(ACMACSD_ROOT)/share/Makefile.g++
-include $(ACMACSD_ROOT)/share/Makefile.dist-build.vars
+TARGET_ROOT=$(shell if [ -f /Volumes/rdisk/ramdisk-id ]; then echo /Volumes/rdisk/AD; else echo $(ACMACSD_ROOT); fi)
+include $(TARGET_ROOT)/share/Makefile.g++
+include $(TARGET_ROOT)/share/Makefile.dist-build.vars
 
 OPTIMIZATION = -O3 #-fvisibility=hidden -flto
 PROFILE = # -pg
-CXXFLAGS = -g -MMD $(OPTIMIZATION) $(PROFILE) -fPIC -std=$(STD) $(WEVERYTHING) $(WARNINGS) -Icc -I$(BUILD)/include -I$(ACMACSD_ROOT)/include $(PKG_INCLUDES)
+CXXFLAGS = -g -MMD $(OPTIMIZATION) $(PROFILE) -fPIC -std=$(STD) $(WEVERYTHING) $(WARNINGS) -Icc -I$(AD_INCLUDE) $(PKG_INCLUDES)
 LDFLAGS = $(OPTIMIZATION) $(PROFILE)
 
 PKG_INCLUDES = $(shell pkg-config --cflags cairo) $(shell pkg-config --cflags liblzma)
@@ -28,8 +27,8 @@ PKG_INCLUDES = $(shell pkg-config --cflags cairo) $(shell pkg-config --cflags li
 all: check-acmacsd-root $(patsubst %,$(DIST)/%,$(PROGRAMS))
 
 install: all
-	ln -sf $(DIST)/* $(ACMACSD_ROOT)/bin
-	ln -sf $(abspath bin)/* $(ACMACSD_ROOT)/bin
+	ln -sf $(DIST)/* $(AD_BIN)
+	ln -sf $(abspath bin)/* $(AD_BIN)
 
 test: install
 	@#test/test
@@ -41,15 +40,15 @@ test: install
 # ----------------------------------------------------------------------
 
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
-	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
+	$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
 $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
-	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs liblzma)
+	$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs liblzma)
 
 $(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
-	$(CXX) $(LDFLAGS) -o $@ $^ -L$(LIB_DIR) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
+	$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_filesystem -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
-include $(ACMACSD_ROOT)/share/Makefile.rtags
+include $(AD_SHARE)/Makefile.rtags
 
 # ----------------------------------------------------------------------
 
@@ -59,14 +58,7 @@ $(BUILD)/%.o: cc/%.cc | $(BUILD)
 
 # ----------------------------------------------------------------------
 
-check-acmacsd-root:
-ifndef ACMACSD_ROOT
-	$(error ACMACSD_ROOT is not set)
-endif
-
-include $(ACMACSD_ROOT)/share/Makefile.dist-build.rules
-
-.PHONY: check-acmacsd-root
+include $(AD_SHARE)/Makefile.dist-build.rules
 
 # ======================================================================
 ### Local Variables:
