@@ -3,12 +3,10 @@
 #pragma GCC diagnostic push
 #include "acmacs-base/boost-diagnostics.hh"
 #include "boost/program_options.hpp"
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 #pragma GCC diagnostic pop
 
 #include "acmacs-chart/ace.hh"
-
-namespace fs = boost::filesystem;
 
 // ----------------------------------------------------------------------
 
@@ -88,7 +86,7 @@ void find_ace_files(const fs::path& source_dir, std::vector<fs::path>& ace_files
 {
     if (!fs::is_directory(source_dir))
         throw std::runtime_error(source_dir.string() + " is not a directory");
-    for (fs::directory_entry& dirent: fs::directory_iterator(source_dir)) {
+    for (const auto& dirent: fs::directory_iterator(source_dir)) {
         if (fs::is_directory(dirent.status()))
             find_ace_files(dirent.path(), ace_files);
         else if (is_regular_file(dirent.status()) && dirent.path().extension().string() == ".ace")
