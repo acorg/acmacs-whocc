@@ -40,15 +40,15 @@ include $(ACMACSD_ROOT)/share/makefiles/Makefile.rtags
 
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
 	@echo "LINK       " $@ # '<--' $^
-	@$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
+	@$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart  -llocationdb -lacmacsdraw -lboost_program_options $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
 $(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
 	@echo "LINK       " $@ # '<--' $^
-	@$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options -lboost_system $(shell pkg-config --libs liblzma)
+	@$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart -llocationdb -lboost_program_options $(shell pkg-config --libs liblzma)
 
 $(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
 	@echo "LINK       " $@ # '<--' $^
-	@$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options -lboost_system $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
+	@$(CXX) $(LDFLAGS) -o $@ $^ -L$(AD_LIB) -lacmacsbase -lacmacschart -llocationdb -lacmacsdraw -lboost_program_options $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
 # ======================================================================
 ### Local Variables:
