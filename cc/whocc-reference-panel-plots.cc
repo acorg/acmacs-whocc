@@ -230,11 +230,9 @@ void process_source(ChartData& aData, std::string filename)
 {
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     std::unique_ptr<Chart> chart{import_chart(filename)};
-    size_t table_no = aData.add_table(*chart);
+    const auto table_no = aData.add_table(*chart);
     chart->find_homologous_antigen_for_sera();
-    std::vector<size_t> ref_antigens;
-    chart->antigens().reference_indices(ref_antigens);
-    for (size_t antigen_index_in_chart: ref_antigens) {
+    for (auto antigen_index_in_chart: chart->antigens().reference_indices()) {
         antigens[antigen_index_in_chart] = aData.add_antigen(static_cast<const Antigen&>(chart->antigen(antigen_index_in_chart)));
     }
     for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
