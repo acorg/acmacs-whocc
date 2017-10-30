@@ -1,0 +1,47 @@
+#! /bin/bash
+
+export ACMACSD_ROOT=$HOME/AD
+PROG=$(readlink -f $0)
+LOG=/syn/eu/log/hidb4-night-build.log
+DB_DIR=$ACMACSD_ROOT/data
+
+export PATH="$ACMACSD_ROOT/bin:$HOME/bin:/usr/local/bin:$PATH"
+export TIME='<Time %E>'
+
+if [ "$(uname)" == "Linux" ]; then
+    export LD_LIBRARY_PATH="$ACMACSD_ROOT/lib"
+fi
+
+on_error()
+{
+    (echo $PROG FAILED; echo "LOG: /scp:$HOSTNAME:$LOG") | mail -s "$(hostname) $PROG FAILED" eu@antigenic-cartography.org
+    exit 1
+}
+
+trap on_error ERR
+
+exec > "$LOG"
+exec 2>&1
+
+date
+echo Updating acmacs-c2
+cd ~/ac/acmacs
+git pull
+c2 make -j11 acmacs
+
+echo "=================================================================="
+date
+echo Updating ACMACSD packages
+${ACMACSD_ROOT}/sources/acmacs-build/bin/install-acmacs-d --source ${ACMACSD_ROOT} --target ${ACMACSD_ROOT} --dev-release --acorg-only
+
+echo "=================================================================="
+hidb-update-hidb
+
+echo "----------------------------------------------------------------------"
+
+(echo "$PROG completed"; echo "LOG: /scp:$HOSTNAME:$LOG") | mail -s "$(hostname) $PROG completed" eu@antigenic-cartography.org
+
+# ----------------------------------------------------------------------
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
