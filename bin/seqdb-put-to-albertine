@@ -1,0 +1,8 @@
+#! /bin/bash
+SEQDB="$HOME/AD/data/seqdb.json.xz"
+if [ -f "$SEQDB" ]; then
+    scp "$SEQDB" albertine:AD/data
+else
+    echo "Error: $SEQDB not found" >&2
+    exit 1
+fi
