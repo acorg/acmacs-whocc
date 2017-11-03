@@ -148,7 +148,7 @@ class ChartData
             return sMedianTiterColors[aMedianIndex][titer_index];
         }
 
-    inline void text(Surface& aSurface, const Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
+    inline void text(Surface& aSurface, const acmacs::Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
         {
             const auto size = aSurface.text_size(aText, Scaled{aFontSize});
             if (size.width > aMaxWidth)
@@ -423,7 +423,7 @@ void ChartData::plot(std::string output_filename)
     CellParameters cell_parameters{number_of_tables(), mTiterLevel.size()};
     const double title_height = cell_parameters.vstep * 0.5;
 
-    const Viewport cell_viewport{Size{cell_parameters.hstep, cell_parameters.vstep}};
+    const acmacs::Viewport cell_viewport{acmacs::Size{cell_parameters.hstep, cell_parameters.vstep}};
 
     PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
 
