@@ -153,7 +153,7 @@ class ChartData
             const auto size = aSurface.text_size(aText, Scaled{aFontSize});
             if (size.width > aMaxWidth)
                 aFontSize *= aMaxWidth / size.width;
-            aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, TextStyle(), aRotation);
+            aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, acmacs::TextStyle(), aRotation);
         }
 
     void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
