@@ -7,7 +7,10 @@ MAKEFLAGS = -w
 
 # ----------------------------------------------------------------------
 
-PROGRAMS = whocc-reference-panel-plots whocc-scan-titers whocc-histogram-of-titers
+TARGETS = \
+	$(DIST)/whocc-reference-panel-plots \
+	$(DIST)/whocc-scan-titers \
+	$(DIST)/whocc-histogram-of-titers
 
 # ----------------------------------------------------------------------
 
@@ -19,11 +22,17 @@ LDFLAGS = $(OPTIMIZATION) $(PROFILE)
 
 PKG_INCLUDES = $(shell pkg-config --cflags cairo) $(shell pkg-config --cflags liblzma)
 
+LDLIBS = \
+	$(AD_LIB)/$(call shared_lib_name,libacmacsbase,1,0) \
+	$(AD_LIB)/$(call shared_lib_name,libacmacschart,1,0) \
+	$(AD_LIB)/$(call shared_lib_name,liblocationdb,1,0) \
+	-L$(AD_LIB) -lacmacsdraw -lboost_program_options $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
+
 # ----------------------------------------------------------------------
 
-all: check-acmacsd-root $(patsubst %,$(DIST)/%,$(PROGRAMS))
+all: check-acmacsd-root $(TARGETS)
 
-install: all
+install: $(TARGETS)
 	ln -sf $(DIST)/* $(AD_BIN)
 	ln -sf $(abspath bin)/* $(AD_BIN)
 
@@ -39,16 +48,12 @@ include $(ACMACSD_ROOT)/share/makefiles/Makefile.rtags
 # ----------------------------------------------------------------------
 
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
-	@echo "LINK       " $@ # '<--' $^
-	@$(CXX) $(LDFLAGS) -o $@ $^ $(AD_LIB)/$(call shared_lib_name,libacmacsbase,1,0) $(AD_LIB)/$(call shared_lib_name,libacmacschart,1,0) -L$(AD_LIB) -llocationdb -lacmacsdraw -lboost_program_options $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
+	@printf "%-16s %s\n" "LINK" $@
+	@$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(DIST)/whocc-scan-titers: $(BUILD)/whocc-scan-titers.o | $(DIST)
-	@echo "LINK       " $@ # '<--' $^
-	@$(CXX) $(LDFLAGS) -o $@ $^ $(AD_LIB)/$(call shared_lib_name,libacmacsbase,1,0) $(AD_LIB)/$(call shared_lib_name,libacmacschart,1,0) -L$(AD_LIB) -llocationdb -lboost_program_options $(shell pkg-config --libs liblzma)
-
-$(DIST)/whocc-histogram-of-titers: $(BUILD)/whocc-histogram-of-titers.o | $(DIST)
-	@echo "LINK       " $@ # '<--' $^
-	@$(CXX) $(LDFLAGS) -o $@ $^ $(AD_LIB)/$(call shared_lib_name,libacmacsbase,1,0) $(AD_LIB)/$(call shared_lib_name,libacmacschart,1,0) -L$(AD_LIB) -llocationdb -lacmacsdraw -lboost_program_options $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
+$(DIST)/%: $(BUILD)/%.o | $(DIST)
+	@printf "%-16s %s\n" "LINK" $@
+	@$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 # ======================================================================
 ### Local Variables:
