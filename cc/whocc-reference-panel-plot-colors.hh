@@ -1,7 +1,7 @@
 #pragma once
 
 #include "acmacs-base/color.hh"
-#include "acmacs-chart/chart.hh"
+#include "acmacs-chart-1/chart.hh"
 
 constexpr const size_t sNumberOfAllTiters = 325;
 
