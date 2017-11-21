@@ -36,7 +36,7 @@ date
 echo H3
 echo
 DB=$DB_DIR/hidb5.h3.json.xz
-/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ac* 2>&1
+/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ace 2>&1
 
 echo
 echo "=================================================================="
@@ -44,7 +44,7 @@ date
 echo H1PDM
 echo
 DB=$DB_DIR/hidb5.h1.json.xz
-/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ac* 2>&1
+/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ace 2>&1
 
 echo
 echo "=================================================================="
@@ -52,7 +52,7 @@ date
 echo B
 echo
 DB=$DB_DIR/hidb5.b.json.xz
-/usr/bin/time hidb-make "$DB" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ac* ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ac* 2>&1
+/usr/bin/time hidb-make "$DB" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ace ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ace 2>&1
 echo
 date
 
