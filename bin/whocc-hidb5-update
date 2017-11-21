@@ -1,16 +1,23 @@
 #! /bin/bash
 
 export ACMACSD_ROOT=$HOME/AD
-PROG=$(readlink -f $0)
-LOG=/syn/eu/log/hidb4-night-build.log
 DB_DIR=$ACMACSD_ROOT/data
-
 export PATH="$ACMACSD_ROOT/bin:$HOME/bin:/usr/local/bin:$PATH"
 export TIME='<Time %E>'
+PROG=$(readlink -f $0)
 
 if [ "$(uname)" == "Linux" ]; then
     export LD_LIBRARY_PATH="$ACMACSD_ROOT/lib"
 fi
+
+if [[ $# -eq 1 ]]; then
+    LOG="$1"
+else
+    LOG=/syn/eu/log/whocc-hidb5-update.log
+    echo "LOG: $LOG" >&2
+fi
+
+# ----------------------------------------------------------------------
 
 on_error()
 {
@@ -23,30 +30,31 @@ trap on_error ERR
 exec > "$LOG"
 exec 2>&1
 
+# ----------------------------------------------------------------------
+
 date
-echo Updating acmacs-c2
-cd ~/ac/acmacs
-git pull
-c2 make -j11 acmacs
+echo H3
+echo
+DB=$DB_DIR/hidb5.h3.json.xz
+/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ac* 2>&1
 
+echo
 echo "=================================================================="
 date
-echo Updating ACMACSD packages
-${ACMACSD_ROOT}/sources/acmacs-build/bin/install-acmacs-d --source ${ACMACSD_ROOT} --target ${ACMACSD_ROOT} --dev-release --acorg-only
+echo H1PDM
+echo
+DB=$DB_DIR/hidb5.h1.json.xz
+/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ac* 2>&1
 
+echo
 echo "=================================================================="
-echo Updating ace-store
-whocc-update-ace-store
-
-echo "=================================================================="
-whocc-hidb4-update
-
-echo "=================================================================="
-whocc-hidb5-update
-
-echo "----------------------------------------------------------------------"
-
-(echo "$PROG completed"; echo "LOG: /scp:$HOSTNAME:$LOG") | mail -s "$(hostname) $PROG completed" eu@antigenic-cartography.org
+date
+echo B
+echo
+DB=$DB_DIR/hidb5.b.json.xz
+/usr/bin/time hidb-make "$DB" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ac* ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ac* 2>&1
+echo
+date
 
 # ----------------------------------------------------------------------
 ### Local Variables:

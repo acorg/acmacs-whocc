@@ -32,9 +32,9 @@ exec 2>&1
 
 # ----------------------------------------------------------------------
 
-date
-echo Updating ace-store
-/usr/bin/time hidb-update-ace-store
+# date
+# echo Updating ace-store
+# /usr/bin/time whocc-update-ace-store
 
 echo
 echo "=================================================================="
