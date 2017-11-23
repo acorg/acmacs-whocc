@@ -35,24 +35,27 @@ exec 2>&1
 date
 echo H3
 echo
-DB=$DB_DIR/hidb5.h3.json.xz
-/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ace 2>&1
+DB=$DB_DIR/hidb5.h3
+/usr/bin/time hidb-make "${DB}.json.xz" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ace 2>&1
+/usr/bin/time hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 
 echo
 echo "=================================================================="
 date
 echo H1PDM
 echo
-DB=$DB_DIR/hidb5.h1.json.xz
-/usr/bin/time hidb-make "$DB" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ace 2>&1
+DB=$DB_DIR/hidb5.h1
+/usr/bin/time hidb-make "${DB}.json.xz" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ace 2>&1
+/usr/bin/time hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 
 echo
 echo "=================================================================="
 date
 echo B
 echo
-DB=$DB_DIR/hidb5.b.json.xz
-/usr/bin/time hidb-make "$DB" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ace ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ace 2>&1
+DB=$DB_DIR/hidb5.b
+/usr/bin/time hidb-make "${DB}.json.xz" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ace ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ace 2>&1
+/usr/bin/time hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 echo
 date
 
