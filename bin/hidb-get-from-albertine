@@ -1,5 +1,6 @@
 #! /bin/bash
 if [ "$HOSTNAME" != "i19" ]; then
     mkdir -p ~/AD/data
-    rsync -av albertine:'AD/data/hidb[45].*.json.xz' albertine:'AD/data/hidb5.*.hidb5b' ~/AD/data
+    rsync -av albertine:'AD/data/hidb[45].*.json.xz' ~/AD/data
+    rsync -av albertine:'AD/data/hidb5.*.hidb5b' ~/AD/data
 fi
