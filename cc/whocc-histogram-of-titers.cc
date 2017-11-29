@@ -123,16 +123,10 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
 void process_source(TiterData& aData, std::string filename)
 {
     auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None);
-    if (chart->titers().list().empty()) {
-        for (const auto& row: chart->titers().dict()) {
-            for (const auto& serum_titer: row)
-                aData.add(serum_titer.second);
-        }
-    }
-    else {
-        for (const auto& row: chart->titers().list()) {
-            for (const auto& titer: row)
-                aData.add(titer);
+    auto chart_titers = chart->titers();
+    for (size_t antigen_no = 0; antigen_no < chart_titers->number_of_antigens(); ++antigen_no) {
+        for (size_t serum_no = 0; serum_no < chart_titers->number_of_sera(); ++serum_no) {
+            aData.add(chart_titers->titer(antigen_no, serum_no));
         }
     }
 

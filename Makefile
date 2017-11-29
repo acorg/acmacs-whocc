@@ -26,7 +26,7 @@ LDLIBS = \
 	$(AD_LIB)/$(call shared_lib_name,libacmacsbase,1,0) \
 	$(AD_LIB)/$(call shared_lib_name,libacmacschart,2,0) \
 	$(AD_LIB)/$(call shared_lib_name,liblocationdb,1,0) \
-	$(AD_LIB)/$(call shared_lib_name,libacmacsdraw,2,0) \
+	$(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
 	-L$(AD_LIB) -lboost_program_options $(shell pkg-config --libs cairo) $(shell pkg-config --libs liblzma)
 
 # ----------------------------------------------------------------------

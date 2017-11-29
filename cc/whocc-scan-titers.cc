@@ -101,9 +101,10 @@ void find_ace_files(const fs::path& source_dir, std::vector<fs::path>& ace_files
 void scan_titers(const fs::path& filename, std::set<acmacs::chart::Titer>& titers)
 {
     auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None);
-    for (size_t antigen_no = 0; antigen_no < chart->antigens().size(); ++antigen_no) {
-        for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
-            titers.insert(chart->titers().get(antigen_no, serum_no));
+    auto chart_titers = chart->titers();
+    for (size_t antigen_no = 0; antigen_no < chart_titers->number_of_antigens(); ++antigen_no) {
+        for (size_t serum_no = 0; serum_no < chart_titers->number_of_sera(); ++serum_no) {
+            titers.insert(chart_titers->titer(antigen_no, serum_no));
         }
     }
 
