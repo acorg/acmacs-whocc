@@ -524,7 +524,7 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
     double table_no = 2;
     for (const auto& element: ag_sr_data.titer_per_table) {
         if (!element.first.is_dont_care()) { // do not draw dont-care titer
-            const double titer = element.first.similarity_with_thresholded();
+            const double titer = element.first.logged_with_thresholded();
               // const double symbol_top = aParameters.cell_top_title_height + aParameters.voffset_base + (titer + 1) * logged_titer_step;
             const double symbol_top = aParameters.vstep - aParameters.voffset_base - (titer + 2) * logged_titer_step;
             const double symbol_bottom = symbol_top + logged_titer_step;
