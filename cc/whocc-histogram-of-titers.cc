@@ -124,8 +124,9 @@ void process_source(TiterData& aData, std::string filename)
 {
     auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None);
     auto chart_titers = chart->titers();
-    for (size_t antigen_no = 0; antigen_no < chart_titers->number_of_antigens(); ++antigen_no) {
-        for (size_t serum_no = 0; serum_no < chart_titers->number_of_sera(); ++serum_no) {
+    const auto number_of_antigens = chart_titers->number_of_antigens(), number_of_sera = chart_titers->number_of_sera();
+    for (size_t antigen_no = 0; antigen_no < number_of_antigens; ++antigen_no) {
+        for (size_t serum_no = 0; serum_no < number_of_sera; ++serum_no) {
             aData.add(chart_titers->titer(antigen_no, serum_no));
         }
     }
