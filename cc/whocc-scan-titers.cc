@@ -3,15 +3,16 @@
 #pragma GCC diagnostic push
 #include "acmacs-base/boost-diagnostics.hh"
 #include "boost/program_options.hpp"
-//#include <boost/filesystem.hpp>
 #pragma GCC diagnostic pop
 
-#include "acmacs-chart-1/ace.hh"
+#include "acmacs-base/filesystem.hh"
+#include "acmacs-chart-2/chart.hh"
+#include "acmacs-chart-2/factory-import.hh"
 
 // ----------------------------------------------------------------------
 
 void find_ace_files(const fs::path& source_dir, std::vector<fs::path>& ace_files);
-void scan_titers(const fs::path& filename, std::set<Titer>& titers);
+void scan_titers(const fs::path& filename, std::set<acmacs::chart::Titer>& titers);
 
 // ----------------------------------------------------------------------
 
@@ -32,7 +33,7 @@ int main(int argc, const char *argv[])
             std::vector<fs::path> ace_files;
             find_ace_files(fs::path(options.source_dir), ace_files);
             std::cout << "Total .ace files found: " << ace_files.size() << std::endl;
-            std::set<Titer> titers;
+            std::set<acmacs::chart::Titer> titers;
             for (const auto& filename: ace_files)
                 scan_titers(filename, titers);
             std::cout << titers << std::endl;
@@ -97,9 +98,9 @@ void find_ace_files(const fs::path& source_dir, std::vector<fs::path>& ace_files
 
 // ----------------------------------------------------------------------
 
-void scan_titers(const fs::path& filename, std::set<Titer>& titers)
+void scan_titers(const fs::path& filename, std::set<acmacs::chart::Titer>& titers)
 {
-    std::unique_ptr<Chart> chart{import_chart(filename.string())};
+    auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None);
     for (size_t antigen_no = 0; antigen_no < chart->antigens().size(); ++antigen_no) {
         for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
             titers.insert(chart->titers().get(antigen_no, serum_no));

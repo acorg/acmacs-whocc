@@ -1,11 +1,11 @@
 #pragma once
 
 #include "acmacs-base/color.hh"
-#include "acmacs-chart-1/chart.hh"
+#include "acmacs-chart-2/chart.hh"
 
 constexpr const size_t sNumberOfAllTiters = 325;
 
-extern const Titer sAllTiters[sNumberOfAllTiters];
+extern const acmacs::chart::Titer sAllTiters[sNumberOfAllTiters];
 
 #pragma GCC diagnostic push
 #ifdef __clang__

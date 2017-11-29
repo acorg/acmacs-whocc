@@ -8,7 +8,8 @@
 #pragma GCC diagnostic pop
 
 #include "acmacs-base/stream.hh"
-#include "acmacs-chart-1/ace.hh"
+#include "acmacs-chart-2/chart.hh"
+#include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-draw/surface-cairo.hh"
 
 // ----------------------------------------------------------------------
@@ -30,7 +31,7 @@ class TiterData
             return std::max_element(mTiters.begin(), mTiters.end(), [](const auto& a, const auto& b) { return a.second < b.second; })->second;
         }
 
-    inline const Titer& longest_label() const
+    inline const acmacs::chart::Titer& longest_label() const
         {
             return std::max_element(mTiters.begin(), mTiters.end(), [](const auto& a, const auto& b) { return a.first.size() < b.first.size(); })->first;
         }
@@ -38,7 +39,7 @@ class TiterData
     void histogram(std::string filename);
 
  private:
-    std::map<Titer, size_t> mTiters;
+    std::map<acmacs::chart::Titer, size_t> mTiters;
 
     friend inline std::ostream& operator << (std::ostream& out, const TiterData& aData)
         {
@@ -121,7 +122,7 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
 
 void process_source(TiterData& aData, std::string filename)
 {
-    std::unique_ptr<Chart> chart{import_chart(filename)};
+    auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None);
     if (chart->titers().list().empty()) {
         for (const auto& row: chart->titers().dict()) {
             for (const auto& serum_titer: row)

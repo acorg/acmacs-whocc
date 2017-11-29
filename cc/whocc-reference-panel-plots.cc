@@ -11,7 +11,8 @@
 #pragma GCC diagnostic pop
 
 #include "acmacs-base/stream.hh"
-#include "acmacs-chart-1/ace.hh"
+#include "acmacs-chart-2/chart.hh"
+#include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-draw/surface-cairo.hh"
 
 // sNumberOfAllTiters, sAllTiters, sMedianTiterColors
@@ -37,7 +38,7 @@ static void process_source(ChartData& aData, std::string filename);
 class TiterData
 {
  public:
-    inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable, const Titer& aTiter) : antigen(aAntigen), serum(aSerum), table(aTable), titer(aTiter) {}
+    inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) : antigen(aAntigen), serum(aSerum), table(aTable), titer(aTiter) {}
     inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable) : antigen(aAntigen), serum(aSerum), table(aTable) {}
     inline bool operator < (const TiterData& a) const
         {
@@ -51,7 +52,7 @@ class TiterData
     size_t antigen;
     size_t serum;
     size_t table;
-    Titer titer;
+    acmacs::chart::Titer titer;
 };
 
 class AntigenSerumData
@@ -61,8 +62,8 @@ class AntigenSerumData
     inline bool empty() const { return titer_per_table.empty(); }
     inline size_t number_of_tables() const { return std::accumulate(titer_per_table.begin(), titer_per_table.end(), 0U, [](size_t acc, auto& element) { return element.first.is_dont_care() ? acc : (acc + 1); }); }
 
-    std::pair<Titer, int> median;
-    std::vector<std::pair<Titer, int>> titer_per_table;
+    std::pair<acmacs::chart::Titer, int> median;
+    std::vector<std::pair<acmacs::chart::Titer, int>> titer_per_table;
     friend std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData);
 };
 
@@ -99,10 +100,10 @@ class ChartData
 
     inline ChartData() : mYAxisLabels{"5", "10", "20", "40", "80", "160", "320", "640", "1280", "2560", "5120", "10240", "20480", "40960"} {}
 
-    size_t add_antigen(const Antigen& aAntigen);
-    size_t add_serum(const Serum& aSerum);
-    size_t add_table(const Chart& aChart);
-    inline void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
+    size_t add_antigen(acmacs::chart::AntigenP aAntigen);
+    size_t add_serum(acmacs::chart::SerumP aSerum);
+    size_t add_table(acmacs::chart::ChartP aChart);
+    inline void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
 
     void make_antigen_serum_data();
     void plot(std::string output_filename);
@@ -118,15 +119,15 @@ class ChartData
     inline size_t longest_serum_name() const { return std::max_element(mSera.begin(), mSera.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
     inline size_t longest_antigen_name() const { return std::max_element(mAntigens.begin(), mAntigens.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
     range find_range(size_t aSerum, size_t aAntigen) const;
-    Titer median(const range& aRange) const;
+    acmacs::chart::Titer median(const range& aRange) const;
 
  private:
     std::vector<std::string> mTables;
     std::vector<AgSr> mSera;
     std::vector<AgSr> mAntigens;
     std::vector<TiterData> mTiters;
-    std::set<Titer> mAllTiters;
-    std::map<Titer, size_t> mTiterLevel;
+    std::set<acmacs::chart::Titer> mAllTiters;
+    std::map<acmacs::chart::Titer, size_t> mTiterLevel;
     std::vector<std::vector<AntigenSerumData>> mAntigenSerumData;
     std::string mLab, mVirusType, mAssay, mFirstDate, mLastDate;
     std::vector<std::string> mYAxisLabels;
@@ -134,13 +135,13 @@ class ChartData
     friend std::ostream& operator << (std::ostream& out, const ChartData& aData);
     inline void sort_titers_by_serum_antigen() { std::sort(mTiters.begin(), mTiters.end()); }
 
-    inline size_t titer_index_in_sAllTiters(Titer aTiter) const
+    inline size_t titer_index_in_sAllTiters(acmacs::chart::Titer aTiter) const
         {
             const auto iter = std::find(std::begin(sAllTiters), std::end(sAllTiters), aTiter);
             return static_cast<size_t>(iter - std::begin(sAllTiters));
         }
 
-    inline Color color_for_titer(Titer aTiter, size_t aMedianIndex) const
+    inline Color color_for_titer(acmacs::chart::Titer aTiter, size_t aMedianIndex) const
         {
             const auto titer_index = titer_index_in_sAllTiters(aTiter);
             if (aMedianIndex == sNumberOfAllTiters || titer_index == sNumberOfAllTiters)
@@ -229,19 +230,22 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
 void process_source(ChartData& aData, std::string filename)
 {
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
-    std::unique_ptr<Chart> chart{import_chart(filename)};
-    const auto table_no = aData.add_table(*chart);
-    chart->find_homologous_antigen_for_sera();
-    for (auto antigen_index_in_chart: chart->antigens().reference_indices()) {
-        antigens[antigen_index_in_chart] = aData.add_antigen(static_cast<const Antigen&>(chart->antigen(antigen_index_in_chart)));
+    auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None);
+    chart->set_homologous(true);
+    const auto table_no = aData.add_table(chart);
+    auto chart_antigens = chart->antigens();
+    auto chart_sera = chart->sera();
+    auto chart_titers = chart->titers();
+    for (auto antigen_index_in_chart: chart_antigens->reference_indexes()) {
+        antigens[antigen_index_in_chart] = aData.add_antigen((*chart_antigens)[antigen_index_in_chart]);
     }
-    for (size_t serum_no = 0; serum_no < chart->sera().size(); ++serum_no) {
-        const size_t serum_index_in_data = aData.add_serum(static_cast<const Serum&>(chart->serum(serum_no)));
+    for (size_t serum_no = 0; serum_no < chart_sera->size(); ++serum_no) {
+        const size_t serum_index_in_data = aData.add_serum((*chart_sera)[serum_no]);
         for (const auto& antigen: antigens) {
             // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) << std::endl;
-            aData.add_titer(antigen.second, serum_index_in_data, table_no, chart->titers().get(antigen.first, serum_no));
+            aData.add_titer(antigen.second, serum_index_in_data, table_no, chart_titers->titer(antigen.first, serum_no));
         }
-        for (size_t homologous_antigen: chart->serum(serum_no).homologous()) {
+        for (size_t homologous_antigen: (*chart_sera)[serum_no]->homologous_antigens()) {
             aData.serum(serum_index_in_data).homologous.push_back(antigens[homologous_antigen]);
         }
     }
@@ -250,9 +254,9 @@ void process_source(ChartData& aData, std::string filename)
 
 // ======================================================================
 
-size_t ChartData::add_antigen(const Antigen& aAntigen)
+size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen)
 {
-    const std::string name = aAntigen.full_name();
+    const std::string name = aAntigen->full_name();
     const auto pos = std::find(mAntigens.begin(), mAntigens.end(), name);
     size_t result = static_cast<size_t>(pos - mAntigens.begin());
     if (pos == mAntigens.end()) {
@@ -265,9 +269,9 @@ size_t ChartData::add_antigen(const Antigen& aAntigen)
 
 // ----------------------------------------------------------------------
 
-size_t ChartData::add_serum(const Serum& aSerum)
+size_t ChartData::add_serum(acmacs::chart::SerumP aSerum)
 {
-    const std::string name = aSerum.full_name_without_passage();
+    const std::string name = aSerum->full_name_without_passage();
     const auto pos = std::find(mSera.begin(), mSera.end(), name);
     size_t result = static_cast<size_t>(pos - mSera.begin());
     if (pos == mSera.end()) {
@@ -280,18 +284,19 @@ size_t ChartData::add_serum(const Serum& aSerum)
 
 // ----------------------------------------------------------------------
 
-size_t ChartData::add_table(const Chart& aChart)
+size_t ChartData::add_table(acmacs::chart::ChartP aChart)
 {
-    mLab = aChart.chart_info().lab();
-    mVirusType = aChart.chart_info().virus_type();
+    auto info = aChart->info();
+    mLab = info->lab();
+    mVirusType = info->virus_type();
     if (mVirusType == "B")
-        mVirusType += "/" + aChart.lineage().substr(0, 3);
-    mAssay = aChart.chart_info().assay();
-    if (mFirstDate.empty() || aChart.chart_info().date() < mFirstDate)
-        mFirstDate = aChart.chart_info().date();
-    if (mLastDate.empty() || aChart.chart_info().date() > mLastDate)
-        mLastDate = aChart.chart_info().date();
-    mTables.push_back(aChart.chart_info().make_name());
+        mVirusType += "/" + aChart->lineage().substr(0, 3);
+    mAssay = info->assay();
+    if (mFirstDate.empty() || info->date() < mFirstDate)
+        mFirstDate = info->date();
+    if (mLastDate.empty() || info->date() > mLastDate)
+        mLastDate = info->date();
+    mTables.push_back(info->make_name());
     return mTables.size() - 1;
 
 } // ChartData::add_table
@@ -302,7 +307,7 @@ void ChartData::make_antigen_serum_data()
 {
     sort_titers_by_serum_antigen();
 
-    mAllTiters.insert(Titer());
+    mAllTiters.insert(acmacs::chart::Titer());
     size_t level = mAllTiters.size() - 1;
     for (const auto& titer: mAllTiters) {
         mTiterLevel[titer] = level;
@@ -324,7 +329,7 @@ void ChartData::make_antigen_serum_data()
                         ++range.first;
                     }
                     else
-                        ag_sr_data.titer_per_table.emplace_back(Titer{}, mTiterLevel[Titer{}]);
+                        ag_sr_data.titer_per_table.emplace_back(acmacs::chart::Titer{}, mTiterLevel[acmacs::chart::Titer{}]);
                 }
             }
         }
@@ -367,9 +372,9 @@ ChartData::range ChartData::find_range(size_t aSerum, size_t aAntigen) const
 
 // ----------------------------------------------------------------------
 
-Titer ChartData::median(const ChartData::range& aRange) const
+acmacs::chart::Titer ChartData::median(const ChartData::range& aRange) const
 {
-    std::vector<Titer> titers;
+    std::vector<acmacs::chart::Titer> titers;
     std::transform(aRange.first, aRange.second, std::back_inserter(titers), [](const auto& e) { return e.titer; });
     std::sort(titers.begin(), titers.end());
       // ignore dont-cares when finding median
