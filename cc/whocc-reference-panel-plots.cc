@@ -230,7 +230,7 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
 void process_source(ChartData& aData, std::string filename)
 {
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
-    auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None);
+    auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None, report_time::No);
     chart->set_homologous(true);
     const auto table_no = aData.add_table(chart);
     auto chart_antigens = chart->antigens();
