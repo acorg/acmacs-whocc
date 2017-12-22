@@ -122,7 +122,7 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
 
 void process_source(TiterData& aData, std::string filename)
 {
-    auto chart = acmacs::chart::import_factory(filename, acmacs::chart::Verify::None, report_time::No);
+    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
     auto chart_titers = chart->titers();
     const auto number_of_antigens = chart_titers->number_of_antigens(), number_of_sera = chart_titers->number_of_sera();
     for (size_t antigen_no = 0; antigen_no < number_of_antigens; ++antigen_no) {
