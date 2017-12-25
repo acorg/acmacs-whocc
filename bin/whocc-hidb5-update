@@ -7,7 +7,7 @@ export TIME='<Time %E>'
 PROG=$(readlink -f $0)
 
 if [ "$(uname)" == "Linux" ]; then
-    export LD_LIBRARY_PATH="$ACMACSD_ROOT/lib"
+    export LD_LIBRARY_PATH="${ACMACSD_ROOT}/lib:${LD_LIBRARY_PATH}"
 fi
 
 if [[ $# -eq 1 ]]; then

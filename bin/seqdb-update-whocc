@@ -4,4 +4,5 @@ export ACMACSD_ROOT
 LOG="$ACMACSD_ROOT/data/$(basename $0).log"
 echo "LOG: $LOG"
 echo Approximate running time: 5 minutes
-env LD_LIBRARY_PATH=$ACMACSD_ROOT/lib time $ACMACSD_ROOT/bin/seqdb-create --db $ACMACSD_ROOT/data/seqdb.json.xz --match-hidb --clades $HOME/ac/tables-store/sequences/*.fas.bz2 >"$LOG" 2>&1
+export LD_LIBRARY_PATH="${ACMACSD_ROOT}/lib:${LD_LIBRARY_PATH}"
+time $ACMACSD_ROOT/bin/seqdb-create --db $ACMACSD_ROOT/data/seqdb.json.xz --match-hidb --clades $HOME/ac/tables-store/sequences/*.fas.bz2 >"$LOG" 2>&1

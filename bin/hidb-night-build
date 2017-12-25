@@ -9,7 +9,7 @@ export PATH="$ACMACSD_ROOT/bin:$HOME/bin:/usr/local/bin:$PATH"
 export TIME='<Time %E>'
 
 if [ "$(uname)" == "Linux" ]; then
-    export LD_LIBRARY_PATH="$ACMACSD_ROOT/lib"
+    export LD_LIBRARY_PATH="${ACMACSD_ROOT}/lib:${LD_LIBRARY_PATH}"
 fi
 
 on_error()

@@ -50,7 +50,7 @@ def main(args):
 
 def acmacs_env():
     if sys.platform == "linux":
-        LD_LIBRARY_PATH = "LD_LIBRARY_PATH=$HOME/c2r/lib:$HOME/ac/acmacs/build/backend"
+        LD_LIBRARY_PATH = "LD_LIBRARY_PATH=$HOME/c2r/lib:$HOME/ac/acmacs/build/backend:$LD_LIBRARY_PATH"
     else:
         LD_LIBRARY_PATH = ""
     return "env PATH=\"$HOME/c2r/bin:$PATH\" ACMACS_ROOT=$HOME/ac/acmacs PYTHONPATH=$HOME/ac/acmacs:$HOME/ac/acmacs/build " + LD_LIBRARY_PATH

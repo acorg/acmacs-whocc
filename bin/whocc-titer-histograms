@@ -13,7 +13,7 @@ sLabs = ["CDC", "MELB", "NIID", "NIMR"]
 # ======================================================================
 
 def main(args):
-    os.environ["LD_LIBRARY_PATH"] = str(Path("~/AD/lib").expanduser())
+    os.environ["LD_LIBRARY_PATH"] = str(Path("~/AD/lib").expanduser()) + ":" + os.environ.get("LD_LIBRARY_PATH", "")
     sources = walk_h3(args.source_dir, "H3") # subtype -> lab -> rbc/neut -> [filename]
     sources.update(walk_h3(args.source_dir, "H1PDM"))
     sources.update(walk_b(args.source_dir))
