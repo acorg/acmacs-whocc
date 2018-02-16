@@ -17,7 +17,7 @@ const Color transparent{"transparent"}, black{"black"}, /* red{"red"}, yellow{"y
 
 #pragma GCC diagnostic pop
 
-extern const Color::value_type sMedianTiterColors[sNumberOfAllTiters][sNumberOfAllTiters];
+extern const uint32_t sMedianTiterColors[sNumberOfAllTiters][sNumberOfAllTiters];
 
 // ----------------------------------------------------------------------
 /// Local Variables:
