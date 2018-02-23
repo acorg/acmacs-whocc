@@ -231,7 +231,7 @@ void process_source(ChartData& aData, std::string filename)
 {
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
-    chart->set_homologous(true);
+    chart->set_homologous(acmacs::chart::Chart::find_homologous_for_big_chart::yes);
     const auto table_no = aData.add_table(chart);
     auto chart_antigens = chart->antigens();
     auto chart_sera = chart->sera();
