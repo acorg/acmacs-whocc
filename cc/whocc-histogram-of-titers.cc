@@ -138,7 +138,7 @@ void process_source(TiterData& aData, std::string filename)
 void TiterData::histogram(std::string filename)
 {
     const double hsize = 1000.0, vsize = hsize / 1.6;
-    PdfCairo surface(filename, hsize, vsize, hsize);
+    acmacs::surface::PdfCairo surface(filename, hsize, vsize, hsize);
     const double font_size = 10;
     const size_t max_y = max_number();
     const double y_label_max_width = surface.text_size(std::to_string(max_y), Pixels{font_size}).width;

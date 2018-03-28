@@ -430,7 +430,7 @@ void ChartData::plot(std::string output_filename)
 
     const acmacs::Viewport cell_viewport{acmacs::Size{cell_parameters.hstep, cell_parameters.vstep}};
 
-    PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
+    acmacs::surface::PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
 
     std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
     text(surface, {title_height, title_height * 0.7}, title, black, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
