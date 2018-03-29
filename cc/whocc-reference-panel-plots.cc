@@ -149,7 +149,7 @@ class ChartData
             return sMedianTiterColors[aMedianIndex][titer_index];
         }
 
-    inline void text(Surface& aSurface, const acmacs::Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
+    inline void text(acmacs::surface::Surface& aSurface, const acmacs::Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
         {
             const auto size = aSurface.text_size(aText, Scaled{aFontSize});
             if (size.width > aMaxWidth)
@@ -157,8 +157,8 @@ class ChartData
             aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, acmacs::TextStyle(), aRotation);
         }
 
-    void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
-    void plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters);
+    void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters);
+    void plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters);
 
     void disable_antigens_sera(size_t aThreshold = 4);
 };
@@ -439,7 +439,7 @@ void ChartData::plot(std::string output_filename)
         if (mAntigens[antigen_no].enabled) {
             for (size_t serum_no = 0, enabled_serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
                 if (mSera[serum_no].enabled) {
-                    Surface& cell = surface.subsurface({enabled_serum_no * cell_parameters.hstep, enabled_antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
+                    acmacs::surface::Surface& cell = surface.subsurface({enabled_serum_no * cell_parameters.hstep, enabled_antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
                       //plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
                     plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters);
                     ++enabled_serum_no;
@@ -453,7 +453,7 @@ void ChartData::plot(std::string output_filename)
 
 // ----------------------------------------------------------------------
 
-void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters)
+void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters)
 {
     const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
     const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
@@ -496,7 +496,7 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, Surf
 
 // ----------------------------------------------------------------------
 
-void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, Surface& aCell, const CellParameters& aParameters)
+void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters)
 {
     const double logged_titer_step = (aParameters.vstep - aParameters.voffset_base - aParameters.cell_top_title_height) / mYAxisLabels.size();
 
