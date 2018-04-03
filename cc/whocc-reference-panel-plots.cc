@@ -433,7 +433,7 @@ void ChartData::plot(std::string output_filename)
     acmacs::surface::PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
 
     std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
-    text(surface, {title_height, title_height * 0.7}, title, black, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
+    text(surface, {title_height, title_height * 0.7}, title, BLACK, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
 
     for (size_t antigen_no = 0, enabled_antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         if (mAntigens[antigen_no].enabled) {
@@ -457,14 +457,15 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acma
 {
     const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
     const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
-    aCell.border(black, Pixels{0.2});
+    const acmacs::Viewport& cell_v = aCell.viewport();
+    aCell.rectangle(cell_v.origin, cell_v.size, BLACK, Pixels{0.4});
       // serum name
-    text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], black, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
+    text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], BLACK, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
       // antigen name
-    text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
+    text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], BLACK, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
       // titer value marks
     for (const auto& element: mTiterLevel) {
-        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, element.first, black, Scaled{aParameters.cell_top_title_height / 2});
+        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, element.first, BLACK, Scaled{aParameters.cell_top_title_height / 2});
     }
 
     double table_no = 2;
@@ -477,13 +478,13 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acma
                 aCell.triangle_filled({table_no - 0.5, symbol_top},
                                       {table_no + 0.5, symbol_top},
                                       {table_no,       symbol_bottom},
-                                      transparent, Pixels{0}, symbol_color);
+                                      TRANSPARENT, Pixels{0}, symbol_color);
             }
             else if (element.first.is_more_than()) {
                 aCell.triangle_filled({table_no - 0.5, symbol_bottom},
                                       {table_no + 0.5, symbol_bottom},
                                       {table_no,       symbol_top},
-                                      transparent, Pixels{0}, symbol_color);
+                                      TRANSPARENT, Pixels{0}, symbol_color);
             }
             else {
                 aCell.rectangle_filled({table_no - 0.5, symbol_top}, {1, aParameters.voffset_per_level}, transparent, Pixels{0}, symbol_color);
@@ -500,13 +501,14 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
 {
     const double logged_titer_step = (aParameters.vstep - aParameters.voffset_base - aParameters.cell_top_title_height) / mYAxisLabels.size();
 
+    const acmacs::Viewport& cell_v = aCell.viewport();
     if (std::find(mSera[serum_no].homologous.begin(), mSera[serum_no].homologous.end(), antigen_no) != mSera[serum_no].homologous.end())
-        aCell.background(homologous_background);     // homologous antigen and serum
-    aCell.border(black, Pixels{0.2});
+        aCell.rectangle_filled(cell_v.origin, cell_v.size, homologous_background, Pixels{0}, homologous_background);     // homologous antigen and serum
+    aCell.rectangle(cell_v.origin, cell_v.size, BLACK, Pixels{0.4});
       // serum name
-    text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], black, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
+    text(aCell, {aParameters.cell_top_title_height * 1.2, aParameters.cell_top_title_height}, mSera[serum_no], BLACK, NoRotation, aParameters.cell_top_title_height, (aParameters.hstep - aParameters.cell_top_title_height * 1.5));
       // antigen name
-    text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], black, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
+    text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], BLACK, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
 
       // titer value marks
     const double titer_label_font_size = aParameters.cell_top_title_height * 0.7;
@@ -515,7 +517,7 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
         aCell.text_right_aligned({aParameters.hstep - aParameters.cell_top_title_height * 0.2,
                           // aParameters.cell_top_title_height + aParameters.voffset_base + titer_label_vpos * logged_titer_step + logged_titer_step * 0.5},
                         aParameters.vstep - aParameters.voffset_base - titer_label_vpos * logged_titer_step - logged_titer_step * 0.5 + titer_label_font_size * 0.3},
-                   titer_label, black, Scaled{titer_label_font_size});
+                   titer_label, BLACK, Scaled{titer_label_font_size});
         ++titer_label_vpos;
     }
 

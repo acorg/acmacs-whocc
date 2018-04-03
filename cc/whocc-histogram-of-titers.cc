@@ -154,16 +154,16 @@ void TiterData::histogram(std::string filename)
     const double left = padding + y_label_max_width + padding;
     const double right = hsize - padding;
 
-    surface.line({left, padding}, {left, bottom}, "black", Pixels{1});
+    surface.line({left, padding}, {left, bottom}, BLACK, Pixels{1});
     for (size_t y_check_mark = 0; y_check_mark < y_num_check_marks; ++y_check_mark) {
         const double mark_y = bottom - (y_check_mark + 1) * y_mark_step;
-        surface.line({left - mark_size, mark_y}, {left, mark_y}, "black", Pixels{1});
-        surface.text_right_aligned({left - mark_size, mark_y + font_size / 2}, std::to_string(size_t(double(max_y) / double(y_num_check_marks) * (y_check_mark + 1))), "black", Pixels{font_size});
+        surface.line({left - mark_size, mark_y}, {left, mark_y}, BLACK, Pixels{1});
+        surface.text_right_aligned({left - mark_size, mark_y + font_size / 2}, std::to_string(size_t(double(max_y) / double(y_num_check_marks) * (y_check_mark + 1))), BLACK, Pixels{font_size});
     }
 
       // const size_t x_num_check_marks = mTiters.size();
     const double x_mark_step = (right - left) / mTiters.size();
-    surface.line({left, bottom}, {right, bottom}, "black", Pixels{1});
+    surface.line({left, bottom}, {right, bottom}, BLACK, Pixels{1});
     size_t x_check_mark = 0;
     double label_font_size = font_size;
     const double longest_label_width = surface.text_size(longest_label(), Pixels{label_font_size}).width;
@@ -174,8 +174,8 @@ void TiterData::histogram(std::string filename)
         const double bar_left = left + x_check_mark * x_mark_step; //, bar_right = bar_left + x_mark_step;
         const double bar_height = double(entry.second) / double(max_y) * (bottom - top);
         double label_width = surface.text_size(entry.first, Pixels{label_font_size}).width;
-        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + label_font_size * 1.5}, entry.first, "black", Pixels{label_font_size});
-        surface.rectangle_filled({bar_left, bottom - bar_height}, {x_mark_step, bar_height}, "black", Pixels{0.5}, "orange");
+        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + label_font_size * 1.5}, entry.first, BLACK, Pixels{label_font_size});
+        surface.rectangle_filled({bar_left, bottom - bar_height}, {x_mark_step, bar_height}, BLACK, Pixels{0.5}, "orange");
         ++x_check_mark;
     }
 
