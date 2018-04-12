@@ -115,7 +115,7 @@ def get_map(page_data, chart_id):
         # print(output_png, result)
         return result
     except Exception as err:
-        module_logger.exception("ERROR: {}".format(err))
+        module_logger.exception("ERROR: chart_id={}: {}".format(chart_id, err))
         return None
 
 # ----------------------------------------------------------------------
