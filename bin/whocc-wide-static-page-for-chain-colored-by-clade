@@ -34,6 +34,7 @@ sPageData = [
     ]
 
 sRowOrder = ["1", "i", "s"]
+sImageSize = 300
 
 # ======================================================================
 
@@ -62,12 +63,13 @@ def process_chains():
 # ----------------------------------------------------------------------
 
 def generate_for_chain(page_data, chain_id, max_images=None):
-    print(page_data, chain_id)
+    Path(page_data["dir"]).mkdir(parents=True, exist_ok=True)
     images = []
     chain_data = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json doc_get id='{chain_id}' fields='[\"results\",\"forked\",\"forked_step\"]'".format(chain_id=chain_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
     if chain_data.get("forked"):
         parent_images, parent_data = generate_for_chain(page_data, chain_id=chain_data["forked"], max_images=chain_data["forked_step"])
         images.extend(parent_images)
+    print(page_data["dir"], chain_id)
     images.extend(get_maps_for_chain_results(page_data=page_data, max_images=max_images, chain_results=chain_data["results"]))
     return images, response
 
@@ -82,16 +84,28 @@ def get_maps_for_chain_results(page_data, max_images, chain_results):
 
 def get_map(page_data, chart_id):
     try:
-        response_details = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json chart_details_for_root id='{chart_id}' details='[\"name\"]'".format(chart_id=chart_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
-        response_get = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json doc_get id='{chart_id}' fields='[\"stresses\"]'".format(chart_id=chart_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
-        output_png = Path(page_data["dir"], chart_id + ".png")
+        output_prefix = Path(page_data["dir"], chart_id)
+        output_json = output_prefix.with_suffix(".json")
+        output_png = output_prefix.with_suffix(".png")
+        if not output_json.exists():
+            response_details = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json chart_details_for_root id='{chart_id}' details='[\"name\"]'".format(chart_id=chart_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["details"]
+            response_get = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json doc_get id='{chart_id}' fields='[\"stresses\"]'".format(chart_id=chart_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
+            result = {"name": response_details.get("name"), "stress": response_get.get("stresses", [-1])[0], "path": output_png.name}
+        else:
+            result = json.load(output_json.open())
         if not output_png.exists():
-            pass
-        result = {"name": response_details.get("name"), "stress": response_get.get("stresses", [-1])[0], "path": output_png.name}
-        print(result)
+            curdir = os.getcwd()
+            try:
+                os.chdir(str(output_png.parent))
+                subprocess.check_call("aw -u whocc-tables aw-chart.py --warning export id='{chart_id}' format=ace".format(chart_id=chart_id), shell=True, stderr=None)
+                subprocess.check_call("map-draw --clade '{chart_id}.ace' '{chart_id}.pdf' 2>&1".format(chart_id=chart_id), shell=True, stderr=None)
+                subprocess.check_call("/usr/bin/convert -resize '{image_size}' '{chart_id}.pdf' '{chart_id}.png'".format(chart_id=chart_id, image_size=sImageSize), shell=True, stderr=None)
+            finally:
+                os.chdir(curdir)
+        print(output_png, result)
         return result
     except Exception as err:
-        module_logger.error(err)
+        module_logger.exception("ERROR: {}".format(err))
         return None
 
 # ----------------------------------------------------------------------
