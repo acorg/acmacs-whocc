@@ -92,18 +92,27 @@ def get_map(page_data, chart_id):
             response_details = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json chart_details_for_root id='{chart_id}' details='[\"name\"]'".format(chart_id=chart_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["details"]
             response_get = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json doc_get id='{chart_id}' fields='[\"stresses\"]'".format(chart_id=chart_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
             result = {"name": response_details.get("name"), "stress": response_get.get("stresses", [-1])[0], "path": output_png.name}
+            json.dump(result, output_json.open("w"), indent=2, sort_keys=True)
         else:
             result = json.load(output_json.open())
         if not output_png.exists():
+            print("plotting", output_png, result["name"])
             curdir = os.getcwd()
             try:
                 os.chdir(str(output_png.parent))
                 subprocess.check_call("aw -u whocc-tables aw-chart.py --warning export id='{chart_id}' format=ace".format(chart_id=chart_id), shell=True, stderr=None)
                 subprocess.check_call("map-draw --clade '{chart_id}.ace' '{chart_id}.pdf' 2>&1".format(chart_id=chart_id), shell=True, stderr=None)
                 subprocess.check_call("/usr/bin/convert -resize '{image_size}' '{chart_id}.pdf' '{chart_id}.png'".format(chart_id=chart_id, image_size=sImageSize), shell=True, stderr=None)
+            except:
+                if Path(chart_id + ".ace").exists():
+                    Path(chart_id + ".ace").unlink()
+                if Path(chart_id + ".pdf").exists():
+                    Path(chart_id + ".pdf").unlink()
+                if Path(chart_id + ".png").exists():
+                    Path(chart_id + ".png").unlink()
             finally:
                 os.chdir(curdir)
-        print(output_png, result)
+        # print(output_png, result)
         return result
     except Exception as err:
         module_logger.exception("ERROR: {}".format(err))
