@@ -72,7 +72,7 @@ def generate_for_chain(page_data, chain_id, max_images=None):
         images.extend(parent_images)
     print(page_data["dir"], chain_id)
     images.extend(get_maps_for_chain_results(page_data=page_data, max_images=max_images, chain_results=chain_data["results"]))
-    return images, response
+    return images, chain_data
 
 # ----------------------------------------------------------------------
 
