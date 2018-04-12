@@ -5,7 +5,48 @@ import sys, os, re, pprint, subprocess, datetime
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
+# ----------------------------------------------------------------------
+
+sPageData = [
+    {"dir": "h1-cdc",  "virus_type": "A(H1N1)2009PDM", "lab": "CDC",  "assay": "HI", "lineage": ""},
+    {"dir": "h1-melb", "virus_type": "A(H1N1)2009PDM", "lab": "MELB", "assay": "HI", "lineage": ""},
+    {"dir": "h1-niid", "virus_type": "A(H1N1)2009PDM", "lab": "NIID", "assay": "HI", "lineage": ""},
+    {"dir": "h1-nimr", "virus_type": "A(H1N1)2009PDM", "lab": "NIMR", "assay": "HI", "lineage": ""},
+
+    {"dir": "h3-hi-cdc",  "virus_type": "A(H3N2)", "lab": "CDC",  "assay": "HI", "lineage": ""},
+    {"dir": "h3-hi-melb", "virus_type": "A(H3N2)", "lab": "MELB", "assay": "HI", "lineage": ""},
+    {"dir": "h3-hi-nimr", "virus_type": "A(H3N2)", "lab": "NIMR", "assay": "HI", "lineage": ""},
+
+    {"dir": "h3-neut-cdc",  "virus_type": "A(H3N2)", "lab": "CDC",  "assay": "NEUTRALIZATION", "lineage": ""},
+    {"dir": "h3-neut-melb", "virus_type": "A(H3N2)", "lab": "MELB", "assay": "NEUTRALIZATION", "lineage": ""},
+    {"dir": "h3-neut-niid", "virus_type": "A(H3N2)", "lab": "NIID", "assay": "NEUTRALIZATION", "lineage": ""},
+    {"dir": "h3-neut-nimr", "virus_type": "A(H3N2)", "lab": "NIMR", "assay": "NEUTRALIZATION", "lineage": ""},
+
+    {"dir": "b-vic-cdc",  "virus_type": "B", "lab": "CDC",  "assay": "HI", "lineage": "VICTORIA"},
+    {"dir": "b-vic-melb", "virus_type": "B", "lab": "MELB", "assay": "HI", "lineage": "VICTORIA"},
+    {"dir": "b-vic-niid", "virus_type": "B", "lab": "NIID", "assay": "HI", "lineage": "VICTORIA"},
+    {"dir": "b-vic-nimr", "virus_type": "B", "lab": "NIMR", "assay": "HI", "lineage": "VICTORIA"},
+
+    {"dir": "b-yam-cdc",  "virus_type": "B", "lab": "CDC",  "assay": "HI", "lineage": "YAMAGATA"},
+    {"dir": "b-yam-melb", "virus_type": "B", "lab": "MELB", "assay": "HI", "lineage": "YAMAGATA"},
+    {"dir": "b-yam-niid", "virus_type": "B", "lab": "NIID", "assay": "HI", "lineage": "YAMAGATA"},
+    {"dir": "b-yam-nimr", "virus_type": "B", "lab": "NIMR", "assay": "HI", "lineage": "YAMAGATA"},
+    ]
+
 # ======================================================================
+
+def main():
+    exit_code = 0
+    try:
+        chains = json.loads(subprocess.run(sCommandPrefix + "aw -u whocc-tables api.py --direct --json whocc_chain_list", shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
+    except Exception as err:
+        module_logger.exception(str(err))
+        exit_code = 1
+    return exit_code
+
+# ----------------------------------------------------------------------
+
+main()
 
 # ======================================================================
 ### Local Variables:
