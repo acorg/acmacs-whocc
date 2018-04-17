@@ -38,54 +38,44 @@ sImageSize = 300
 
 # ======================================================================
 
-def main():
-    exit_code = 0
-    try:
-        process_chains()
-    except Exception as err:
-        module_logger.exception(str(err))
-        exit_code = 1
-    return exit_code
-
-# ----------------------------------------------------------------------
-
-def process_chains():
+def main(args):
     chains = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json whocc_chain_list", shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
     for page_data in sPageData:
-        chain_id = None
-        for inspector in reversed(chains):
-            if page_data["virus_type"] == inspector["virus_type"] and page_data["lab"] == inspector["lab"] and page_data["assay_type"] == inspector["assay_type"] and page_data["lineage"] == inspector.get("lineage", ""):
-                chain_id = inspector["_id"]
-                break
-        if chain_id:
-            images, chain_data = generate_for_chain(page_data, chain_id)
-            generate_html(page_data=page_data, images=images, chain_id=chain_id, chain_data=chain_data)
+        if not args.dir or args.dir == page_data["dir"]:
+            chain_id = None
+            for inspector in reversed(chains):
+                if page_data["virus_type"] == inspector["virus_type"] and page_data["lab"] == inspector["lab"] and page_data["assay_type"] == inspector["assay_type"] and page_data["lineage"] == inspector.get("lineage", ""):
+                    chain_id = inspector["_id"]
+                    break
+            if chain_id:
+                images, chain_data = generate_for_chain(page_data, chain_id, make_json=args.json)
+                generate_chain_html(page_data=page_data, images=images, chain_id=chain_id, chain_data=chain_data)
 
 # ----------------------------------------------------------------------
 
-def generate_for_chain(page_data, chain_id, max_images=None):
+def generate_for_chain(page_data, chain_id, make_json, max_images=None):
     Path(page_data["dir"]).mkdir(parents=True, exist_ok=True)
     images = []
     chain_data = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json doc_get id='{chain_id}' fields='[\"results\",\"forked\",\"forked_step\"]'".format(chain_id=chain_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
     if chain_data.get("forked"):
-        parent_images, parent_data = generate_for_chain(page_data, chain_id=chain_data["forked"], max_images=chain_data["forked_step"])
+        parent_images, parent_data = generate_for_chain(page_data, chain_id=chain_data["forked"], make_json=make_json, max_images=chain_data["forked_step"])
         images.extend(parent_images)
     print(page_data["dir"], chain_id)
-    images.extend(get_maps_for_chain_results(page_data=page_data, max_images=max_images, chain_results=chain_data["results"]))
+    images.extend(get_maps_for_chain_results(page_data=page_data, make_json=make_json, max_images=max_images, chain_results=chain_data["results"]))
     return images, chain_data
 
 # ----------------------------------------------------------------------
 
-def get_maps_for_chain_results(page_data, max_images, chain_results):
+def get_maps_for_chain_results(page_data, make_json, max_images, chain_results):
     cr = chain_results if max_images is None else chain_results[:max_images]
-    images = [{key: get_map(page_data, chart_id=chain_result[key]) for key in sRowOrder if chain_result.get(key)} for chain_result in cr]
+    images = [{key: get_map(page_data, chart_id=chain_result[key], make_json=make_json) for key in sRowOrder if chain_result.get(key)} for chain_result in cr]
     return images
 
 # ----------------------------------------------------------------------
 
 class DocumentNoFound (Exception): pass
 
-def get_map(page_data, chart_id):
+def get_map(page_data, chart_id, make_json):
     try:
         output_prefix = Path(page_data["dir"], chart_id)
         output_json = output_prefix.with_suffix(".json")
@@ -100,30 +90,17 @@ def get_map(page_data, chart_id):
                 else:
                     raise RuntimeError("{}\nRaw response:\n{}".format(err, response_details_raw))
             response_get = json.loads(subprocess.run("aw -u whocc-tables api.py --warning --direct --json doc_get id='{chart_id}' fields='[\"stresses\"]'".format(chart_id=chart_id), shell=True, check=True, stdout=subprocess.PIPE, stderr=None).stdout.decode("utf-8"))["data"]
-            result = {"name": response_details.get("name"), "stress": response_get.get("stresses", [-1])[0], "path": output_png.name}
+            result = {"name": response_details.get("name"), "stress": response_get.get("stresses", [-1])[0], "path": output_png.name, "chart_id": chart_id}
             json.dump(result, output_json.open("w"), indent=2, sort_keys=True)
         else:
             result = json.load(output_json.open())
-        if not output_png.exists():
-            print("plotting", output_png, result["name"])
-            curdir = os.getcwd()
-            try:
-                os.chdir(str(output_png.parent))
-                if Path(chart_id + ".log").exists():
-                    Path(chart_id + ".log").unlink()
-                if not Path(chart_id + ".ace").exists():
-                    subprocess.check_call("aw -u whocc-tables aw-chart.py --warning export id='{chart_id}' format=ace >>'{chart_id}.log' 2>&1".format(chart_id=chart_id), shell=True)
-                settings = ["size_reset", {"N":"point_scale", "scale": 3.0}, "all_grey", "egg", "clades", "vaccines", {"N": "legend", "label_size": 32, "point_size": 20}] # , "title"
-                subprocess.check_call("map-draw --apply '{settings}' '{chart_id}.ace' '{chart_id}.pdf' >>'{chart_id}.log' 2>&1".format(chart_id=chart_id, settings=json.dumps(settings)), shell=True)
-                subprocess.check_call("/usr/bin/convert -resize '{image_size}' '{chart_id}.pdf' '{chart_id}.png' >>'{chart_id}.log' 2>&1".format(chart_id=chart_id, image_size=sImageSize), shell=True)
-            except KeyboardInterrupt:
-                unlink_on_exception(chart_id)
-                module_logger.error("KeyboardInterrupt")
-                exit(15)
-            except:
-                unlink_on_exception(chart_id)
-            finally:
-                os.chdir(curdir)
+            if "chart_id" not in result:
+                result["chart_id"] = chart_id
+        make_ace(chart_id=chart_id, output_dir=page_data["dir"], name=result["name"])
+        if make_json:
+            make_map_json(chart_id=chart_id, output_dir=page_data["dir"], name=result["name"])
+        else:
+            make_png(chart_id=chart_id, output_dir=page_data["dir"], name=result["name"])
         # print(output_png, result)
         return result
     except DocumentNoFound:
@@ -135,6 +112,69 @@ def get_map(page_data, chart_id):
     except Exception as err:
         module_logger.exception("ERROR: chart_id={}: {}".format(chart_id, err))
         return None
+
+# ----------------------------------------------------------------------
+
+def make_map_json(chart_id, output_dir, name):
+    if not Path(output_dir, chart_id).with_suffix(".map.json").exists():
+        print("plotting json", chart_id, name)
+        curdir = os.getcwd()
+        try:
+            os.chdir(output_dir)
+            if Path(chart_id + ".json.log").exists():
+                Path(chart_id + ".json.log").unlink()
+            settings = ["size_reset", "all_grey", "egg", "clades", "vaccines"]
+            subprocess.check_call("map-draw --apply '{settings}' '{chart_id}.ace' '{chart_id}.map.json' >>'{chart_id}.json.log' 2>&1".format(chart_id=chart_id, settings=json.dumps(settings)), shell=True)
+        except KeyboardInterrupt:
+            unlink_on_exception(chart_id)
+            module_logger.error("KeyboardInterrupt")
+            exit(15)
+        except:
+            unlink_on_exception(chart_id)
+        finally:
+            os.chdir(curdir)
+
+# ----------------------------------------------------------------------
+
+def make_png(chart_id, output_dir, name):
+    if not Path(output_dir, chart_id).with_suffix(".png").exists():
+        print("plotting png", chart_id, name)
+        curdir = os.getcwd()
+        try:
+            os.chdir(output_dir)
+            if Path(chart_id + ".png.log").exists():
+                Path(chart_id + ".png.log").unlink()
+            settings = ["size_reset", {"N":"point_scale", "scale": 3.0}, "all_grey", "egg", "clades", "vaccines", {"N": "legend", "label_size": 32, "point_size": 20}] # , "title"
+            subprocess.check_call("map-draw --apply '{settings}' '{chart_id}.ace' '{chart_id}.pdf' >>'{chart_id}.png.log' 2>&1".format(chart_id=chart_id, settings=json.dumps(settings)), shell=True)
+            subprocess.check_call("/usr/bin/convert -resize '{image_size}' '{chart_id}.pdf' '{chart_id}.png' >>'{chart_id}.png.log' 2>&1".format(chart_id=chart_id, image_size=sImageSize), shell=True)
+        except KeyboardInterrupt:
+            unlink_on_exception(chart_id)
+            module_logger.error("KeyboardInterrupt")
+            exit(15)
+        except:
+            unlink_on_exception(chart_id)
+        finally:
+            os.chdir(curdir)
+
+# ----------------------------------------------------------------------
+
+def make_ace(chart_id, output_dir, name):
+    if not Path(output_dir, chart_id).with_suffix(".ace").exists():
+        print("getting ace", chart_id, name)
+        curdir = os.getcwd()
+        try:
+            os.chdir(output_dir)
+            if Path(chart_id + ".ace.log").exists():
+                Path(chart_id + ".ace.log").unlink()
+            subprocess.check_call("aw -u whocc-tables aw-chart.py --warning export id='{chart_id}' format=ace >>'{chart_id}.ace.log' 2>&1".format(chart_id=chart_id), shell=True)
+        except KeyboardInterrupt:
+            unlink_on_exception(chart_id)
+            module_logger.error("KeyboardInterrupt")
+            exit(15)
+        except:
+            unlink_on_exception(chart_id)
+        finally:
+            os.chdir(curdir)
 
 # ----------------------------------------------------------------------
 
@@ -198,7 +238,7 @@ sStyles = """
    p.modified { font-size: 0.9em; }
 """
 
-def generate_html(page_data, images, chain_id, chain_data):
+def generate_chain_html(page_data, images, chain_id, chain_data):
     with Path(page_data["dir"], "data.json").open("w") as f:
         json.dump(images, f, indent=2, sort_keys=True, default=lambda obj: repr(obj))
     data = {
@@ -259,7 +299,25 @@ def column_images(images, key):
 
 # ----------------------------------------------------------------------
 
-main()
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
+
+    parser.add_argument('--dir', action='store', dest='dir', default=None)
+    parser.add_argument('--json', action='store_true', dest='json', default=False)
+
+    args = parser.parse_args()
+    if args.verbose:
+        args.loglevel = logging.DEBUG
+    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    exit_code = main(args)
+except Exception as err:
+    logging.error('{}\n{}'.format(err, traceback.format_exc()))
+    exit_code = 1
+exit(exit_code)
 
 # ======================================================================
 ### Local Variables:
