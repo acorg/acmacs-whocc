@@ -109,17 +109,19 @@ def get_map(page_data, chart_id):
             curdir = os.getcwd()
             try:
                 os.chdir(str(output_png.parent))
-                subprocess.check_call("aw -u whocc-tables aw-chart.py --warning export id='{chart_id}' format=ace".format(chart_id=chart_id), shell=True, stderr=None)
+                if Path(chart_id + ".log").exists():
+                    Path(chart_id + ".log").unlink()
+                if not Path(chart_id + ".ace").exists():
+                    subprocess.check_call("aw -u whocc-tables aw-chart.py --warning export id='{chart_id}' format=ace >>'{chart_id}.log' 2>&1".format(chart_id=chart_id), shell=True)
                 settings = ["size_reset", {"N":"point_scale", "scale": 3.0}, "all_grey", "egg", "clades", "vaccines", {"N": "legend", "label_size": 32, "point_size": 20}] # , "title"
-                subprocess.check_call("map-draw --apply '{settings}' '{chart_id}.ace' '{chart_id}.pdf' 2>&1".format(chart_id=chart_id, settings=json.dumps(settings)), shell=True, stderr=None)
-                subprocess.check_call("/usr/bin/convert -resize '{image_size}' '{chart_id}.pdf' '{chart_id}.png'".format(chart_id=chart_id, image_size=sImageSize), shell=True, stderr=None)
+                subprocess.check_call("map-draw --apply '{settings}' '{chart_id}.ace' '{chart_id}.pdf' >>'{chart_id}.log' 2>&1".format(chart_id=chart_id, settings=json.dumps(settings)), shell=True)
+                subprocess.check_call("/usr/bin/convert -resize '{image_size}' '{chart_id}.pdf' '{chart_id}.png' >>'{chart_id}.log' 2>&1".format(chart_id=chart_id, image_size=sImageSize), shell=True)
+            except KeyboardInterrupt:
+                unlink_on_exception(chart_id)
+                module_logger.error("KeyboardInterrupt")
+                exit(15)
             except:
-                if Path(chart_id + ".ace").exists():
-                    Path(chart_id + ".ace").unlink()
-                if Path(chart_id + ".pdf").exists():
-                    Path(chart_id + ".pdf").unlink()
-                if Path(chart_id + ".png").exists():
-                    Path(chart_id + ".png").unlink()
+                unlink_on_exception(chart_id)
             finally:
                 os.chdir(curdir)
         # print(output_png, result)
@@ -127,9 +129,22 @@ def get_map(page_data, chart_id):
     except DocumentNoFound:
         module_logger.error("ERROR: chart_id={}: not found".format(chart_id))
         return None
+    except KeyboardInterrupt:
+        module_logger.error("KeyboardInterrupt")
+        exit(15)
     except Exception as err:
         module_logger.exception("ERROR: chart_id={}: {}".format(chart_id, err))
         return None
+
+# ----------------------------------------------------------------------
+
+def unlink_on_exception(chart_id):
+    if Path(chart_id + ".ace").exists():
+        Path(chart_id + ".ace").unlink()
+    if Path(chart_id + ".pdf").exists():
+        Path(chart_id + ".pdf").unlink()
+    if Path(chart_id + ".png").exists():
+        Path(chart_id + ".png").unlink()
 
 # ----------------------------------------------------------------------
 
