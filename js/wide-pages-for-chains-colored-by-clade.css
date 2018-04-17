@@ -1,0 +1,7 @@
+td { padding: 0 0.5em; }
+tr.head_individual td { padding-left: 1em; }
+tr.head_incremental td { padding-top: 1em; padding-left: 1em; }
+tr.head_scratch td { padding-top: 1em; padding-left: 1em; }
+tr.column_names td { font-weight: bold; text-align: center; }
+p.chain_id { font-size: 0.9em; }
+p.modified { font-size: 0.9em; }
