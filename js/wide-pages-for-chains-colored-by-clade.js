@@ -1,4 +1,4 @@
-import {draw} from "./acmacs-draw-surface.js";
+import {draw} from "../draw/acmacs-draw-surface.js";
 
 export function main(wide_page_data) {
     console.log(wide_page_data);
