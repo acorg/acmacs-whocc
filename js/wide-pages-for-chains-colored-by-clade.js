@@ -6,7 +6,7 @@ export function main(wide_page_data) {
 
     $("body").append("<table><tr class='column_names'></tr><tr class='head_individual'></tr><tr class='individual'></tr><tr class='head_incremental'></tr><tr class='incremental'></tr><tr class='head_scratch'></tr><tr class='scratch'></tr></table>");
     wide_page_data.maps.forEach(entry => {
-        $("tr.column_names").append("<td>" + entry["1"].name + "</td");
+        $("tr.column_names").append("<td>" + (entry["1"] ? entry["1"].name : "?") + "</td");
         add_column(entry["1"], "individual");
         add_column(entry.i, "incremental");
         add_column(entry.s, "scratch");
