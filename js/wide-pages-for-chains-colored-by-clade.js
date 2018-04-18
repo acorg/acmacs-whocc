@@ -1,7 +1,7 @@
 import {draw} from "../draw/acmacs-draw-surface.js";
 
 export function main(wide_page_data) {
-    console.log(wide_page_data);
+    // console.log(wide_page_data);
     const start = new Date();
 
     $("body").append("<table><tr class='column_names'></tr><tr class='head_individual'></tr><tr class='individual'></tr><tr class='head_incremental'></tr><tr class='incremental'></tr><tr class='head_scratch'></tr><tr class='scratch'></tr></table>");
