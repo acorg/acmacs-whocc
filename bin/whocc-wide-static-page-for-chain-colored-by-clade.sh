@@ -5,7 +5,7 @@ PROG=$(basename $0)
 LOG=/syn/eu/log/whocc-wide-static-page-for-chain.ad.log
 
 export ACMACSD_ROOT="${HOME}/AD"
-export PATH="${ACMACSD_ROOT}/bin:${PATH}"
+export PATH="${ACMACSD_ROOT}/bin:${HOME}/bin:${PATH}"
 export LD_LIBRARY_PATH="${ACMACSD_ROOT}/lib:${LD_LIBRARY_PATH}"
 
 # ======================================================================
