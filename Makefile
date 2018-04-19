@@ -14,6 +14,8 @@ TARGETS = \
 
 # ----------------------------------------------------------------------
 
+SRC_DIR = $(abspath $(ACMACSD_ROOT)/sources)
+
 include $(ACMACSD_ROOT)/share/makefiles/Makefile.g++
 include $(ACMACSD_ROOT)/share/makefiles/Makefile.dist-build.vars
 
@@ -39,6 +41,7 @@ all: check-acmacsd-root $(TARGETS)
 install: $(TARGETS)
 	ln -sf $(DIST)/* $(AD_BIN)
 	ln -sf $(abspath bin)/* $(AD_BIN)
+	mkdir -p $(AD_SHARE)/js/who; ln -sf $(SRC_DIR)/acmacs-whocc/js/* $(AD_SHARE)/js/who
 
 test: install
 	@#test/test
