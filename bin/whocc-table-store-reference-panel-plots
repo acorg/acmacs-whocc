@@ -154,8 +154,12 @@ def plot_one_table(key, table_no, sources, output_dir):
     output_filename = "{}-one-{:02d}-{}.pdf".format(key, table_no, d1)
     # module_logger.info("one table {} <-- ({}) '{}'".format(output_dir.joinpath(output_filename), table_no + 1, "' '".join(str(s) for s in sources[:table_no + 1])))
     # module_logger.info("one table {}".format(output_dir.joinpath(output_filename)))
-    subprocess.check_call("~/AD/bin/whocc-reference-panel-plots --last --min-tables 2 '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources[:table_no + 1])), shell=True)
-    return {"name": output_filename, "d1": d1, "d2": "one", "num": 1}
+    try:
+        subprocess.check_call("~/AD/bin/whocc-reference-panel-plots --last --min-tables 2 '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources[:table_no + 1])), shell=True)
+        return {"name": output_filename, "d1": d1, "d2": "one", "num": 1}
+    except subprocess.CalledProcessError as err:
+        module_logger.error(str(err))
+        return {}
 
 # ----------------------------------------------------------------------
 
@@ -183,10 +187,10 @@ sHtmlTemplate = """<html>
 def make_index(plotted_data, output_dir):
 
     def make_entries_recent(v3):
-        return "<li>" + "</li>\n<li>".join("<a href=\"{}\">{}</a>".format(entry["name"], entry["d1"]) for entry in v3 if entry["d2"] == "one") + "</li>"
+        return "<li>" + "</li>\n<li>".join("<a href=\"{}\">{}</a>".format(entry["name"], entry["d1"]) for entry in v3 if entry and entry["d2"] == "one") + "</li>"
 
     def make_entries_all(v3):
-        return "<li>" + "</li>\n<li>".join("<a href=\"{}\">{} - {} ({})</a>".format(entry["name"], entry["d1"], entry["d2"], entry["num"]) for entry in v3 if entry["d2"] != "one") + "</li>"
+        return "<li>" + "</li>\n<li>".join("<a href=\"{}\">{} - {} ({})</a>".format(entry["name"], entry["d1"], entry["d2"], entry["num"]) for entry in v3 if entry and entry["d2"] != "one") + "</li>"
 
     def make_rbc(v2):
         return "\n".join("<h3>{}</h3>\n<ul class='recent'>\n <li>For antigens/sera in the recent tables\n  <ol>{}</ol>\n </li>\n <li>All tables\n  <ol>{}</ol>\n </li>\n</ul>\n".format(rbc.upper(), make_entries_recent(v2[rbc]), make_entries_all(v2[rbc])) for rbc in sorted(v2))
