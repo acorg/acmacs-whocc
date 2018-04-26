@@ -26,12 +26,14 @@ class Options
  public:
     std::vector<std::string> source_charts;
     std::string output_filename;
+    bool for_ref_in_last_table_only = false;
 };
 
 class ChartData;
 
 static int get_args(int argc, const char *argv[], Options& aOptions);
 static void process_source(ChartData& aData, std::string filename);
+static void make_antigen_serum_set(ChartData& aData, std::string filename);
 
 // ----------------------------------------------------------------------
 
@@ -172,6 +174,8 @@ int main(int argc, const char *argv[])
     if (exit_code == 0) {
         try {
             ChartData data;
+            if (options.for_ref_in_last_table_only)
+                make_antigen_serum_set(data, options.source_charts.back());
             for (const auto& source_name: options.source_charts)
                 process_source(data, source_name);
             data.make_antigen_serum_data();
@@ -196,6 +200,7 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
             ("help", "Print help messages")
             ("output,o", value<std::string>(&aOptions.output_filename)->required(), "output pdf")
             ("sources,s", value<std::vector<std::string>>(&aOptions.source_charts), "source chart in the proper order")
+            ("last", "for ref antigens and sera found in the last table only")
             ;
     positional_options_description pos_opt;
     pos_opt.add("output", 1);
@@ -208,6 +213,8 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
             std::cerr << desc << std::endl;
             return 1;
         }
+        if (vm.count("last"))
+            aOptions.for_ref_in_last_table_only = true;
         notify(vm);
         return 0;
     }
@@ -224,6 +231,22 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
     }
 
 } // get_args
+
+// ----------------------------------------------------------------------
+
+void make_antigen_serum_set(ChartData& aData, std::string filename)
+{
+    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
+    auto chart_antigens = chart->antigens();
+    for (auto antigen_index_in_chart: chart_antigens->reference_indexes()) {
+        aData.add_antigen((*chart_antigens)[antigen_index_in_chart]);
+    }
+    auto chart_sera = chart->sera();
+    for (size_t serum_no = 0; serum_no < chart_sera->size(); ++serum_no) {
+        aData.add_serum((*chart_sera)[serum_no]);
+    }
+
+} // make_antigen_serum_set
 
 // ----------------------------------------------------------------------
 
