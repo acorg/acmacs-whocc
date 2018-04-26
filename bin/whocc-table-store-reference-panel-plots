@@ -20,7 +20,7 @@ def main(args):
     sort_sources(sources)
     # count_sources(sources)
     # pprint.pprint(sources)
-    plotted_data = plot_soures(sources, args.chunk_size, Path(args.output_dir))
+    plotted_data = plot_soures(sources=sources, chunk_size=args.chunk_size, output_dir=Path(args.output_dir), num_recent_table_plots=args.num_recent_table_plots)
     make_index(plotted_data, Path(args.output_dir))
     make_readme(plotted_data, Path(args.output_dir))
 
@@ -92,23 +92,26 @@ def count_sources(sources):
 
 # ----------------------------------------------------------------------
 
-def plot_soures(sources, chunk_size, output_dir):
+def plot_soures(sources, chunk_size, output_dir, num_recent_table_plots):
     plotted_data = {}
     for subtype, v1 in sources.items():
         for lab, v2 in v1.items():
             for rbc, v3 in v2.items():
                 if len(v3) > 9:
-                    plots = plot_source_set(key="-".join([subtype, lab, rbc]), sources=v3, chunk_size=chunk_size, output_dir=output_dir)
+                    plots = plot_source_set(key="-".join([subtype, lab, rbc]), sources=v3, chunk_size=chunk_size, output_dir=output_dir, num_recent_table_plots=num_recent_table_plots)
                     plotted_data.setdefault(subtype, {}).setdefault(lab, {})[rbc] = plots
     # pprint.pprint(plotted_data)
     return plotted_data
 
 # ----------------------------------------------------------------------
 
-def plot_source_set(key, sources, chunk_size, output_dir):
+def plot_source_set(key, sources, chunk_size, output_dir, num_recent_table_plots):
     module_logger.info('{} {} {} - {}'.format(key, len(sources), sources[0].name, sources[-1].name))
+    first_table_for_one_table_plots = len(sources) - num_recent_table_plots if len(sources) > num_recent_table_plots else 0
+    plots = [plot_one_table(key=key, table_no=table_no, sources=sources, output_dir=output_dir) for table_no in range(first_table_for_one_table_plots, len(sources))]
+    # exit(1)
     chunks = make_chunks(sources, chunk_size)
-    plots = [plot_chunk(key, chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
+    plots += [plot_chunk(key, chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
     return plots
 
 # ----------------------------------------------------------------------
@@ -139,6 +142,20 @@ def plot_chunk(key, index, sources, output_dir):
     output_filename = "{}-{:02d}-{}-{}.pdf".format(key, index, d1, d2)
     subprocess.check_call("~/AD/bin/whocc-reference-panel-plots '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources)), shell=True)
     return {"name": output_filename, "d1": d1, "d2": d2, "num": len(sources)}
+
+# ----------------------------------------------------------------------
+
+def plot_one_table(key, table_no, sources, output_dir):
+    m1 = sReNameGetDate.match(sources[table_no].name)
+    if not m1:
+        raise ValueError("Date extraction failed: {!r} ".format(sources[table_no].name))
+    d1 = m1.group(1)
+    module_logger.info('one table {}'.format(d1))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_filename = "{}-one-{:02d}-{}.pdf".format(key, table_no, d1)
+    module_logger.info("one table {} <-- ({}) '{}'".format(output_dir.joinpath(output_filename), table_no + 1, "' '".join(str(s) for s in sources[:table_no + 1])))
+    #subprocess.check_call("~/AD/bin/whocc-reference-panel-plots '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources)), shell=True)
+    return {"name": output_filename, "d1": d1, "d2": "one", "num": 1}
 
 # ----------------------------------------------------------------------
 
@@ -197,6 +214,7 @@ try:
     parser.add_argument('--source', action='store', dest='source_dir', default="/syn/eu/ac/ace-store")
     parser.add_argument('--output', action='store', dest='output_dir', default="/syn/eu/www/who/reference-panel-plots")
     parser.add_argument('--chunk', action='store', type=float, dest='chunk_size', default=40)
+    parser.add_argument('--num-recent-table-plots', action='store', type=int, dest='num_recent_table_plots', default=10)
 
     args = parser.parse_args()
     if args.verbose:
