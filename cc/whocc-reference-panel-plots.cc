@@ -27,6 +27,7 @@ class Options
     std::vector<std::string> source_charts;
     std::string output_filename;
     bool for_ref_in_last_table_only = false;
+    size_t min_number_of_tables = 5;
 };
 
 class ChartData;
@@ -109,8 +110,8 @@ class ChartData
     size_t add_table(acmacs::chart::ChartP aChart);
     inline void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
 
-    void make_antigen_serum_data();
-    void plot(std::string output_filename);
+    void make_antigen_serum_data(size_t aMinNumberOfTables);
+    void plot(std::string output_filename, bool for_ref_in_last_table_only);
 
     inline size_t number_of_antigens() const { return mAntigens.size(); }
     inline size_t number_of_sera() const { return mSera.size(); }
@@ -164,7 +165,7 @@ class ChartData
     void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters);
     void plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters);
 
-    void disable_antigens_sera(size_t aThreshold = 4);
+    void disable_antigens_sera(size_t aMinNumberOfTables);
 };
 
 // ======================================================================
@@ -180,9 +181,9 @@ int main(int argc, const char *argv[])
                 make_antigen_serum_set(data, options.source_charts.back());
             for (const auto& source_name: options.source_charts)
                 process_source(data, source_name, options.for_ref_in_last_table_only);
-            data.make_antigen_serum_data();
+            data.make_antigen_serum_data(options.min_number_of_tables);
             std::cout << data << std::endl;
-            data.plot(options.output_filename);
+            data.plot(options.output_filename, options.for_ref_in_last_table_only);
         }
         catch (std::exception& err) {
             std::cerr << err.what() << std::endl;
@@ -203,6 +204,7 @@ static int get_args(int argc, const char *argv[], Options& aOptions)
             ("output,o", value<std::string>(&aOptions.output_filename)->required(), "output pdf")
             ("sources,s", value<std::vector<std::string>>(&aOptions.source_charts), "source chart in the proper order")
             ("last", "for ref antigens and sera found in the last table only")
+            ("min-tables", value<size_t>(&aOptions.min_number_of_tables), "minimum number of tables where antigen/serum appears")
             ;
     positional_options_description pos_opt;
     pos_opt.add("output", 1);
@@ -340,7 +342,7 @@ size_t ChartData::add_table(acmacs::chart::ChartP aChart)
 
 // ----------------------------------------------------------------------
 
-void ChartData::make_antigen_serum_data()
+void ChartData::make_antigen_serum_data(size_t aMinNumberOfTables)
 {
     sort_titers_by_serum_antigen();
 
@@ -371,20 +373,20 @@ void ChartData::make_antigen_serum_data()
             }
         }
     }
-    disable_antigens_sera(4);
+    disable_antigens_sera(aMinNumberOfTables);
 
 } // ChartData::make_antigen_serum_data
 
 // ----------------------------------------------------------------------
 
-void ChartData::disable_antigens_sera(size_t aThreshold)
+void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
 {
     for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         size_t max_number_of_tables = 0;
         for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
-        mAntigens[antigen_no].enabled = max_number_of_tables > aThreshold;
+        mAntigens[antigen_no].enabled = max_number_of_tables >= aMinNumberOfTables;
         // std::cerr << "AG " << mAntigens[antigen_no].name << " tables: " << max_number_of_tables << std::endl;
     }
 
@@ -393,7 +395,7 @@ void ChartData::disable_antigens_sera(size_t aThreshold)
         for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
-        mSera[serum_no].enabled = max_number_of_tables > aThreshold;
+        mSera[serum_no].enabled = max_number_of_tables >= aMinNumberOfTables;
           // std::cerr << "SR " << mSera[serum_no].name << " tables: " << max_number_of_tables << std::endl;
     }
 
@@ -458,7 +460,7 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
 
 // ======================================================================
 
-void ChartData::plot(std::string output_filename)
+void ChartData::plot(std::string output_filename, bool for_ref_in_last_table_only)
 {
     const size_t ns = number_of_enabled_sera(), na = number_of_enabled_antigens();
     std::cout << "Enabled: antigens: " << na << " sera: " << ns << std::endl;
@@ -469,7 +471,11 @@ void ChartData::plot(std::string output_filename)
 
     acmacs::surface::PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
 
-    std::string title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
+    std::string title;
+    if (for_ref_in_last_table_only)
+        title = mLab + " " + mVirusType + " " + mAssay + " " + mLastDate + "  previous tables:" + std::to_string(number_of_tables() - 1) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
+    else
+        title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
     text(surface, {title_height, title_height * 0.7}, title, BLACK, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
 
     for (size_t antigen_no = 0, enabled_antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
