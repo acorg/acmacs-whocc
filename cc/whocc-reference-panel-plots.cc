@@ -11,6 +11,7 @@
 #pragma GCC diagnostic pop
 
 #include "acmacs-base/stream.hh"
+#include "acmacs-base/enumerate.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-draw/surface-cairo.hh"
@@ -41,9 +42,9 @@ static void make_antigen_serum_set(ChartData& aData, std::string filename);
 class TiterData
 {
  public:
-    inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) : antigen(aAntigen), serum(aSerum), table(aTable), titer(aTiter) {}
-    inline TiterData(size_t aAntigen, size_t aSerum, size_t aTable) : antigen(aAntigen), serum(aSerum), table(aTable) {}
-    inline bool operator < (const TiterData& a) const
+    TiterData(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) : antigen(aAntigen), serum(aSerum), table(aTable), titer(aTiter) {}
+    TiterData(size_t aAntigen, size_t aSerum, size_t aTable) : antigen(aAntigen), serum(aSerum), table(aTable) {}
+    bool operator < (const TiterData& a) const
         {
             if (serum != a.serum)
                 return serum < a.serum;
@@ -61,9 +62,10 @@ class TiterData
 class AntigenSerumData
 {
  public:
-    inline AntigenSerumData() {}
-    inline bool empty() const { return titer_per_table.empty(); }
-    inline size_t number_of_tables() const { return std::accumulate(titer_per_table.begin(), titer_per_table.end(), 0U, [](size_t acc, auto& element) { return element.first.is_dont_care() ? acc : (acc + 1); }); }
+    AntigenSerumData() {}
+    bool empty() const { return titer_per_table.empty(); }
+    size_t number_of_tables() const { return std::accumulate(titer_per_table.begin(), titer_per_table.end(), 0U, [](size_t acc, auto& element) { return element.first.is_dont_care() ? acc : (acc + 1); }); }
+    size_t first_table_no() const { for (auto [no, entry] : acmacs::enumerate(titer_per_table)) if (!entry.first.is_dont_care()) return no; return 0; }
 
     std::pair<acmacs::chart::Titer, int> median;
     std::vector<std::pair<acmacs::chart::Titer, int>> titer_per_table;
@@ -72,7 +74,7 @@ class AntigenSerumData
 
 struct CellParameters
 {
-    inline CellParameters(size_t aNumberOfTables, size_t aNumberOfTiters)
+    CellParameters(size_t aNumberOfTables, size_t aNumberOfTiters)
         : cell_top_title_height(1.3), hstep(aNumberOfTables + 2.0), vstep(hstep), voffset_base(0.1), voffset_per_level((vstep - voffset_base * 2 - cell_top_title_height) / (aNumberOfTiters - 1)) {}
 
     double cell_top_title_height;
@@ -84,11 +86,11 @@ struct CellParameters
 
 struct AgSr
 {
-    inline AgSr(std::string aName) : name(aName), enabled(true) {}
-    inline operator std::string() const { return name; }
-    inline size_t size() const { return name.size(); }
-    inline bool operator==(const AgSr& a) const { return name == a.name; }
-    inline bool operator==(std::string a) const { return name == a; }
+    AgSr(std::string aName) : name(aName), enabled(true) {}
+    operator std::string() const { return name; }
+    size_t size() const { return name.size(); }
+    bool operator==(const AgSr& a) const { return name == a.name; }
+    bool operator==(std::string a) const { return name == a; }
 
     std::string name;
     bool enabled;
@@ -103,26 +105,27 @@ class ChartData
     using titer_iterator = std::vector<TiterData>::const_iterator;
     using range = std::pair<titer_iterator, titer_iterator>;
 
-    inline ChartData() : mYAxisLabels{"5", "10", "20", "40", "80", "160", "320", "640", "1280", "2560", "5120", "10240", "20480", "40960"} {}
+    ChartData() : mYAxisLabels{"5", "10", "20", "40", "80", "160", "320", "640", "1280", "2560", "5120", "10240", "20480", "40960"} {}
 
     size_t add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existing);
     size_t add_serum(acmacs::chart::SerumP aSerum, bool only_existing);
     size_t add_table(acmacs::chart::ChartP aChart);
-    inline void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
+    void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
 
     void make_antigen_serum_data(size_t aMinNumberOfTables);
     void plot(std::string output_filename, bool for_ref_in_last_table_only);
 
-    inline size_t number_of_antigens() const { return mAntigens.size(); }
-    inline size_t number_of_sera() const { return mSera.size(); }
-    inline size_t number_of_enabled_antigens() const { return std::accumulate(mAntigens.begin(), mAntigens.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
-    inline size_t number_of_enabled_sera() const { return std::accumulate(mSera.begin(), mSera.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
-    inline size_t number_of_tables() const { return mTables.size(); }
-    inline const AgSr& antigen(size_t antigen_no) const { return mAntigens[antigen_no]; }
-    inline const AgSr& serum(size_t serum_no) const { return mSera[serum_no]; }
-    inline AgSr& serum(size_t serum_no) { return mSera[serum_no]; }
-    inline size_t longest_serum_name() const { return std::max_element(mSera.begin(), mSera.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
-    inline size_t longest_antigen_name() const { return std::max_element(mAntigens.begin(), mAntigens.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
+    size_t number_of_antigens() const { return mAntigens.size(); }
+    size_t number_of_sera() const { return mSera.size(); }
+    size_t number_of_enabled_antigens() const { return std::accumulate(mAntigens.begin(), mAntigens.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
+    size_t number_of_enabled_sera() const { return std::accumulate(mSera.begin(), mSera.end(), 0U, [](size_t acc, auto& elt) { return elt.enabled ? (acc + 1) : acc; }); }
+    size_t number_of_tables() const { return mTables.size(); }
+    size_t first_table_no() const;
+    const AgSr& antigen(size_t antigen_no) const { return mAntigens[antigen_no]; }
+    const AgSr& serum(size_t serum_no) const { return mSera[serum_no]; }
+    AgSr& serum(size_t serum_no) { return mSera[serum_no]; }
+    size_t longest_serum_name() const { return std::max_element(mSera.begin(), mSera.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
+    size_t longest_antigen_name() const { return std::max_element(mAntigens.begin(), mAntigens.end(), [](const auto& a, const auto& b) { return a.size() < b.size(); })->size(); }
     range find_range(size_t aSerum, size_t aAntigen) const;
     acmacs::chart::Titer median(const range& aRange) const;
 
@@ -138,15 +141,15 @@ class ChartData
     std::vector<std::string> mYAxisLabels;
 
     friend std::ostream& operator << (std::ostream& out, const ChartData& aData);
-    inline void sort_titers_by_serum_antigen() { std::sort(mTiters.begin(), mTiters.end()); }
+    void sort_titers_by_serum_antigen() { std::sort(mTiters.begin(), mTiters.end()); }
 
-    inline size_t titer_index_in_sAllTiters(acmacs::chart::Titer aTiter) const
+    size_t titer_index_in_sAllTiters(acmacs::chart::Titer aTiter) const
         {
             const auto iter = std::find(std::begin(sAllTiters), std::end(sAllTiters), aTiter);
             return static_cast<size_t>(iter - std::begin(sAllTiters));
         }
 
-    inline Color color_for_titer(acmacs::chart::Titer aTiter, size_t aMedianIndex) const
+    Color color_for_titer(acmacs::chart::Titer aTiter, size_t aMedianIndex) const
         {
             const auto titer_index = titer_index_in_sAllTiters(aTiter);
             if (aMedianIndex == sNumberOfAllTiters || titer_index == sNumberOfAllTiters)
@@ -154,7 +157,7 @@ class ChartData
             return sMedianTiterColors[aMedianIndex][titer_index];
         }
 
-    inline void text(acmacs::surface::Surface& aSurface, const acmacs::Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
+    void text(acmacs::surface::Surface& aSurface, const acmacs::Location& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
         {
             const auto size = aSurface.text_size(aText, Scaled{aFontSize});
             if (size.width > aMaxWidth)
@@ -162,8 +165,8 @@ class ChartData
             aSurface.text(aOffset, aText, aColor, Scaled{aFontSize}, acmacs::TextStyle(), aRotation);
         }
 
-    void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters);
-    void plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters);
+    void plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters, size_t first_tab_no);
+    void plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters, size_t first_tab_no);
 
     void disable_antigens_sera(size_t aMinNumberOfTables);
 };
@@ -362,7 +365,7 @@ void ChartData::make_antigen_serum_data(size_t aMinNumberOfTables)
                 const auto median_titer = median(range);
                 auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
                 ag_sr_data.median = std::make_pair(median_titer, mTiterLevel[median_titer]);
-                for (size_t table_no = 0; table_no < number_of_tables(); ++ table_no) {
+                for (size_t table_no = 0; table_no < number_of_tables(); ++table_no) {
                     if (range.first != range.second && range.first->table == table_no) {
                         ag_sr_data.titer_per_table.emplace_back(range.first->titer, mTiterLevel[range.first->titer]);
                         ++range.first;
@@ -403,9 +406,24 @@ void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
 
 // ----------------------------------------------------------------------
 
+size_t ChartData::first_table_no() const
+{
+    size_t first = 1000;
+    for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
+        for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
+            first = std::min(first, mAntigenSerumData[antigen_no][serum_no].first_table_no());
+        }
+    }
+    return first;
+
+} // ChartData::first_table_no
+
+// ----------------------------------------------------------------------
+
 ChartData::range ChartData::find_range(size_t aSerum, size_t aAntigen) const
 {
-    return std::make_pair(std::lower_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, 0)), std::upper_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, number_of_tables())));
+    return std::make_pair(std::lower_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, 0)),
+                          std::upper_bound(mTiters.begin(), mTiters.end(), TiterData(aAntigen, aSerum, number_of_tables())));
 
 } // ChartData::find_range
 
@@ -464,7 +482,7 @@ void ChartData::plot(std::string output_filename, bool for_ref_in_last_table_onl
 {
     const size_t ns = number_of_enabled_sera(), na = number_of_enabled_antigens();
     std::cout << "Enabled: antigens: " << na << " sera: " << ns << std::endl;
-    CellParameters cell_parameters{number_of_tables(), mTiterLevel.size()};
+    CellParameters cell_parameters{number_of_tables() - first_table_no(), mTiterLevel.size()};
     const double title_height = cell_parameters.vstep * 0.5;
 
     const acmacs::Viewport cell_viewport{acmacs::Size{cell_parameters.hstep, cell_parameters.vstep}};
@@ -473,18 +491,19 @@ void ChartData::plot(std::string output_filename, bool for_ref_in_last_table_onl
 
     std::string title;
     if (for_ref_in_last_table_only)
-        title = mLab + " " + mVirusType + " " + mAssay + " " + mLastDate + "  previous tables:" + std::to_string(number_of_tables() - 1) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
+        title = mLab + " " + mVirusType + " " + mAssay + " " + mLastDate + "  previous tables:" + std::to_string(number_of_tables() - first_table_no() - 1) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
     else
-        title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
+        title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables() - first_table_no()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
     text(surface, {title_height, title_height * 0.7}, title, BLACK, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
 
+    const auto first_tab_no = first_table_no();
     for (size_t antigen_no = 0, enabled_antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         if (mAntigens[antigen_no].enabled) {
             for (size_t serum_no = 0, enabled_serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
                 if (mSera[serum_no].enabled) {
                     acmacs::surface::Surface& cell = surface.subsurface({enabled_serum_no * cell_parameters.hstep, enabled_antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
-                      //plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters);
-                    plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters);
+                      //plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters, first_tab_no);
+                    plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters, first_tab_no);
                     ++enabled_serum_no;
                 }
             }
@@ -496,7 +515,7 @@ void ChartData::plot(std::string output_filename, bool for_ref_in_last_table_onl
 
 // ----------------------------------------------------------------------
 
-void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters)
+void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters, size_t first_tab_no)
 {
     const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
     const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
@@ -511,7 +530,7 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acma
         aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, element.first, BLACK, Scaled{aParameters.cell_top_title_height / 2});
     }
 
-    double table_no = 2;
+    double table_no = 2 - static_cast<int>(first_tab_no);
     for (const auto& element: ag_sr_data.titer_per_table) {
         if (!element.first.is_dont_care()) { // do not draw dont-care titer
             const double symbol_top = aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level;
@@ -540,7 +559,7 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acma
 
 // ----------------------------------------------------------------------
 
-void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters)
+void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters, size_t first_tab_no)
 {
     const double logged_titer_step = (aParameters.vstep - aParameters.voffset_base - aParameters.cell_top_title_height) / mYAxisLabels.size();
 
@@ -566,7 +585,7 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
 
     const auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
     const size_t median_index = titer_index_in_sAllTiters(ag_sr_data.median.first);
-    double table_no = 2;
+    double table_no = 2 - static_cast<int>(first_tab_no);
     for (const auto& element: ag_sr_data.titer_per_table) {
         if (!element.first.is_dont_care()) { // do not draw dont-care titer
             const double titer = element.first.logged_with_thresholded();
