@@ -32,7 +32,7 @@ class Options
 class ChartData;
 
 static int get_args(int argc, const char *argv[], Options& aOptions);
-static void process_source(ChartData& aData, std::string filename);
+static void process_source(ChartData& aData, std::string filename, bool only_existing_antigens_sera);
 static void make_antigen_serum_set(ChartData& aData, std::string filename);
 
 // ----------------------------------------------------------------------
@@ -94,6 +94,8 @@ struct AgSr
     std::vector<size_t> homologous;
 };
 
+class AntigenSerumDoesNotPresent : public std::exception { public: using std::exception::exception; };
+
 class ChartData
 {
  public:
@@ -102,8 +104,8 @@ class ChartData
 
     inline ChartData() : mYAxisLabels{"5", "10", "20", "40", "80", "160", "320", "640", "1280", "2560", "5120", "10240", "20480", "40960"} {}
 
-    size_t add_antigen(acmacs::chart::AntigenP aAntigen);
-    size_t add_serum(acmacs::chart::SerumP aSerum);
+    size_t add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existing);
+    size_t add_serum(acmacs::chart::SerumP aSerum, bool only_existing);
     size_t add_table(acmacs::chart::ChartP aChart);
     inline void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
 
@@ -177,7 +179,7 @@ int main(int argc, const char *argv[])
             if (options.for_ref_in_last_table_only)
                 make_antigen_serum_set(data, options.source_charts.back());
             for (const auto& source_name: options.source_charts)
-                process_source(data, source_name);
+                process_source(data, source_name, options.for_ref_in_last_table_only);
             data.make_antigen_serum_data();
             std::cout << data << std::endl;
             data.plot(options.output_filename);
@@ -239,18 +241,18 @@ void make_antigen_serum_set(ChartData& aData, std::string filename)
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
     auto chart_antigens = chart->antigens();
     for (auto antigen_index_in_chart: chart_antigens->reference_indexes()) {
-        aData.add_antigen((*chart_antigens)[antigen_index_in_chart]);
+        aData.add_antigen((*chart_antigens)[antigen_index_in_chart], false);
     }
     auto chart_sera = chart->sera();
     for (size_t serum_no = 0; serum_no < chart_sera->size(); ++serum_no) {
-        aData.add_serum((*chart_sera)[serum_no]);
+        aData.add_serum((*chart_sera)[serum_no], false);
     }
 
 } // make_antigen_serum_set
 
 // ----------------------------------------------------------------------
 
-void process_source(ChartData& aData, std::string filename)
+void process_source(ChartData& aData, std::string filename, bool only_existing_antigens_sera)
 {
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
@@ -259,17 +261,25 @@ void process_source(ChartData& aData, std::string filename)
     auto chart_antigens = chart->antigens();
     auto chart_sera = chart->sera();
     auto chart_titers = chart->titers();
-    for (auto antigen_index_in_chart: chart_antigens->reference_indexes()) {
-        antigens[antigen_index_in_chart] = aData.add_antigen((*chart_antigens)[antigen_index_in_chart]);
+    for (auto antigen_index_in_chart : chart_antigens->reference_indexes()) {
+        try {
+            antigens[antigen_index_in_chart] = aData.add_antigen((*chart_antigens)[antigen_index_in_chart], only_existing_antigens_sera);
+        }
+        catch (AntigenSerumDoesNotPresent&) {
+        }
     }
     for (size_t serum_no = 0; serum_no < chart_sera->size(); ++serum_no) {
-        const size_t serum_index_in_data = aData.add_serum((*chart_sera)[serum_no]);
-        for (const auto& antigen: antigens) {
-            // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) << std::endl;
-            aData.add_titer(antigen.second, serum_index_in_data, table_no, chart_titers->titer(antigen.first, serum_no));
+        try {
+            const size_t serum_index_in_data = aData.add_serum((*chart_sera)[serum_no], only_existing_antigens_sera);
+            for (const auto& antigen : antigens) {
+                // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) << std::endl;
+                aData.add_titer(antigen.second, serum_index_in_data, table_no, chart_titers->titer(antigen.first, serum_no));
+            }
+            for (size_t homologous_antigen : (*chart_sera)[serum_no]->homologous_antigens()) {
+                aData.serum(serum_index_in_data).homologous.push_back(antigens[homologous_antigen]);
+            }
         }
-        for (size_t homologous_antigen: (*chart_sera)[serum_no]->homologous_antigens()) {
-            aData.serum(serum_index_in_data).homologous.push_back(antigens[homologous_antigen]);
+        catch (AntigenSerumDoesNotPresent&) {
         }
     }
 
@@ -277,12 +287,14 @@ void process_source(ChartData& aData, std::string filename)
 
 // ======================================================================
 
-size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen)
+size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existing)
 {
     const std::string name = aAntigen->full_name();
     const auto pos = std::find(mAntigens.begin(), mAntigens.end(), name);
     size_t result = static_cast<size_t>(pos - mAntigens.begin());
     if (pos == mAntigens.end()) {
+        if (only_existing)
+            throw AntigenSerumDoesNotPresent{};
         mAntigens.emplace_back(name);
         result = mAntigens.size() - 1;
     }
@@ -292,12 +304,14 @@ size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen)
 
 // ----------------------------------------------------------------------
 
-size_t ChartData::add_serum(acmacs::chart::SerumP aSerum)
+size_t ChartData::add_serum(acmacs::chart::SerumP aSerum, bool only_existing)
 {
     const std::string name = aSerum->full_name_without_passage();
     const auto pos = std::find(mSera.begin(), mSera.end(), name);
     size_t result = static_cast<size_t>(pos - mSera.begin());
     if (pos == mSera.end()) {
+        if (only_existing)
+            throw AntigenSerumDoesNotPresent{};
         mSera.emplace_back(name);
         result = mSera.size() - 1;
     }
