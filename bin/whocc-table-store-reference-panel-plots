@@ -100,7 +100,6 @@ def plot_soures(sources, chunk_size, output_dir, num_recent_table_plots):
                 if len(v3) > 9:
                     plots = plot_source_set(key="-".join([subtype, lab, rbc]), sources=v3, chunk_size=chunk_size, output_dir=output_dir, num_recent_table_plots=num_recent_table_plots)
                     plotted_data.setdefault(subtype, {}).setdefault(lab, {})[rbc] = plots
-                    return plotted_data
     # pprint.pprint(plotted_data)
     return plotted_data
 
@@ -154,7 +153,7 @@ def plot_one_table(key, table_no, sources, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
     output_filename = "{}-one-{:02d}-{}.pdf".format(key, table_no, d1)
     # module_logger.info("one table {} <-- ({}) '{}'".format(output_dir.joinpath(output_filename), table_no + 1, "' '".join(str(s) for s in sources[:table_no + 1])))
-    module_logger.info("one table {}".format(output_dir.joinpath(output_filename)))
+    # module_logger.info("one table {}".format(output_dir.joinpath(output_filename)))
     subprocess.check_call("~/AD/bin/whocc-reference-panel-plots --last --min-tables 2 '{}' '{}'".format(output_dir.joinpath(output_filename), "' '".join(str(s) for s in sources[:table_no + 1])), shell=True)
     return {"name": output_filename, "d1": d1, "d2": "one", "num": 1}
 
