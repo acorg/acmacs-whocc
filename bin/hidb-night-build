@@ -33,6 +33,7 @@ echo "=================================================================="
 date
 echo Updating ACMACSD packages
 ${ACMACSD_ROOT}/sources/acmacs-build/bin/install-acmacs-d --source ${ACMACSD_ROOT} --target ${ACMACSD_ROOT} --dev-release --acorg-only
+install-apache-mod-acmacs
 
 echo "=================================================================="
 echo Updating ace-store
@@ -43,6 +44,7 @@ whocc-update-ace-store
 
 echo "=================================================================="
 whocc-hidb5-update
+
 
 echo "----------------------------------------------------------------------"
 
