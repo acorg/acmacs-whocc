@@ -2,7 +2,7 @@
 # -*- Python -*-
 # ======================================================================
 
-import sys, os, json, socket
+import sys, os, json, socket, subprocess
 from pathlib import Path
 # sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
@@ -14,6 +14,8 @@ ROOT_DIR = None
 def main(args):
     # if socket.gethostname() != "i19":
     #     raise RuntimeError("The script must be run on i19")
+    if not os.getenv("ACMACSD_ROOT") or not Path(os.getenv("ACMACSD_ROOT"), "data", "hidb5.h1.json.xz"):
+        raise RuntimeError("ACMACSD_ROOT not set or no hidb in $ACMACSD_ROOT/data")
     global ROOT_DIR, STATE_FILE
     ROOT_DIR = Path("/syn/eu/ac/results/whocc-tree", args.tag)
     STATE_FILE = ROOT_DIR.joinpath("state.json")
@@ -25,6 +27,7 @@ def main(args):
 
 def initialize():
     ROOT_DIR.mkdir(parents=True)
+    ROOT_DIR.joinpath("log").mkdir()
     state = {"state": "init", "subtypes": ["H1", "H3", "BV", "BY"]}
     save_state(state)
 
@@ -39,6 +42,21 @@ def run():
 # ----------------------------------------------------------------------
 
 def state_init(state):
+    if not ROOT_DIR.joinpath("seqdb.json.xz").exists():
+        state["state"] = "make_seqdb"
+    else:
+        raise NotImplementedError()
+
+# ----------------------------------------------------------------------
+
+def state_make_seqdb(state):
+    module_logger.info("making seqdb (~5min)")
+    subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-create"), "--db", ROOT_DIR.joinpath("seqdb.json.xz"), "--match-hidb", "--clades", os.path.expandvars("${HOME}/ac/tables-store/sequences/*.fas.bz2")], stdout=ROOT_DIR.joinpath("log", "seqdb-create.log").open("w"), stderr=subprocess.STDOUT)
+    state["state"] = "export_sequences"
+
+# ----------------------------------------------------------------------
+
+def state_export_sequences(state):
     raise NotImplementedError()
 
 # ----------------------------------------------------------------------
