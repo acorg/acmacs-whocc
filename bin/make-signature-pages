@@ -2,6 +2,9 @@
 # -*- Python -*-
 # ======================================================================
 
+# States
+# init, make_seqdb, export_sequences, make_trees_init, make_trees_update_config
+
 import sys, os, json, socket, subprocess
 from pathlib import Path
 # sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
@@ -10,6 +13,8 @@ import logging; module_logger = logging.getLogger(__name__)
 # ======================================================================
 
 ROOT_DIR = None
+CONFIG = None
+STATE_FILE = None
 
 def main(args):
     # if socket.gethostname() != "i19":
@@ -19,14 +24,14 @@ def main(args):
     global ROOT_DIR, STATE_FILE
     ROOT_DIR = Path("/syn/eu/ac/results/whocc-tree", args.tag)
     STATE_FILE = ROOT_DIR.joinpath("state.json")
-    if not ROOT_DIR.exists():
+    if not ROOT_DIR.exists() or not STATE_FILE.exists():
         initialize()
     run()
 
 # ----------------------------------------------------------------------
 
 def initialize():
-    ROOT_DIR.mkdir(parents=True)
+    ROOT_DIR.mkdir(parents=True, exist_ok=True)
     ROOT_DIR.joinpath("log").mkdir()
     state = {"state": "init", "subtypes": ["H1", "H3", "BV", "BY"]}
     save_state(state)
@@ -34,9 +39,13 @@ def initialize():
 # ----------------------------------------------------------------------
 
 def run():
+    global CONFIG
+    CONFIG = json.load(Path(os.getenv("ACMACSD_ROOT"), "sources", "acmacs-whocc", "conf", "make-signature-pages.config.json").open("r"))
     state = load_state()
     while True:
-        globals()["state_" + state["state"]](state)
+        current_state = state["state"]
+        state["state"] = "fail"
+        globals()["state_" + current_state](state)
         save_state(state)
 
 # ----------------------------------------------------------------------
@@ -50,29 +59,56 @@ def state_init(state):
 # ----------------------------------------------------------------------
 
 def state_make_seqdb(state):
-    module_logger.info("making seqdb (~5min)")
-    subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-create"), "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")), "--match-hidb", "--clades", os.path.expandvars("${HOME}/ac/tables-store/sequences/*.fas.bz2")], stdout=ROOT_DIR.joinpath("log", "seqdb-create.log").open("w"), stderr=subprocess.STDOUT)
+    module_logger.info("making seqdb (~7min)")
+    cmd = [
+        os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-create"),
+        "--db", ROOT_DIR.joinpath("seqdb.json.xz"),
+        "--match-hidb", "--clades",
+        os.path.expandvars("${HOME}/ac/tables-store/sequences/*.fas.bz2")
+        ]
+    subprocess.check_call([str(field) for field in cmd], stdout=ROOT_DIR.joinpath("log", "seqdb-create.log").open("w"), stderr=subprocess.STDOUT)
     state["state"] = "export_sequences"
 
 # ----------------------------------------------------------------------
 
+sSeqdbExportFlu = {"H1": "h1", "H3": "h3", "BV": "bvic", "BY": "byam"}
+
 def state_export_sequences(state):
     log = ROOT_DIR.joinpath("log", "seqdb-export.log").open("w")
-    data = {
-        "H1": {"flu": "h1",   "base_seq": "SWITZERLAND/9772556/2013 SIAT2"},
-        "H3": {"flu": "h3",   "base_seq": "HAWAII/22/2012 MDCK"},
-        "BV": {"flu": "bvic", "base_seq": "VICTORIA/830/2013 MDCK2"},
-        "BY": {"flu": "byam", "base_seq": "CHRISTCHURCH/503/2013 MDCK1"}
-        }
     for subtype in state["subtypes"]:
+        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+        output_dir.mkdir(parents=True, exist_ok=True)
         module_logger.info("exporting fasta for %s", subtype)
-        subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"), "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")), "--flu", data[subtype]["flu"], "--recent", "4000", "--hamming-distance-threshold", "160", "--tree-maker", "--base-seq", data[subtype]["base_seq"], str(ROOT_DIR.joinpath(subtype + ".fas"))], stdout=log, stderr=subprocess.STDOUT)
-    state["state"] = "make_trees_start"
+        cmd = [
+            os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"),
+            "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")),
+            "--flu", sSeqdbExportFlu[subtype],
+            "--recent", CONFIG[subtype]["sequences"]["recent"],
+            "--hamming-distance-threshold", CONFIG[subtype]["sequences"]["hamming_distance_threshold"],
+            "--tree-maker",
+            "--base-seq", CONFIG[subtype]["sequences"]["base"],
+            output_dir.joinpath("source.fas")
+            ]
+        subprocess.check_call([str(field) for field in cmd], stdout=log, stderr=subprocess.STDOUT)
+    state["state"] = "make_trees_init"
 
 # ----------------------------------------------------------------------
 
-def state_make_trees_start(state):
-    raise NotImplementedError()
+def state_make_trees_init(state):
+    module_logger.info("initializing tree-maker")
+    log = ROOT_DIR.joinpath("log", "tree-maker.log").open("a")
+    for subtype in state["subtypes"]:
+        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+        subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", str(output_dir), "init"], stdout=log, stderr=subprocess.STDOUT)
+    state["state"] = "make_trees_update_config"
+
+# ----------------------------------------------------------------------
+
+def state_make_trees_update_config(state):
+    module_logger.info("updating configs for tree-maker")
+    for subtype in state["subtypes"]:
+        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+        config = json.load(output_dir.joinpath("tree-maker.config").open())
 
 # ----------------------------------------------------------------------
 
