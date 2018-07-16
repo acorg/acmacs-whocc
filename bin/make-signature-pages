@@ -5,7 +5,7 @@
 # States
 # init, make_seqdb, export_sequences, make_trees_init, make_trees_update_config
 
-import sys, os, json, socket, subprocess
+import sys, os, json, socket, subprocess, copy
 from pathlib import Path
 # sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def main(args):
 def initialize():
     ROOT_DIR.mkdir(parents=True, exist_ok=True)
     ROOT_DIR.joinpath("log").mkdir()
-    state = {"state": "init", "subtypes": ["H1", "H3", "BV", "BY"]}
+    state = {"state": "init", "tree_maker": "week", "tree_maker?": ["week", "day"], "subtypes": ["H1", "H3", "BV", "BY"]}
     save_state(state)
 
 # ----------------------------------------------------------------------
@@ -44,9 +44,10 @@ def run():
     state = load_state()
     while True:
         current_state = state["state"]
-        state["state"] = "fail"
         globals()["state_" + current_state](state)
         save_state(state)
+        if current_state == state["state"]:
+            raise RuntimeError("state not changed from " + current_state)
 
 # ----------------------------------------------------------------------
 
@@ -108,12 +109,16 @@ def state_make_trees_update_config(state):
     module_logger.info("updating configs for tree-maker")
     for subtype in state["subtypes"]:
         output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
-        config = json.load(output_dir.joinpath("tree-maker.config").open())
+        config_file = output_dir.joinpath("tree-maker.config")
+        config = json.load(config_file.open())
+        config_file.rename(output_dir.joinpath("tree-maker.orig.config"))
+        config.update(CONFIG[subtype]["tree_maker"][state["tree_maker"]])
+        json.dump(config, config_file.open("w"), indent=2, sort_keys=True)
 
 # ----------------------------------------------------------------------
 
-def state_fail(state):
-    raise NotImplementedError("state fail")
+# def state_fail(state):
+#     raise NotImplementedError("state fail")
 
 # ----------------------------------------------------------------------
 

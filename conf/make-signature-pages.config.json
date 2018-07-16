@@ -1,14 +1,27 @@
 {
     "H1": {
-        "sequences": {"base": "SWITZERLAND/9772556/2013 SIAT2", "recent": 4000, "hamming_distance_threshold": 160}
+        "sequences": {"base": "SWITZERLAND/9772556/2013 SIAT2", "recent": 4000, "hamming_distance_threshold": 160},
+        "tree_maker": {
+            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_num_runs": 256, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
+        }
     },
     "H3": {
-        "sequences": {"base": "HAWAII/22/2012 MDCK", "recent": 4000, "hamming_distance_threshold": 160}
+        "sequences": {"base": "HAWAII/22/2012 MDCK", "recent": 4000, "hamming_distance_threshold": 160},
+        "tree_maker": {
+            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_num_runs": 256, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
+        }
     },
     "BV": {
-        "sequences": {"base": "VICTORIA/830/2013 MDCK2", "recent": 4000, "hamming_distance_threshold": 160}
+        "sequences": {"base": "VICTORIA/830/2013 MDCK2", "recent": 4000, "hamming_distance_threshold": 160},
+        "tree_maker": {
+            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_num_runs": 256, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
+        }
     },
     "BY": {
-        "sequences": {"base": "CHRISTCHURCH/503/2013 MDCK1", "recent": 4000, "hamming_distance_threshold": 160}
+        "sequences": {"base": "CHRISTCHURCH/503/2013 MDCK1", "recent": 4000, "hamming_distance_threshold": 160},
+        "tree_maker": {
+            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_num_runs": 256, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "day": {"garli_num_runs": 8, "garli_stoptime": 86400, "raxml_num_runs": 8, "raxml_model_optimization_precision": 0.01, "raxml_num_runs": 256, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
+        }
     }
 }
