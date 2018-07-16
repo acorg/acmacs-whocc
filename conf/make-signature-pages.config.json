@@ -1,0 +1,14 @@
+{
+    "H1": {
+        "sequences": {"base": "SWITZERLAND/9772556/2013 SIAT2", "recent": 4000, "hamming_distance_threshold": 160}
+    },
+    "H3": {
+        "sequences": {"base": "HAWAII/22/2012 MDCK", "recent": 4000, "hamming_distance_threshold": 160}
+    },
+    "BV": {
+        "sequences": {"base": "VICTORIA/830/2013 MDCK2", "recent": 4000, "hamming_distance_threshold": 160}
+    },
+    "BY": {
+        "sequences": {"base": "CHRISTCHURCH/503/2013 MDCK1", "recent": 4000, "hamming_distance_threshold": 160}
+    }
+}
