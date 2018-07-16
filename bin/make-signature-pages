@@ -65,8 +65,8 @@ def state_export_sequences(state):
         "BY": {"flu": "byam", "base_seq": "CHRISTCHURCH/503/2013 MDCK1"}
         }
     for subtype in state["subtypes"]:
-        module_logger.info("exporting fasta for {}", subtype)
-        subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"), "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")), "--flu", data[subtype]["flu"], "--recent", "4000" "--hamming-distance-threshold", "160", "--tree-maker", "--base-seq", data[subtype]["base_seq"], str(ROOT_DIR.joinpath(subtype + ".fas"))], stdout=log, stderr=subprocess.STDOUT)
+        module_logger.info("exporting fasta for %s", subtype)
+        subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"), "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")), "--flu", data[subtype]["flu"], "--recent", "4000", "--hamming-distance-threshold", "160", "--tree-maker", "--base-seq", data[subtype]["base_seq"], str(ROOT_DIR.joinpath(subtype + ".fas"))], stdout=log, stderr=subprocess.STDOUT)
     state["state"] = "make_trees_start"
 
 # ----------------------------------------------------------------------
