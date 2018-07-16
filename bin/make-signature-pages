@@ -3,9 +3,10 @@
 # ======================================================================
 
 # States
-# init, make_seqdb, export_sequences, make_trees_init, make_trees_update_config
+# init, make_seqdb, export_sequences,
+# make_trees_init, make_trees_update_config, make_trees_wait, make_trees_done
 
-import sys, os, json, socket, subprocess, copy
+import sys, os, json, socket, subprocess, time
 from pathlib import Path
 # sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
@@ -15,6 +16,8 @@ import logging; module_logger = logging.getLogger(__name__)
 ROOT_DIR = None
 CONFIG = None
 STATE_FILE = None
+
+class Error (Exception): pass
 
 def main(args):
     # if socket.gethostname() != "i19":
@@ -47,7 +50,7 @@ def run():
         globals()["state_" + current_state](state)
         save_state(state)
         if current_state == state["state"]:
-            raise RuntimeError("state not changed from " + current_state)
+            raise Error("state not changed from " + current_state)
 
 # ----------------------------------------------------------------------
 
@@ -114,11 +117,46 @@ def state_make_trees_update_config(state):
         config_file.rename(output_dir.joinpath("tree-maker.orig.config"))
         config.update(CONFIG[subtype]["tree_maker"][state["tree_maker"]])
         json.dump(config, config_file.open("w"), indent=2, sort_keys=True)
+    state["state"] = "make_trees_wait"
 
 # ----------------------------------------------------------------------
 
-# def state_fail(state):
-#     raise NotImplementedError("state fail")
+def state_make_trees_wait(state):
+    module_logger.info("running tree-maker")
+    log = ROOT_DIR.joinpath("log", "tree-maker.log").open("a")
+    procs = {}
+    for subtype in state["subtypes"]:
+        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+        procs[subtype] = subprocess.Popen([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", str(output_dir), "wait"], stdout=log, stderr=subprocess.STDOUT)
+    while procs:
+        time.sleep(60)
+        done = []
+        for subtype, proc in procs.items():
+            try:
+                proc.communicate(timeout=1)
+                if proc.returncode != 0:
+                    module_logger.warning("tree-maker for {} FAILED with code {}".format(subtype, proc.returncode))
+                    state["state"] = "fail"
+                    state["failure_message"] = "tree-maker for {} FAILED with code {}".format(subtype, proc.returncode)
+                else:
+                    module_logger.info("tree-maker for {} completed".format(subtype))
+                done.append(subtype)
+            except subprocess.TimeoutExpired:
+                pass
+        for subtype in done:
+            del procs[subtype]
+    if state["state"] != "fail":
+        state["state"] = "make_trees_done"
+
+# ----------------------------------------------------------------------
+
+def state_make_trees_done(state):
+    module_logger.info("making trees done")
+
+# ----------------------------------------------------------------------
+
+def state_fail(state):
+    raise Error("state fail: " + state.get("failure_message", "no message"))
 
 # ----------------------------------------------------------------------
 
@@ -143,6 +181,9 @@ try:
         args.loglevel = logging.DEBUG
     logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
     exit_code = main(args)
+except Error as err:
+    logging.error('{}\n{}'.format(err))
+    exit_code = 2
 except Exception as err:
     logging.error('{}\n{}'.format(err, traceback.format_exc()))
     exit_code = 1
