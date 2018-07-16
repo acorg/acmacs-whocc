@@ -51,13 +51,33 @@ def state_init(state):
 
 def state_make_seqdb(state):
     module_logger.info("making seqdb (~5min)")
-    subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-create"), "--db", ROOT_DIR.joinpath("seqdb.json.xz"), "--match-hidb", "--clades", os.path.expandvars("${HOME}/ac/tables-store/sequences/*.fas.bz2")], stdout=ROOT_DIR.joinpath("log", "seqdb-create.log").open("w"), stderr=subprocess.STDOUT)
+    subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-create"), "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")), "--match-hidb", "--clades", os.path.expandvars("${HOME}/ac/tables-store/sequences/*.fas.bz2")], stdout=ROOT_DIR.joinpath("log", "seqdb-create.log").open("w"), stderr=subprocess.STDOUT)
     state["state"] = "export_sequences"
 
 # ----------------------------------------------------------------------
 
 def state_export_sequences(state):
+    log = ROOT_DIR.joinpath("log", "seqdb-export.log").open("w")
+    data = {
+        "H1": {"flu": "h1",   "base_seq": "SWITZERLAND/9772556/2013 SIAT2"},
+        "H3": {"flu": "h3",   "base_seq": "HAWAII/22/2012 MDCK"},
+        "BV": {"flu": "bvic", "base_seq": "VICTORIA/830/2013 MDCK2"},
+        "BY": {"flu": "byam", "base_seq": "CHRISTCHURCH/503/2013 MDCK1"}
+        }
+    for subtype in state["subtypes"]:
+        module_logger.info("exporting fasta for {}", subtype)
+        subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"), "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")), "--flu", data[subtype]["flu"], "--recent", "4000" "--hamming-distance-threshold", "160", "--tree-maker", "--base-seq", data[subtype]["base_seq"], str(ROOT_DIR.joinpath(subtype + ".fas"))], stdout=log, stderr=subprocess.STDOUT)
+    state["state"] = "make_trees_start"
+
+# ----------------------------------------------------------------------
+
+def state_make_trees_start(state):
     raise NotImplementedError()
+
+# ----------------------------------------------------------------------
+
+def state_fail(state):
+    raise NotImplementedError("state fail")
 
 # ----------------------------------------------------------------------
 
