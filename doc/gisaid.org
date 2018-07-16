@@ -1,0 +1,35 @@
+#+STARTUP: showall
+Time-stamp: <2018-07-16 11:09:42 eu>
+* visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
+* Hold Cmd and click A and B in the Type.
+* Set COLLECTION date From to 2018-06-01 (or later depending on the number of isolates upon search, see below)
+* _Leave originating lab empty!_
+* Select **Submitting lab** them all using Cmd
+document.querySelectorAll("#ce_pb1g05_2j5_select")[0].style.height="3000px"
+
+   (Change height of the submitting lab <select> 500px)
+
+        [Australia, North Melbourne] WHO CC ...
+        [United Kingdom, London] National Institute for Medical Research
+        [United Kingdom, London] Crick
+        [United states, Atlanta] CDC
+        ? [China, Bejing] WHO Chinese National Influenza Center
+
+** Required segments: HA (checkbox to the left from HA)
+** Click Search. Total must not exceed 20k isolates (gisaid does not allow downloading more)
+** Click leftmost checkbox in header to select all
+** Click Download
+** Format: Sequences (DNA) as FASTA (second radio button)
+** DNA: HA (checkbox to the left from HA)
+** FASTA Header: Isolate name |  Collection date | Passage details/history |  Sample ID by submitting lab | Submitting lab | Type |  Lineage
+** Date format: YYYY-MM-DD
+** Click download
+** Install file: ~/AD/sources/ssm-report/bin/gisaid-fasta-install (just run it without arguments)
+** make seqdb from newly downloaded fasta file only just to check file content and hidb matching
+ad seqdb-create --db ~/tmp/seqdb.json.xz --match-hidb --clades --report-not-aligned-prefixes 32 --save-not-found-locations ~/tmp/not-found.txt $(ls -1t ~/ac/tables-store/sequences/gisaid-all-* | head -n 1); if [ -f ~/tmp/not-found.txt ]; then echo; echo 'WARNING: *** Not matched ***'; cat ~/tmp/not-found.txt; fi
+ad seqdb-info ~/tmp/seqdb.json.xz
+
+# ======================================================================
+### Local Variables:
+### eval: (add-hook 'before-save-hook 'time-stamp)
+### End:
