@@ -21,7 +21,8 @@
         "sequences": {"base": "CHRISTCHURCH/503/2013 MDCK1", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
             "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_num_runs": 256, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
-            "day": {"garli_num_runs": 8, "garli_stoptime": 86400, "raxml_num_runs": 8, "raxml_model_optimization_precision": 0.01, "raxml_num_runs": 8, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
+            "day": {"garli_num_runs": 8, "garli_stoptime": 86400, "raxml_num_runs": 8, "raxml_model_optimization_precision": 0.01, "raxml_num_runs": 8, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "?day 2018-07-17": "just BY with day completed in 23h, raxml: 5h, garli: 18h (/syn/eu/ac/results/whocc-tree/2018-0716)"
         }
     }
 }

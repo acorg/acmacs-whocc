@@ -143,6 +143,7 @@ def state_make_trees_wait(state):
                 done.append(subtype)
             except subprocess.TimeoutExpired:
                 pass
+        # if a subtype done, state["state"] = "make_trees_done", then return back to "make_trees_wait"
         for subtype in done:
             del procs[subtype]
     if state["state"] != "fail":
@@ -151,6 +152,11 @@ def state_make_trees_wait(state):
 # ----------------------------------------------------------------------
 
 def state_make_trees_done(state):
+    for subtype in state["subtypes"]:
+        tree_file = ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz")
+        # ad sigp tree.json.xz --no-draw --init-settings "subtype + .tree.settings.json"
+        # edit settings:
+        #   avoid long braches
     module_logger.info("making trees done")
 
 # ----------------------------------------------------------------------
