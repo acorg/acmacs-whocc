@@ -148,8 +148,7 @@ def state_make_trees_wait(state):
                 proc.communicate(timeout=1)
                 if proc.returncode != 0:
                     module_logger.warning("tree-maker for {} FAILED with code {}".format(subtype, proc.returncode))
-                    state["state"] = "fail"
-                    state["failure_message"] = "tree-maker for {} FAILED with code {}".format(subtype, proc.returncode)
+                    state["failure_messages"] = state.get("failure_messages", []) + ["tree-maker for {} FAILED with code {}".format(subtype, proc.returncode)]
                     _set_add(state["tree"]["failed"], subtype)
                 else:
                     module_logger.info("tree-maker for {} completed".format(subtype))
@@ -194,7 +193,7 @@ def state_make_trees_failed(state):
 # ----------------------------------------------------------------------
 
 def state_fail(state):
-    raise Error("state fail: " + state.get("failure_message", "no message"))
+    raise Error("state fail: " + state.get("failure_messages", ["no message"]).join("\n"))
 
 # ----------------------------------------------------------------------
 
@@ -243,7 +242,7 @@ try:
     logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
     exit_code = main(args)
 except Error as err:
-    logging.error('{}\n{}'.format(err))
+    logging.error(str(err))
     exit_code = 2
 except Exception as err:
     logging.error('{}\n{}'.format(err, traceback.format_exc()))
