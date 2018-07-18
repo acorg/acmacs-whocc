@@ -4,7 +4,7 @@
 
 # States
 # init, make_seqdb, export_sequences,
-# make_trees_init, make_trees_update_config, make_trees_wait, make_trees_done
+# make_trees_init, make_trees_update_config, make_trees_wait, make_trees_completed, make_trees_failed
 
 import sys, os, json, socket, subprocess, time
 from pathlib import Path
@@ -28,15 +28,19 @@ def main(args):
     ROOT_DIR = Path("/syn/eu/ac/results/whocc-tree", args.tag)
     STATE_FILE = ROOT_DIR.joinpath("state.json")
     if not ROOT_DIR.exists() or not STATE_FILE.exists():
-        initialize()
+        initialize(args)
     run()
 
 # ----------------------------------------------------------------------
 
-def initialize():
+def initialize(args):
     ROOT_DIR.mkdir(parents=True, exist_ok=True)
     ROOT_DIR.joinpath("log").mkdir()
-    state = {"state": "init", "tree_maker": "week", "tree_maker?": ["week", "day"], "subtypes": ["H1", "H3", "BV", "BY"]}
+    if args.subtype:
+        subtypes = [args.subtype]
+    else:
+        subtypes = ["H1", "H3", "BV", "BY"]
+    state = {"state": "init", "tree_maker": "day", "tree_maker?": ["week", "day"], "subtypes": subtypes, "tree": {"running": [], "completed": [], "failed": []}}
     save_state(state)
 
 # ----------------------------------------------------------------------
@@ -44,6 +48,8 @@ def initialize():
 def run():
     global CONFIG
     CONFIG = json.load(Path(os.getenv("ACMACSD_ROOT"), "sources", "acmacs-whocc", "conf", "make-signature-pages.config.json").open("r"))
+    # for to_remove in (subtype for subtype in CONFIG if subtype[0] == "?" or subtype[-1] == "?"):
+    #     del CONFIG[subtype]
     state = load_state()
     while True:
         current_state = state["state"]
@@ -70,7 +76,7 @@ def state_make_seqdb(state):
         "--match-hidb", "--clades",
         os.path.expandvars("${HOME}/ac/tables-store/sequences/*.fas.bz2")
         ]
-    subprocess.check_call([str(field) for field in cmd], stdout=ROOT_DIR.joinpath("log", "seqdb-create.log").open("w"), stderr=subprocess.STDOUT)
+    _system(cmd, "seqdb-create.log")
     state["state"] = "export_sequences"
 
 # ----------------------------------------------------------------------
@@ -93,7 +99,7 @@ def state_export_sequences(state):
             "--base-seq", CONFIG[subtype]["sequences"]["base"],
             output_dir.joinpath("source.fas")
             ]
-        subprocess.check_call([str(field) for field in cmd], stdout=log, stderr=subprocess.STDOUT)
+        _system(cmd, log)
     state["state"] = "make_trees_init"
 
 # ----------------------------------------------------------------------
@@ -103,7 +109,7 @@ def state_make_trees_init(state):
     log = ROOT_DIR.joinpath("log", "tree-maker.log").open("a")
     for subtype in state["subtypes"]:
         output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
-        subprocess.check_call([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", str(output_dir), "init"], stdout=log, stderr=subprocess.STDOUT)
+        _system([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", output_dir, "init"], log)
     state["state"] = "make_trees_update_config"
 
 # ----------------------------------------------------------------------
@@ -121,43 +127,66 @@ def state_make_trees_update_config(state):
 
 # ----------------------------------------------------------------------
 
+sTreeMakerProc = {}
+
 def state_make_trees_wait(state):
+    global sTreeMakerProc
     module_logger.info("running tree-maker")
     log = ROOT_DIR.joinpath("log", "tree-maker.log").open("a")
-    procs = {}
     for subtype in state["subtypes"]:
-        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
-        procs[subtype] = subprocess.Popen([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", str(output_dir), "wait"], stdout=log, stderr=subprocess.STDOUT)
-    while procs:
+        if subtype not in state["tree"]["running"] and subtype not in state["tree"]["completed"] and subtype not in state["tree"]["failed"]:
+            output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+            sTreeMakerProc[subtype] = subprocess.Popen([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", str(output_dir), "wait"], stdout=log, stderr=subprocess.STDOUT)
+            _set_add(state["tree"]["running"], subtype)
+    save_state(state)
+    while not state["tree"]["completed"] and sTreeMakerProc:
         time.sleep(60)
-        done = []
-        for subtype, proc in procs.items():
+        for subtype, proc in sTreeMakerProc.items():
             try:
                 proc.communicate(timeout=1)
                 if proc.returncode != 0:
                     module_logger.warning("tree-maker for {} FAILED with code {}".format(subtype, proc.returncode))
                     state["state"] = "fail"
                     state["failure_message"] = "tree-maker for {} FAILED with code {}".format(subtype, proc.returncode)
+                    _set_add(state["tree"]["failed"], subtype)
                 else:
                     module_logger.info("tree-maker for {} completed".format(subtype))
-                done.append(subtype)
+                    _set_add(state["tree"]["completed"], subtype)
+                _set_remove(state["tree"]["running"], subtype)
             except subprocess.TimeoutExpired:
                 pass
         # if a subtype done, state["state"] = "make_trees_done", then return back to "make_trees_wait"
-        for subtype in done:
-            del procs[subtype]
-    if state["state"] != "fail":
-        state["state"] = "make_trees_done"
+        for subtype in state["tree"]["completed"] + state["tree"]["failed"]:
+            del sTreeMakerProc[subtype]
+    if state["tree"]["completed"]:
+        state["state"] = "make_trees_completed"
+    elif state["tree"]["failed"]:
+        state["state"] = "make_trees_failed"
 
 # ----------------------------------------------------------------------
 
-def state_make_trees_done(state):
-    for subtype in state["subtypes"]:
-        tree_file = ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz")
-        # ad sigp tree.json.xz --no-draw --init-settings "subtype + .tree.settings.json"
+def state_make_trees_completed(state):
+    log = ROOT_DIR.joinpath("log", "sigp.log").open("a")
+    for subtype in state["tree"]["completed"]:
+        tree_file = ROOT_DIR.joinpath(subtype + ".tree.json.xz")
+        tree_file.symlink_to(ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz"))
+        settings_file = ROOT_DIR.joinpath(subtype + ".tree.settings.json")
+        _system([os.path.expandvars("${ACMACSD_ROOT}/bin/sigp"), tree_file, "--no-draw", "--init-settings", settings_file], log)
+        with settings_file.open("r") as fd:
+            settings = json.load(fd)
         # edit settings:
         #   avoid long braches
+        with settings_file.open("w") as fd:
+            json.dump(settings, fd)
+    state["tree"]["completed"] = []
+    if state["tree"]["running"]:
+        state["state"] = "make_trees_wait"
     module_logger.info("making trees done")
+
+# ----------------------------------------------------------------------
+
+def state_make_trees_failed(state):
+    raise Error("Making trees failed for: " + str(state["tree"]["failed"]))
 
 # ----------------------------------------------------------------------
 
@@ -172,6 +201,23 @@ def save_state(state):
 def load_state():
     return json.load(STATE_FILE.open("r"))
 
+def _set_add(data, to_add):
+    if to_add not in data:
+        data.append(to_add)
+
+def _set_remove(data, to_remove):
+    try:
+        data.remove(to_remove)
+    except ValueError:
+        pass
+
+def _system(cmd, log):
+    if isinstance(log, str):
+        log = ROOT_DIR.joinpath("log", log).open("w")
+    elif isinstance(log, Path):
+        log = log.open("w")
+    subprocess.check_call([str(field) for field in cmd], stdout=log, stderr=subprocess.STDOUT)
+
 # ----------------------------------------------------------------------
 
 import argparse, traceback
@@ -181,6 +227,7 @@ try:
     parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
     parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
     parser.add_argument('-t', '--tag', action='store', dest='tag', required=True)
+    parser.add_argument('-s', '--subtype', action='store', dest='subtype', default=None, help="run for this subtype only")
 
     args = parser.parse_args()
     if args.verbose:
