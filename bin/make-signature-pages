@@ -6,7 +6,7 @@
 # init, make_seqdb, export_sequences,
 # make_trees_init, make_trees_update_config, make_trees_wait, make_trees_completed, make_trees_failed
 
-import sys, os, json, socket, subprocess, time
+import sys, os, json, socket, subprocess, time, shutil
 from pathlib import Path
 # sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
@@ -40,8 +40,10 @@ def initialize(args):
         subtypes = [args.subtype]
     else:
         subtypes = ["H1", "H3", "BV", "BY"]
-    state = {"state": "init", "tree_maker": "day", "tree_maker?": ["week", "day"], "subtypes": subtypes, "tree": {"running": [], "completed": [], "failed": []}}
+    state = {"state": "init", "tree_maker": args.tree_maker_speed, "subtypes": subtypes, "tree": {"running": [], "completed": [], "failed": []}}
     save_state(state)
+    if args.seqdb:
+        shutil.copyfile(args.seqdb, str(_seqdb_file()))
 
 # ----------------------------------------------------------------------
 
@@ -61,10 +63,10 @@ def run():
 # ----------------------------------------------------------------------
 
 def state_init(state):
-    if not ROOT_DIR.joinpath("seqdb.json.xz").exists():
+    if not _seqdb_file().exists():
         state["state"] = "make_seqdb"
     else:
-        raise NotImplementedError()
+        state["state"] = "export_sequences"
 
 # ----------------------------------------------------------------------
 
@@ -171,7 +173,8 @@ def state_make_trees_completed(state):
         tree_file = ROOT_DIR.joinpath(subtype + ".tree.json.xz")
         tree_file.symlink_to(ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz"))
         settings_file = ROOT_DIR.joinpath(subtype + ".tree.settings.json")
-        _system([os.path.expandvars("${ACMACSD_ROOT}/bin/sigp"), tree_file, "--no-draw", "--init-settings", settings_file], log)
+        pdf_file = ROOT_DIR.joinpath(subtype + ".pdf")
+        _system([os.path.expandvars("${ACMACSD_ROOT}/bin/sigp"), tree_file, pdf_file, "--init-settings", settings_file], log) # "--no-draw",
         with settings_file.open("r") as fd:
             settings = json.load(fd)
         # edit settings:
@@ -201,6 +204,9 @@ def save_state(state):
 def load_state():
     return json.load(STATE_FILE.open("r"))
 
+def _seqdb_file():
+    return ROOT_DIR.joinpath("seqdb.json.xz")
+
 def _set_add(data, to_add):
     if to_add not in data:
         data.append(to_add)
@@ -228,6 +234,8 @@ try:
     parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
     parser.add_argument('-t', '--tag', action='store', dest='tag', required=True)
     parser.add_argument('-s', '--subtype', action='store', dest='subtype', default=None, help="run for this subtype only")
+    parser.add_argument('--seqdb', action='store', dest='seqdb', default=None, help="use the specified seqdb instead of making a new one")
+    parser.add_argument('--tree-maker-speed', action='store', dest='tree_maker_speed', default="week", help="\"week\", \"day\" or see ../conf/make-signature-pages.config.json")
 
     args = parser.parse_args()
     if args.verbose:
