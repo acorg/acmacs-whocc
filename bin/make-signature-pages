@@ -6,7 +6,7 @@
 # init, make_seqdb, export_sequences,
 # make_trees_init, make_trees_update_config, make_trees_wait, make_trees_completed, make_trees_failed
 
-import sys, os, json, socket, subprocess, time, shutil
+import sys, os, json, socket, subprocess, time, shutil, pprint
 from pathlib import Path
 # sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def initialize(args):
         subtypes = [args.subtype]
     else:
         subtypes = ["H1", "H3", "BV", "BY"]
-    state = {"state": "init", "tree_maker": args.tree_maker_speed, "subtypes": subtypes, "tree": {"running": [], "completed": [], "failed": []}}
+    state = {"state": "init", "tree_maker": args.tree_maker_speed, "subtypes": subtypes, "tree": {"running": [], "completed": [], "failed": [], "done": []}}
     save_state(state)
     if args.seqdb:
         shutil.copyfile(args.seqdb, str(_seqdb_file()))
@@ -136,13 +136,14 @@ def state_make_trees_wait(state):
     module_logger.info("running tree-maker")
     log = ROOT_DIR.joinpath("log", "tree-maker.log").open("a")
     for subtype in state["subtypes"]:
-        if subtype not in state["tree"]["running"] and subtype not in state["tree"]["completed"] and subtype not in state["tree"]["failed"]:
+        if (subtype not in sTreeMakerProc) and (subtype not in (state["tree"]["completed"] + state["tree"]["done"] + state["tree"]["failed"])):
+            module_logger.info("executing tree-maker wait for {}".format(subtype))
             output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
             sTreeMakerProc[subtype] = subprocess.Popen([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", str(output_dir), "wait"], stdout=log, stderr=subprocess.STDOUT)
             _set_add(state["tree"]["running"], subtype)
     save_state(state)
-    while not state["tree"]["completed"] and sTreeMakerProc:
-        time.sleep(60)
+    wait_for_tree_maker = bool(sTreeMakerProc)
+    while wait_for_tree_maker:
         for subtype, proc in sTreeMakerProc.items():
             try:
                 proc.communicate(timeout=1)
@@ -154,11 +155,17 @@ def state_make_trees_wait(state):
                     module_logger.info("tree-maker for {} completed".format(subtype))
                     _set_add(state["tree"]["completed"], subtype)
                 _set_remove(state["tree"]["running"], subtype)
+                save_state(state)
+                # pprint.pprint(state)
             except subprocess.TimeoutExpired:
                 pass
         # if a subtype done, state["state"] = "make_trees_done", then return back to "make_trees_wait"
         for subtype in state["tree"]["completed"] + state["tree"]["failed"]:
-            del sTreeMakerProc[subtype]
+            if subtype in sTreeMakerProc:
+                del sTreeMakerProc[subtype]
+                wait_for_tree_maker = False
+        if wait_for_tree_maker:
+            time.sleep(60)
     if state["tree"]["completed"]:
         state["state"] = "make_trees_completed"
     elif state["tree"]["failed"]:
@@ -170,7 +177,10 @@ def state_make_trees_completed(state):
     log = ROOT_DIR.joinpath("log", "sigp.log").open("a")
     for subtype in state["tree"]["completed"]:
         tree_file = ROOT_DIR.joinpath(subtype + ".tree.json.xz")
-        tree_file.symlink_to(ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz"))
+        try:
+            tree_file.symlink_to(ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz"))
+        except FileExistsError:
+            pass
         settings_file = ROOT_DIR.joinpath(subtype + ".tree.settings.json")
         pdf_file = ROOT_DIR.joinpath(subtype + ".pdf")
         _system([os.path.expandvars("${ACMACSD_ROOT}/bin/sigp"), tree_file, pdf_file, "--init-settings", settings_file], log) # "--no-draw",
@@ -180,7 +190,8 @@ def state_make_trees_completed(state):
         #   avoid long braches
         with settings_file.open("w") as fd:
             json.dump(settings, fd)
-    state["tree"]["completed"] = []
+        _set_add(state["tree"]["done"], subtype)
+        _set_remove(state["tree"]["completed"], subtype)
     if state["tree"]["running"]:
         state["state"] = "make_trees_wait"
     module_logger.info("making trees done")
