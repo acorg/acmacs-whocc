@@ -1,11 +1,10 @@
 #+STARTUP: showall
-Time-stamp: <2018-07-16 11:09:42 eu>
+Time-stamp: <2018-07-26 13:26:28 eu>
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 * Hold Cmd and click A and B in the Type.
-* Set COLLECTION date From to 2018-06-01 (or later depending on the number of isolates upon search, see below)
+* Set COLLECTION date From to 2018-01-01 (or later depending on the number of isolates upon search, see below)
 * _Leave originating lab empty!_
 * Select **Submitting lab** them all using Cmd
-document.querySelectorAll("#ce_pb1g05_2j5_select")[0].style.height="3000px"
 
    (Change height of the submitting lab <select> 500px)
 
