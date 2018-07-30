@@ -187,7 +187,7 @@ sCladeWidth = {"H1": 60, "H3": 200, "BV": 50, "BY": 50}
 def state_make_trees_completed(state):
     log = ROOT_DIR.joinpath("log", "sigp.log").open("a")
     sigp = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
-    for subtype in state["tree"]["completed"]:
+    for subtype in state["tree"]["completed"][:]: # clone list because it is modified at the end of the loop
         module_logger.info("making pdfs for " + subtype)
         tree_file = ROOT_DIR.joinpath(subtype + ".tree.json.xz")
         try:
@@ -243,7 +243,7 @@ sHtml = """
     </p>
     <{tag} class="horizontal" {src}="{pdf0}{toolbar}" ></{tag}>
     <h3>Split into HZ sections by amino acids</h3>
-    <p>If for given position there is long enough sequence of nodes having the same AA
+    <p>If for given position there is a long enough sequence of nodes having the same AA
        (interruption with few nodes having another AA is allowed),
        then boundaries of that sequences are used to generate HZ lines.
        Number at the left shows node index (for reference purposes), dotted line is a HZ line,
