@@ -195,8 +195,9 @@ def state_make_trees_completed(state):
         except FileExistsError:
             pass
         settings_file = ROOT_DIR.joinpath(subtype + ".tree.settings.json")
-        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".aa-at-pos.pdf"), "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[subtype], "--not-show-hz-sections"], log)
-        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".all-hz-sections.pdf"), "-s", settings_file], log)
+        pdfs = [ROOT_DIR.joinpath(subtype + ".aa-at-pos.pdf"), ROOT_DIR.joinpath(subtype + ".all-hz-sections.pdf"), ROOT_DIR.joinpath(subtype + ".pdf")]
+        _system([sigp, tree_file, pdfs[0], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[subtype], "--not-show-hz-sections"], log)
+        _system([sigp, tree_file, pdfs[1], "-s", settings_file], log)
 
         with settings_file.open("r") as fd:
             settings = json.load(fd)
@@ -209,12 +210,51 @@ def state_make_trees_completed(state):
         #   avoid long braches
         with settings_file.open("w") as fd:
             json.dump(settings, fd)
-        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".pdf"), "-s", settings_file], log)
+        _system([sigp, tree_file, pdfs[2], "-s", settings_file], log)
+        make_html(subtype, pdfs)
         _set_add(state["tree"]["done"], subtype)
         _set_remove(state["tree"]["completed"], subtype)
     if state["tree"]["running"]:
         state["state"] = "make_trees_wait"
     module_logger.info("making trees done")
+
+# ----------------------------------------------------------------------
+
+sHtml = """
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      object.horizontal {{ width: 1360px; height: 910px; }}
+      object.vertical {{ width: 565px; height: 870px; }}
+      p {{ width: 40em; }}
+    </style>
+    <title>{subtype}: split into HZ sections</title>
+  </head>
+  <body>
+    <h2>{subtype}: split into HZ sections</h2>
+    <h3>Amino acids at the most diverse positions</h3>
+    <p>Central part shows amino acids at the most diverse positions (from left to right, position numbers are at the bottom).
+    The most popular AA is transparent (not shown), the second most popular AA shown with red line, the third with yellow line.
+    Zoom in to see AA name in each line.
+    </p>
+    <{tag} class="horizontal" {src}="{pdf0}{toolbar}" ></{tag}>
+    <h3>Split into HZ sections by amino acids</h3>
+    <{tag} class="horizontal" {src}="{pdf1}{toolbar}" ></{tag}>
+    <h3>Tree with HZ sections</h3>
+    <{tag} class="vertical" {src}="{pdf2}{toolbar}" ></{tag}>
+    <br>
+  </body>
+</html>
+"""
+
+def make_html(subtype, pdfs):
+    for infix, tag, src, toolbar in [[".safari", "img", "src", ""], ["", "object", "data", ""]]: # "#toolbar=0"
+        output = ROOT_DIR.joinpath(subtype + infix + ".html")
+        module_logger.info("making https://notebooks.antigenic-cartography.org/eu/" + str(output).replace("/syn/eu/ac/", ""))
+        with output.open("w") as fd:
+            fd.write(sHtml.format(pdf0=pdfs[0].name, pdf1=pdfs[1].name, pdf2=pdfs[2].name, subtype=subtype, tag=tag, src=src, toolbar=toolbar))
 
 # ----------------------------------------------------------------------
 
