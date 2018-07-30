@@ -175,6 +175,15 @@ def state_make_trees_wait(state):
 
 sAAAtPosThreshold = {"H1": 100, "H3": 100, "BV": 100, "BY": 100}
 
+sTreeMods = {
+    "H1": [],
+    "H3": [{"d1": 0.04, "mod": "hide-if-cumulative-edge-length-bigger-than"}],
+    "BV": [],
+    "BY": []
+    }
+
+sCladeWidth = {"H1": 60, "H3": 100, "BV": 50, "BY": 50}
+
 def state_make_trees_completed(state):
     log = ROOT_DIR.joinpath("log", "sigp.log").open("a")
     sigp = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
@@ -186,9 +195,16 @@ def state_make_trees_completed(state):
         except FileExistsError:
             pass
         settings_file = ROOT_DIR.joinpath(subtype + ".tree.settings.json")
-        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".aa-at-pos.pdf"), "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[subtype]], log)
+        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".aa-at-pos.pdf"), "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[subtype], "--not-show-hz-sections"], log)
+        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".all-hz-sections.pdf"), "-s", settings_file], log)
+
         with settings_file.open("r") as fd:
             settings = json.load(fd)
+        settings["aa_at_pos"]["width"] = 0 #  hide aa-at-pos
+        settings["signature_page"]["layout"] = "tree-ts-clades"
+        settings["signature_page"]["time_series_width"] = 300
+        settings["signature_page"]["clades_width"] = sCladeWidth[subtype]
+        settings["tree"]["mods"] = sTreeMods[subtype]
         # edit settings:
         #   avoid long braches
         with settings_file.open("w") as fd:
