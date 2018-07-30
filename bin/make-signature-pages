@@ -173,23 +173,27 @@ def state_make_trees_wait(state):
 
 # ----------------------------------------------------------------------
 
+sAAAtPosThreshold = {"H1": 100, "H3": 100, "BV": 100, "BY": 100}
+
 def state_make_trees_completed(state):
     log = ROOT_DIR.joinpath("log", "sigp.log").open("a")
+    sigp = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
     for subtype in state["tree"]["completed"]:
+        module_logger.info("making pdfs for " + subtype)
         tree_file = ROOT_DIR.joinpath(subtype + ".tree.json.xz")
         try:
             tree_file.symlink_to(ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz"))
         except FileExistsError:
             pass
         settings_file = ROOT_DIR.joinpath(subtype + ".tree.settings.json")
-        pdf_file = ROOT_DIR.joinpath(subtype + ".pdf")
-        _system([os.path.expandvars("${ACMACSD_ROOT}/bin/sigp"), tree_file, pdf_file, "--init-settings", settings_file], log) # "--no-draw",
+        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".aa-at-pos.pdf"), "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[subtype]], log)
         with settings_file.open("r") as fd:
             settings = json.load(fd)
         # edit settings:
         #   avoid long braches
         with settings_file.open("w") as fd:
             json.dump(settings, fd)
+        _system([sigp, tree_file, ROOT_DIR.joinpath(subtype + ".pdf"), "-s", settings_file], log)
         _set_add(state["tree"]["done"], subtype)
         _set_remove(state["tree"]["completed"], subtype)
     if state["tree"]["running"]:
