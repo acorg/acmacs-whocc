@@ -182,7 +182,7 @@ sTreeMods = {
     "BY": []
     }
 
-sCladeWidth = {"H1": 60, "H3": 100, "BV": 50, "BY": 50}
+sCladeWidth = {"H1": 60, "H3": 200, "BV": 50, "BY": 50}
 
 def state_make_trees_completed(state):
     log = ROOT_DIR.joinpath("log", "sigp.log").open("a")
