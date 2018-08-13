@@ -34,7 +34,7 @@ date
 echo Updating ACMACSD packages
 ${ACMACSD_ROOT}/sources/acmacs-build/bin/install-acmacs-d --source ${ACMACSD_ROOT} --target ${ACMACSD_ROOT} --dev-release --acorg-only
 install-apache-mod-acmacs
-cd /syn/eu/acmacs-api-server && acmacs-api-server-restart settings.json
+acmacs-api-server-restart
 
 echo "=================================================================="
 echo Updating ace-store
