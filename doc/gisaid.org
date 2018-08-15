@@ -1,8 +1,8 @@
 #+STARTUP: showall
-Time-stamp: <2018-07-26 13:26:28 eu>
+Time-stamp: <2018-08-15 13:52:17 eu>
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 * Hold Cmd and click A and B in the Type.
-* Set COLLECTION date From to 2018-01-01 (or later depending on the number of isolates upon search, see below)
+* COLLECTION date: at least 1.5 years ago till 1 Feb next year (but gisaid does not allow downloading more than 20k sequences)
 * _Leave originating lab empty!_
 * Select **Submitting lab** them all using Cmd
 
@@ -23,9 +23,12 @@ Time-stamp: <2018-07-26 13:26:28 eu>
 ** FASTA Header: Isolate name |  Collection date | Passage details/history |  Sample ID by submitting lab | Submitting lab | Type |  Lineage
 ** Date format: YYYY-MM-DD
 ** Click download
+** Check for incorrect duplicates and perhaps fix them
+ad gisaid-fasta-merge /d/gisaid_epiflu_sequence.fasta >/dev/null
 ** Install file: ~/AD/sources/ssm-report/bin/gisaid-fasta-install (just run it without arguments)
 ** make seqdb from newly downloaded fasta file only just to check file content and hidb matching
-ad seqdb-create --db ~/tmp/seqdb.json.xz --match-hidb --clades --report-not-aligned-prefixes 32 --save-not-found-locations ~/tmp/not-found.txt $(ls -1t ~/ac/tables-store/sequences/gisaid-all-* | head -n 1); if [ -f ~/tmp/not-found.txt ]; then echo; echo 'WARNING: *** Not matched ***'; cat ~/tmp/not-found.txt; fi
+ad seqdb-create --db /d/seqdb.json.xz --match-hidb --clades --report-not-aligned-prefixes 32 --save-not-found-locations /d/not-found.txt $(ls -1t ~/ac/tables-store/sequences/gisaid-all-* | head -n 1); if [ -f ~/tmp/not-found.txt ]; then echo; echo 'WARNING: *** Not matched ***'; cat ~/tmp/not-found.txt; fi
+check and fix wrong names
 ad seqdb-info ~/tmp/seqdb.json.xz
 
 # ======================================================================
