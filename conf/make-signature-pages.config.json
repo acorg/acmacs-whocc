@@ -2,14 +2,14 @@
     "H1": {
         "sequences": {"base": "SWITZERLAND/9772556/2013 SIAT2", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
-            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "12days": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
     },
     "H3": {
         "sequences": {"base": "HAWAII/22/2012 MDCK", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
-            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "12days": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "davidb": {"garli_num_runs": 32, "garli_stoptime": 86400, "raxml_num_runs": 50, "raxml_model_optimization_precision": 0.01, "raxml_kill_rate": 0.5, "machines": ["i20", "i21"]},
             "day1": {"?": "just H3 completed in 27h, raxml: 26h, garli: 1h, score 39281 (/syn/eu/ac/results/whocc-tree/2018-0718-H3-1)", "garli_num_runs": 8, "garli_stoptime": 3600, "raxml_num_runs": 8, "raxml_model_optimization_precision": 10, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
@@ -18,18 +18,21 @@
     "BV": {
         "sequences": {"base": "VICTORIA/830/2013 MDCK2", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
-            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "12days": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
     },
     "BY": {
         "sequences": {"base": "CHRISTCHURCH/503/2013 MDCK1", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
-            "week": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "12days": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "day3": {"?": "just BY completed in 14.7h, raxml: 11h, garli: 3h, score: 34916 (/syn/eu/ac/results/whocc-tree/2018-0718-BY-3)", "garli_num_runs": 8, "garli_genthreshfortopoterm": 1000, "garli_stoptime": 3600, "raxml_num_runs": 8, "raxml_model_optimization_precision": 1, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "day2": {"?": "just BY completed in 14.5h, raxml: 9.5h, garli: 5h, score: 34912 (/syn/eu/ac/results/whocc-tree/2018-0718)", "garli_num_runs": 8, "garli_genthreshfortopoterm": 1000, "garli_stoptime": 7200, "raxml_num_runs": 8, "raxml_model_optimization_precision": 0.1, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "day1": {"?": "just BY completed in 23h, raxml: 5h, garli: 18h, score 34904 (/syn/eu/ac/results/whocc-tree/2018-0716)", "garli_num_runs": 8, "garli_stoptime": 86400, "raxml_num_runs": 8, "raxml_model_optimization_precision": 0.01, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
-    }
+    },
+    "? previous-timing": [
+        "for 2018-08-14 week": "12 days"
+    ]
 }
