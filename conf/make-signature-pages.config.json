@@ -36,7 +36,7 @@
             "day1": {"?": "just BY completed in 23h, raxml: 5h, garli: 18h, score 34904 (/syn/eu/ac/results/whocc-tree/2018-0716)", "garli_num_runs": 8, "garli_stoptime": 86400, "raxml_num_runs": 8, "raxml_model_optimization_precision": 0.01, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
     },
-    "? previous-timing": [
+    "? previous-timing": {
         "for 2018-08-14 week": "12 days"
-    ]
+    }
 }
