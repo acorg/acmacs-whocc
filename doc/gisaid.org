@@ -1,8 +1,8 @@
 #+STARTUP: showall
-Time-stamp: <2018-08-30 16:17:42 eu>
+Time-stamp: <2018-09-06 12:13:58 eu>
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 * Hold Cmd and click A and B in the Type.
-* COLLECTION date: at least 1.5 years ago till 1 Feb next year (but gisaid does not allow downloading more than 20k sequences)
+* SUBMISSION date: 6 months ago(?) OR COLLECTION date: at least 1.5 years ago till 1 Feb next year (but gisaid does not allow downloading more than 20k sequences)
 * _Leave originating lab empty!_
 * Select **Submitting lab** them all using Cmd
 
