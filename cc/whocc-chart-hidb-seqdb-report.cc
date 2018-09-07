@@ -59,7 +59,8 @@ int main(int argc, char* const argv[])
             const bool verbose = args["-v"] || args["--verbose"];
             const bool sort_by_tables = args["--sort-by-tables"];
             const std::string clade = args["--clade"];
-            const auto report_aa_at_pos = acmacs::string::split_into_uint(static_cast<std::string>(args["--aa"]), ",");
+            const std::string aa_opt = args["--aa"];
+            const std::vector<size_t> report_aa_at_pos = aa_opt.empty() ? std::vector<size_t>{} : acmacs::string::split_into_uint(static_cast<std::string>(args["--aa"]), ",");
 
             seqdb::setup_dbs(args["--db-dir"], verbose ? seqdb::report::yes : seqdb::report::no);
             auto chart = acmacs::chart::import_from_file(args[0], acmacs::chart::Verify::None, report_time::No);
