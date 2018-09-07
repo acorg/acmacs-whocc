@@ -2,6 +2,7 @@
 
 #include "acmacs-base/argc-argv.hh"
 #include "acmacs-base/string.hh"
+#include "acmacs-base/string-split.hh"
 #include "acmacs-base/range.hh"
 #include "acmacs-base/stream.hh"
 #include "acmacs-chart-2/factory-import.hh"
@@ -43,6 +44,7 @@ int main(int argc, char* const argv[])
                        {
                            {"--sort-by-tables", false},
                            {"--clade", ""},
+                           {"--aa", "", "report AA at given positions (comma separated)"},
                            {"--db-dir", ""},
                            {"-h", false},
                            {"--help", false},
@@ -57,6 +59,7 @@ int main(int argc, char* const argv[])
             const bool verbose = args["-v"] || args["--verbose"];
             const bool sort_by_tables = args["--sort-by-tables"];
             const std::string clade = args["--clade"];
+            const auto report_aa_at_pos = acmacs::string::split_into_uint(static_cast<std::string>(args["--aa"]), ",");
 
             seqdb::setup_dbs(args["--db-dir"], verbose ? seqdb::report::yes : seqdb::report::no);
             auto chart = acmacs::chart::import_from_file(args[0], acmacs::chart::Verify::None, report_time::No);
@@ -89,9 +92,21 @@ int main(int argc, char* const argv[])
                                                                     return nt1 > nt2;
                                                             });
             }
-            for (const auto& ad : antigens)
+            for (const auto& ad : antigens) {
                 std::cout << ad << '\n';
-
+                if (!report_aa_at_pos.empty()) {
+                    const auto aa = ad.antigen_seqdb.seq().amino_acids(true);
+                    std::cout << "   ";
+                    for (auto pos : report_aa_at_pos) {
+                        std::cout << ' ' << pos;
+                        if (aa.size() >= pos)
+                            std::cout << aa[pos - 1];
+                        else
+                            std::cout << '?';
+                    }
+                    std::cout << '\n';
+                }
+            }
         }
     }
     catch (std::exception& err) {
