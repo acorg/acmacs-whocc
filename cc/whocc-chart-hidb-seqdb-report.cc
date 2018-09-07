@@ -42,6 +42,7 @@ int main(int argc, char* const argv[])
         argc_argv args(argc, argv,
                        {
                            {"--sort-by-tables", false},
+                           {"--clade", ""},
                            {"--db-dir", ""},
                            {"-h", false},
                            {"--help", false},
@@ -55,6 +56,7 @@ int main(int argc, char* const argv[])
         else {
             const bool verbose = args["-v"] || args["--verbose"];
             const bool sort_by_tables = args["--sort-by-tables"];
+            const std::string clade = args["--clade"];
 
             seqdb::setup_dbs(args["--db-dir"], verbose ? seqdb::report::yes : seqdb::report::no);
             auto chart = acmacs::chart::import_from_file(args[0], acmacs::chart::Verify::None, report_time::No);
@@ -67,7 +69,11 @@ int main(int argc, char* const argv[])
             std::vector<AntigenData> antigens(antigens_chart->size());
             std::transform(acmacs::index_iterator(0UL), acmacs::index_iterator(antigens_chart->size()), antigens.begin(), [&](size_t index) -> AntigenData {
                 return {index, &hidb, antigens_chart->at(index), hidb_antigens[index], seqdb_antigens[index]};
-            });
+                                                                                                                          });
+            if (!clade.empty()) {
+                antigens.erase(std::remove_if(antigens.begin(), antigens.end(), [&](const auto& ag) -> bool { return !ag.antigen_seqdb || !ag.antigen_seqdb.seq().has_clade(clade); }), antigens.end());
+            }
+            std::cerr << "INFO: " << antigens.size() << " antigens upon filtering\n";
             if (sort_by_tables) {
                 auto hidb_tables = hidb.tables();
                 std::sort(antigens.begin(), antigens.end(), [&](const auto& e1, const auto& e2) -> bool {
