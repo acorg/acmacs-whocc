@@ -46,6 +46,17 @@ whocc-update-ace-store
 echo "=================================================================="
 whocc-hidb5-update
 
+echo "=================================================================="
+echo updating reference-antigens-in-tables.csv
+WHO_DIR=/syn/WebSites/Protected/who/
+TRA_NAME=reference-antigens-in-tables
+DATE=$(date +%Y%m%d)
+TRA=${WHO_DIR}/${TRA_NAME}.${DATE}.csv
+TRA_2018=${WHO_DIR}/${TRA_NAME}.${DATE}.2018.csv
+hidb5-reference-antigens-in-tables > "${TRA}"
+ln -sf "${TRA}" "${WHO_DIR}/${TRA_NAME}.csv"
+hidb5-reference-antigens-in-tables --start 2018 > "${TRA_2018}"
+ln -sf "${TRA_2018}" "${WHO_DIR}/${TRA_NAME}.2018.csv"
 
 echo "----------------------------------------------------------------------"
 
