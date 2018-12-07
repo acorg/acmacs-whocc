@@ -1,10 +1,4 @@
 # -*- Makefile -*-
-# Eugene Skepner 2017
-
-# ----------------------------------------------------------------------
-
-MAKEFLAGS = -w
-
 # ----------------------------------------------------------------------
 
 TARGETS = \
@@ -17,13 +11,10 @@ TARGETS = \
 
 SRC_DIR = $(abspath $(ACMACSD_ROOT)/sources)
 
-include $(ACMACSD_ROOT)/share/makefiles/Makefile.g++
-include $(ACMACSD_ROOT)/share/makefiles/Makefile.dist-build.vars
+all: install
 
-CXXFLAGS = -g -MMD $(OPTIMIZATION) $(PROFILE) -fPIC -std=$(STD) $(WARNINGS) -Icc -I$(AD_INCLUDE) $(PKG_INCLUDES)
-LDFLAGS = $(OPTIMIZATION) $(PROFILE)
-
-PKG_INCLUDES = $(shell pkg-config --cflags cairo) $(shell pkg-config --cflags liblzma)
+CONFIGURE_CAIRO = 1
+include $(ACMACSD_ROOT)/share/Makefile.config
 
 LDLIBS = \
   $(AD_LIB)/$(call shared_lib_name,libacmacsbase,1,0) \
@@ -32,14 +23,9 @@ LDLIBS = \
   $(AD_LIB)/$(call shared_lib_name,libhidb,5,0) \
   $(AD_LIB)/$(call shared_lib_name,libseqdb,2,0) \
   $(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
-  -L$(AD_LIB) -lboost_program_options \
-  $(shell pkg-config --libs cairo) \
-  $(shell pkg-config --libs liblzma) \
-  $(CXX_LIB)
+  $(CAIRO_LDLIBS) $(XZ_LIBS) $(CXX_LIBS)
 
 # ----------------------------------------------------------------------
-
-all: check-acmacsd-root $(TARGETS)
 
 install: $(TARGETS)
 	ln -sf $(DIST)/* $(AD_BIN)
@@ -51,19 +37,13 @@ test: install
 
 # ----------------------------------------------------------------------
 
--include $(BUILD)/*.d
-include $(ACMACSD_ROOT)/share/makefiles/Makefile.dist-build.rules
-include $(ACMACSD_ROOT)/share/makefiles/Makefile.rtags
-
-# ----------------------------------------------------------------------
-
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
-	@printf "%-16s %s\n" "LINK" $@
-	@$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
+	$(call echo_link_exe,$@)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
 
 $(DIST)/%: $(BUILD)/%.o | $(DIST)
-	@printf "%-16s %s\n" "LINK" $@
-	@$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
+	$(call echo_link_exe,$@)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
 
 # ======================================================================
 ### Local Variables:
