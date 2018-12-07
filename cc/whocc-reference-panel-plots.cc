@@ -5,11 +5,7 @@
 #include <iomanip>
 #include <cmath>
 
-#pragma GCC diagnostic push
-#include "acmacs-base/boost-diagnostics.hh"
-#include "boost/program_options.hpp"
-#pragma GCC diagnostic pop
-
+#include "acmacs-base/argc-argv.hh"
 #include "acmacs-base/stream.hh"
 #include "acmacs-base/enumerate.hh"
 #include "acmacs-chart-2/chart.hh"
@@ -22,20 +18,10 @@
 
 // ----------------------------------------------------------------------
 
-class Options
-{
- public:
-    std::vector<std::string> source_charts;
-    std::string output_filename;
-    bool for_ref_in_last_table_only = false;
-    size_t min_number_of_tables = 5;
-};
-
 class ChartData;
 
-static int get_args(int argc, const char *argv[], Options& aOptions);
-static void process_source(ChartData& aData, std::string filename, bool only_existing_antigens_sera);
-static void make_antigen_serum_set(ChartData& aData, std::string filename);
+static void process_source(ChartData& aData, std::string_view filename, bool only_existing_antigens_sera);
+static void make_antigen_serum_set(ChartData& aData, std::string_view filename);
 
 // ----------------------------------------------------------------------
 
@@ -113,7 +99,7 @@ class ChartData
     void add_titer(size_t aAntigen, size_t aSerum, size_t aTable, const acmacs::chart::Titer& aTiter) { mTiters.emplace_back(aAntigen, aSerum, aTable, aTiter); mAllTiters.insert(aTiter); }
 
     void make_antigen_serum_data(size_t aMinNumberOfTables);
-    void plot(std::string output_filename, bool for_ref_in_last_table_only);
+    void plot(std::string_view output_filename, bool for_ref_in_last_table_only);
 
     size_t number_of_antigens() const { return mAntigens.size(); }
     size_t number_of_sera() const { return mSera.size(); }
@@ -173,75 +159,44 @@ class ChartData
 
 // ======================================================================
 
-int main(int argc, const char *argv[])
+int main(int argc, const char* argv[])
 {
-    Options options;
-    int exit_code = get_args(argc, argv, options);
-    if (exit_code == 0) {
-        try {
-            ChartData data;
-            if (options.for_ref_in_last_table_only)
-                make_antigen_serum_set(data, options.source_charts.back());
-            for (const auto& source_name: options.source_charts)
-                process_source(data, source_name, options.for_ref_in_last_table_only);
-            data.make_antigen_serum_data(options.min_number_of_tables);
-            std::cout << data << std::endl;
-            data.plot(options.output_filename, options.for_ref_in_last_table_only);
-        }
-        catch (std::exception& err) {
-            std::cerr << err.what() << std::endl;
+    int exit_code = 0;
+    try {
+        argc_argv args(argc, argv,
+                       {{"-o", "", "output pdf"},
+                        {"--last", false, "for ref antigens and sera found in the last table only"},
+                        {"--min-tables", 5, "minimum number of tables where antigen/serum appears"},
+                        {"-h", false},
+                        {"--help", false},
+                        {"-v", false},
+                        {"--verbose", false}});
+        if (args["-h"] || args["--help"] || args.number_of_arguments() < 1) {
+            std::cerr << "Usage: " << args.program() << " [options] <chart-file> ... \n" << args.usage_options() << '\n';
             exit_code = 1;
         }
+        else {
+            ChartData data;
+            if (args["--last"])
+                make_antigen_serum_set(data, args[args.number_of_arguments() - 1]);
+            for (size_t file_no = 0; file_no < args.number_of_arguments(); ++file_no) {
+                process_source(data, args[file_no], args["--last"]);
+                data.make_antigen_serum_data(args["--min-tables"]);
+                std::cout << data << std::endl;
+                data.plot(args["-o"], args["--last"]);
+            }
+        }
+    }
+    catch (std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        exit_code = 1;
     }
     return exit_code;
 }
 
 // ----------------------------------------------------------------------
 
-static int get_args(int argc, const char *argv[], Options& aOptions)
-{
-    using namespace boost::program_options;
-    options_description desc("Options");
-    desc.add_options()
-            ("help", "Print help messages")
-            ("output,o", value<std::string>(&aOptions.output_filename)->required(), "output pdf")
-            ("sources,s", value<std::vector<std::string>>(&aOptions.source_charts), "source chart in the proper order")
-            ("last", "for ref antigens and sera found in the last table only")
-            ("min-tables", value<size_t>(&aOptions.min_number_of_tables), "minimum number of tables where antigen/serum appears")
-            ;
-    positional_options_description pos_opt;
-    pos_opt.add("output", 1);
-    pos_opt.add("sources", -1);
-
-    variables_map vm;
-    try {
-        store(command_line_parser(argc, argv).options(desc).positional(pos_opt).run(), vm);
-        if (vm.count("help")) {
-            std::cerr << desc << std::endl;
-            return 1;
-        }
-        if (vm.count("last"))
-            aOptions.for_ref_in_last_table_only = true;
-        notify(vm);
-        return 0;
-    }
-    catch(required_option& e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
-        std::cerr << desc << std::endl;
-          // std::cerr << "Usage: " << argv[0] << " <tree.json> <output.pdf>" << std::endl;
-        return 2;
-    }
-    catch(error& e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
-        std::cerr << desc << std::endl;
-        return 3;
-    }
-
-} // get_args
-
-// ----------------------------------------------------------------------
-
-void make_antigen_serum_set(ChartData& aData, std::string filename)
+void make_antigen_serum_set(ChartData& aData, std::string_view filename)
 {
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
     auto chart_antigens = chart->antigens();
@@ -257,7 +212,7 @@ void make_antigen_serum_set(ChartData& aData, std::string filename)
 
 // ----------------------------------------------------------------------
 
-void process_source(ChartData& aData, std::string filename, bool only_existing_antigens_sera)
+void process_source(ChartData& aData, std::string_view filename, bool only_existing_antigens_sera)
 {
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
@@ -478,7 +433,7 @@ std::ostream& operator << (std::ostream& out, const ChartData& aData)
 
 // ======================================================================
 
-void ChartData::plot(std::string output_filename, bool for_ref_in_last_table_only)
+void ChartData::plot(std::string_view output_filename, bool for_ref_in_last_table_only)
 {
     const size_t ns = number_of_enabled_sera(), na = number_of_enabled_antigens();
     std::cout << "Enabled: antigens: " << na << " sera: " << ns << std::endl;
@@ -487,7 +442,7 @@ void ChartData::plot(std::string output_filename, bool for_ref_in_last_table_onl
 
     const acmacs::Viewport cell_viewport{acmacs::Size{cell_parameters.hstep, cell_parameters.vstep}};
 
-    acmacs::surface::PdfCairo surface(output_filename, ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
+    acmacs::surface::PdfCairo surface(std::string(output_filename), ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
 
     std::string title;
     if (for_ref_in_last_table_only)

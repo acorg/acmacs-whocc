@@ -2,11 +2,7 @@
 #include <map>
 #include <algorithm>
 
-#pragma GCC diagnostic push
-#include "acmacs-base/boost-diagnostics.hh"
-#include "boost/program_options.hpp"
-#pragma GCC diagnostic pop
-
+#include "acmacs-base/argc-argv.hh"
 #include "acmacs-base/stream.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/factory-import.hh"
@@ -17,26 +13,26 @@
 class TiterData
 {
  public:
-    inline TiterData() {}
+    TiterData() {}
 
-    inline void add(std::string aTiter)
+    void add(std::string aTiter)
         {
             auto iter_inserted = mTiters.emplace(aTiter, 1U);
             if (!iter_inserted.second)
                 ++iter_inserted.first->second;
         }
 
-    inline size_t max_number() const
+    size_t max_number() const
         {
             return std::max_element(mTiters.begin(), mTiters.end(), [](const auto& a, const auto& b) { return a.second < b.second; })->second;
         }
 
-    inline const acmacs::chart::Titer& longest_label() const
+    const acmacs::chart::Titer& longest_label() const
         {
             return std::max_element(mTiters.begin(), mTiters.end(), [](const auto& a, const auto& b) { return a.first.size() < b.first.size(); })->first;
         }
 
-    void histogram(std::string filename);
+    void histogram(std::string_view filename);
 
  private:
     std::map<acmacs::chart::Titer, size_t> mTiters;
@@ -49,78 +45,37 @@ class TiterData
 
 // ----------------------------------------------------------------------
 
-void process_source(TiterData& aData, std::string filename);
+void process_source(TiterData& aData, std::string_view filename);
 
-class Options
+int main(int argc, const char* argv[])
 {
- public:
-    std::vector<std::string> source_charts;
-    std::string output_filename;
-};
-
-static int get_args(int argc, const char *argv[], Options& aOptions);
-
-int main(int argc, const char *argv[])
-{
-    Options options;
-    int exit_code = get_args(argc, argv, options);
-    if (exit_code == 0) {
-        try {
-            TiterData data;
-            for (const auto& source_name: options.source_charts)
-                process_source(data, source_name);
-            std::cout << data << std::endl;
-            std::cout << "max: " << data.max_number() << std::endl;
-            data.histogram(options.output_filename);
-        }
-        catch (std::exception& err) {
-            std::cerr << err.what() << std::endl;
+    int exit_code = 0;
+    try {
+        argc_argv args(argc, argv, {{"-h", false}, {"--help", false}, {"-v", false}, {"--verbose", false}});
+        if (args["-h"] || args["--help"] || args.number_of_arguments() < 2) {
+            std::cerr << "Usage: " << args.program() << " [options] <chart-file> ... <output.pdf>\n" << args.usage_options() << '\n';
             exit_code = 1;
         }
+        else {
+            TiterData data;
+            for (size_t file_no = 0; file_no < (args.number_of_arguments() - 1); ++file_no) {
+                process_source(data, args[file_no]);
+                std::cout << data << std::endl;
+                std::cout << "max: " << data.max_number() << '\n';
+                data.histogram(args[args.number_of_arguments() - 1]);
+            }
+        }
+    }
+    catch (std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        exit_code = 1;
     }
     return exit_code;
 }
 
-static int get_args(int argc, const char *argv[], Options& aOptions)
-{
-    using namespace boost::program_options;
-    options_description desc("Options");
-    desc.add_options()
-            ("help", "Print help messages")
-            ("output,o", value<std::string>(&aOptions.output_filename)->required(), "output pdf")
-            ("sources,s", value<std::vector<std::string>>(&aOptions.source_charts), "source charts")
-            ;
-    positional_options_description pos_opt;
-    pos_opt.add("output", 1);
-    pos_opt.add("sources", -1);
-
-    variables_map vm;
-    try {
-        store(command_line_parser(argc, argv).options(desc).positional(pos_opt).run(), vm);
-        if (vm.count("help")) {
-            std::cerr << desc << std::endl;
-            return 1;
-        }
-        notify(vm);
-        return 0;
-    }
-    catch(required_option& e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
-        std::cerr << desc << std::endl;
-          // std::cerr << "Usage: " << argv[0] << " <tree.json> <output.pdf>" << std::endl;
-        return 2;
-    }
-    catch(error& e) {
-        std::cerr << "ERROR: " << e.what() << std::endl;
-        std::cerr << desc << std::endl;
-        return 3;
-    }
-
-} // get_args
-
 // ----------------------------------------------------------------------
 
-void process_source(TiterData& aData, std::string filename)
+void process_source(TiterData& aData, std::string_view filename)
 {
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
     auto chart_titers = chart->titers();
@@ -135,10 +90,10 @@ void process_source(TiterData& aData, std::string filename)
 
 // ----------------------------------------------------------------------
 
-void TiterData::histogram(std::string filename)
+void TiterData::histogram(std::string_view filename)
 {
     const double hsize = 1000.0, vsize = hsize / 1.6;
-    acmacs::surface::PdfCairo surface(filename, hsize, vsize, hsize);
+    acmacs::surface::PdfCairo surface(std::string(filename), hsize, vsize, hsize);
     const double font_size = 10;
     const size_t max_y = max_number();
     const double y_label_max_width = surface.text_size(std::to_string(max_y), Pixels{font_size}).width;
