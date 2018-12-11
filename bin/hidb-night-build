@@ -32,7 +32,10 @@ c2 make -j11 acmacs
 echo "=================================================================="
 date
 echo Updating ACMACSD packages
-${ACMACSD_ROOT}/sources/acmacs-build/bin/install-acmacs-d --source ${ACMACSD_ROOT} --target ${ACMACSD_ROOT} --dev-release --acorg-only
+# ${ACMACSD_ROOT}/sources/acmacs-build/bin/install-acmacs-d --source ${ACMACSD_ROOT} --target ${ACMACSD_ROOT} --dev-release --acorg-only
+cd ${ACMACSD_ROOT}/sources/acmacs-build
+git pull
+./bin/remake-all TEST=1
 install-apache-mod-acmacs
 acmacs-api-server-restart
 
