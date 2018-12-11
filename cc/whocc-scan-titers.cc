@@ -57,7 +57,7 @@ void find_ace_files(const fs::path& source_dir, std::vector<fs::path>& ace_files
 
 void scan_titers(const fs::path& filename, std::set<acmacs::chart::Titer>& titers)
 {
-    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
+    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::no);
     auto chart_titers = chart->titers();
     const auto number_of_antigens = chart_titers->number_of_antigens(), number_of_sera = chart_titers->number_of_sera();
     for (size_t antigen_no = 0; antigen_no < number_of_antigens; ++antigen_no) {

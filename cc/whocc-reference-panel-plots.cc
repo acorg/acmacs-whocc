@@ -198,7 +198,7 @@ int main(int argc, const char* argv[])
 
 void make_antigen_serum_set(ChartData& aData, std::string_view filename)
 {
-    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
+    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::no);
     auto chart_antigens = chart->antigens();
     for (auto antigen_index_in_chart: chart_antigens->reference_indexes()) {
         aData.add_antigen((*chart_antigens)[antigen_index_in_chart], false);
@@ -215,7 +215,7 @@ void make_antigen_serum_set(ChartData& aData, std::string_view filename)
 void process_source(ChartData& aData, std::string_view filename, bool only_existing_antigens_sera)
 {
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
-    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::No);
+    auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::no);
     chart->set_homologous(acmacs::chart::find_homologous::strict);
     const auto table_no = aData.add_table(chart);
     auto chart_antigens = chart->antigens();

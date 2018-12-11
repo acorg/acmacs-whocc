@@ -63,10 +63,10 @@ int main(int argc, char* const argv[])
             const std::vector<size_t> report_aa_at_pos = aa_opt.empty() ? std::vector<size_t>{} : acmacs::string::split_into_uint(static_cast<std::string>(args["--aa"]), ",");
 
             seqdb::setup_dbs(std::string(args["--db-dir"]), verbose ? seqdb::report::yes : seqdb::report::no);
-            auto chart = acmacs::chart::import_from_file(args[0], acmacs::chart::Verify::None, report_time::No);
+            auto chart = acmacs::chart::import_from_file(args[0], acmacs::chart::Verify::None, report_time::no);
             const auto virus_type = chart->info()->virus_type(acmacs::chart::Info::Compute::Yes);
             const auto& seqdb = seqdb::get();
-            const auto& hidb = hidb::get(virus_type, verbose ? report_time::Yes : report_time::No);
+            const auto& hidb = hidb::get(virus_type, do_report_time(verbose));
             auto antigens_chart = chart->antigens();
             const auto hidb_antigens = hidb.antigens()->find(*antigens_chart);
             const auto seqdb_antigens = seqdb.match(*antigens_chart, virus_type);
