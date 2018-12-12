@@ -34,6 +34,7 @@ install: $(TARGETS)
 
 test: install
 	@#test/test
+.PHONY: test
 
 # ----------------------------------------------------------------------
 
