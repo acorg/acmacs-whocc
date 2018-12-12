@@ -1,0 +1,26 @@
+#! /bin/bash
+
+# For Catherine Smith (CDC/OID/NCIRD) <cab2@cdc.gov>
+# see Eu's message 2018-10-05 19:33 Subject: WHO CC HI data
+
+# You may download cvs file (excel should be able to read it) at:
+# https://notebooks.antigenic-cartography.org/who/reference-antigens-in-tables.csv
+# It contains reference antigens in all the tables that I have.
+# Another csv file has tables of 2018 only like in your sheet that you sent me:
+# https://notebooks.antigenic-cartography.org/who/reference-antigens-in-tables.2018.csv
+
+WHO_DIR="/syn/WebSites/Protected/who/"
+TRA_NAME="reference-antigens-in-tables"
+DATE="$(date +%Y%m%d)"
+TRA="${WHO_DIR}/${TRA_NAME}.${DATE}.csv"
+TRA_2018="${WHO_DIR}/${TRA_NAME}.${DATE}.2018.csv"
+
+hidb5-reference-antigens-in-tables > "${TRA}"
+ln -sf "${TRA}" "${WHO_DIR}/${TRA_NAME}.csv"
+hidb5-reference-antigens-in-tables --start 2018 > "${TRA_2018}"
+ln -sf "${TRA_2018}" "${WHO_DIR}/${TRA_NAME}.2018.csv"
+
+# ----------------------------------------------------------------------
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:

@@ -1,5 +1,11 @@
 #! /bin/bash
 
+echo OBSOLETE! >&2
+echo "Use ~/Shared/acorg/bin/ad-at-night or ~/Shared/acorg/bin/at-night" >&2
+exit 1
+
+# ----------------------------------------------------------------------
+
 export ACMACSD_ROOT=$HOME/AD
 PROG=$(readlink -f $0)
 LOG=/syn/eu/log/hidb4-night-build.log
