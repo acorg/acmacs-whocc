@@ -5,7 +5,8 @@ TARGETS = \
   $(DIST)/whocc-reference-panel-plots \
   $(DIST)/whocc-scan-titers \
   $(DIST)/whocc-histogram-of-titers \
-  $(DIST)/whocc-chart-hidb-seqdb-report
+  $(DIST)/whocc-chart-hidb-seqdb-report \
+  $(DIST)/whocc-melb-serum-id
 
 # ----------------------------------------------------------------------
 
