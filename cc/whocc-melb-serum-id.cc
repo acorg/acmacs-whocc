@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/filesystem.hh"
@@ -36,6 +37,26 @@ inline bool is_acmacs_file(const fs::path& path)
 
 // ----------------------------------------------------------------------
 
+class SerumIds
+{
+ public:
+    using Name = acmacs::chart::Name;
+    using Passage = acmacs::chart::Passage;
+    using Reassortant = acmacs::chart::Reassortant;
+    using Annotations = acmacs::chart::Annotations;
+    using SerumId = acmacs::chart::SerumId;
+    using SerumIdRoot = std::string;
+    using SerumEntry = std::tuple<Name, Reassortant, Annotations, SerumId, Passage>;
+    using TableEntry = std::tuple<>;
+    
+    SerumIds() = default;
+
+    void add(const Name& name, const Reassortant& reassortant, const Annotations& annotations, const SerumId& serum_id, const Passage& passage);
+
+ private:
+      // std::map<SerumIdRoot, std::tuple<
+};
+
 struct NameId
 {
   NameId(std::string n, std::string si, std::string d) : name(n), serum_id(si), date(d) {}
@@ -56,60 +77,59 @@ struct NameIds
 
 // ----------------------------------------------------------------------
 
-
 int main(int /*argc*/, const char* /*argv*/[])
 {
-  int exit_code = 0;
-  try {
-    // Options opt(argc, argv);
-    std::vector<NameId> name_id;
-    size_t charts_processed = 0;
-    for (auto& entry : fs::directory_iterator(".")) {
-      if (entry.is_regular_file() && is_acmacs_file(entry.path())) {
-        // std::cout << entry.path() << '\n';
-        auto chart = acmacs::chart::import_from_file(entry.path());
-        const std::string date = chart->info()->date();
-        auto sera = chart->sera();
-        for (auto serum : *sera)
-          name_id.emplace_back(serum->designation_without_serum_id(), serum->serum_id(), date);
-        ++charts_processed;
-      }
+    int exit_code = 0;
+    try {
+        // Options opt(argc, argv);
+        std::vector<NameId> name_id;
+        size_t charts_processed = 0;
+        for (auto& entry : fs::directory_iterator(".")) {
+            if (entry.is_regular_file() && is_acmacs_file(entry.path())) {
+                // std::cout << entry.path() << '\n';
+                auto chart = acmacs::chart::import_from_file(entry.path());
+                const std::string date = chart->info()->date();
+                auto sera = chart->sera();
+                for (auto serum : *sera)
+                    name_id.emplace_back(serum->designation_without_serum_id(), serum->serum_id(), date);
+                ++charts_processed;
+            }
+        }
+        std::cout << charts_processed << " charts processed\n";
+        std::sort(name_id.begin(), name_id.end());
+        // std::cout << name_id.size() << " sera found\n";
+        // name_id.erase(std::unique(name_id.begin(), name_id.end()),
+        // name_id.end());
+        std::cout << name_id.size() << " sera found\n";
+
+        // std::vector<std::pair<std::string, std::vector<std::string>>> name_ids;
+        // for (const auto& entry : name_id) {
+        //     if (name_ids.empty() || name_ids.back().first != entry.first)
+        //         name_ids.emplace_back(entry.first, std::vector<std::string>{entry.second});
+        //     else
+        //         name_ids.back().second.push_back(entry.second);
+        // }
+        // std::cout << name_ids.size() << " serum names found\n";
+
+        // for (const auto& entry : name_ids) {
+        //     std::cout << entry.first << '\n';
+        //     for (const auto& serum_id : entry.second) {
+        //         std::cout << "  " << serum_id;
+        //         if (serum_id[0] == 'F' || serum_id[0] == 'R') {
+        //             if (serum_id.back() != 'D')
+        //                 std::cout << "  Warning: FIX!";
+        //         }
+        //         else
+        //             std::cout << "  Warning: not MELB";
+        //         std::cout << '\n';
+        //     }
+        // }
     }
-    std::cout << charts_processed << " charts processed\n";
-    std::sort(name_id.begin(), name_id.end());
-    // std::cout << name_id.size() << " sera found\n";
-    // name_id.erase(std::unique(name_id.begin(), name_id.end()), name_id.end());
-    std::cout << name_id.size() << " sera found\n";
-
-    /* std::vector<std::pair<std::string, std::vector<std::string>>> name_ids; */
-    /* for (const auto& entry : name_id) { */
-    /*   if (name_ids.empty() || name_ids.back().first != entry.first) */
-    /*     name_ids.emplace_back(entry.first, std::vector<std::string>{entry.second}); */
-    /*   else */
-    /*     name_ids.back().second.push_back(entry.second); */
-    /* } */
-    /* std::cout << name_ids.size() << " serum names found\n"; */
-
-    /* for (const auto& entry : name_ids) { */
-    /*   std::cout << entry.first << '\n'; */
-    /*   for (const auto& serum_id : entry.second) { */
-    /*     std::cout << "  " << serum_id; */
-    /*     if (serum_id[0] == 'F' || serum_id[0] == 'R') { */
-    /*       if (serum_id.back() != 'D') */
-    /*         std::cout << "  Warning: FIX!"; */
-    /*     } */
-    /*     else */
-    /*       std::cout << "  Warning: not MELB"; */
-    /*     std::cout << '\n'; */
-    /*   } */
-    /* } */
-    
-  }
-  catch (std::exception& err) {
-    std::cerr << "ERROR: " << err.what() << '\n';
-    exit_code = 2;
-  }
-  return exit_code;
+    catch (std::exception& err) {
+        std::cerr << "ERROR: " << err.what() << '\n';
+        exit_code = 2;
+    }
+    return exit_code;
 }
 
 // ----------------------------------------------------------------------
