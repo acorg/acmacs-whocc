@@ -5,6 +5,7 @@
 
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/filesystem.hh"
+#include "acmacs-base/named-type.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/chart.hh"
 
@@ -45,16 +46,23 @@ class SerumIds
     using Reassortant = acmacs::chart::Reassortant;
     using Annotations = acmacs::chart::Annotations;
     using SerumId = acmacs::chart::SerumId;
-    using SerumIdRoot = std::string;
+    using SerumIdRoot = acmacs::named_t<std::string, struct SerumIdRootTag>;
     using SerumEntry = std::tuple<Name, Reassortant, Annotations, SerumId, Passage>;
-    using TableEntry = std::tuple<>;
+    using TableEntry = std::tuple<acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate>;
     
     SerumIds() = default;
 
-    void add(const Name& name, const Reassortant& reassortant, const Annotations& annotations, const SerumId& serum_id, const Passage& passage);
+      // void add(const Name& name, const Reassortant& reassortant, const Annotations& annotations, const SerumId& serum_id, const Passage& passage);
+    void add(const SerumEntry& serum, const TableEntry& table);
 
  private:
-      // std::map<SerumIdRoot, std::tuple<
+    std::map<SerumIdRoot, std::map<SerumId, std::vector<std::tuple<SerumEntry, TableEntry>>>> data_;
+
+    SerumIdRoot serum_id_root(const SerumEntry& serum, const TableEntry& table) const
+        {
+            return SerumIdRoot(std::get<SerumId>(serum));
+        }
+    
 };
 
 struct NameId
