@@ -27,13 +27,13 @@
 
 inline bool is_acmacs_file(const fs::path& path)
 {
-  if (path.extension() == ".ace")
-    return true;
-  if (path.extension() == ".bz2") {
-    if (path.stem().extension() == ".acd1")
-      return true;
-  }
-  return false;
+    if (path.extension() == ".ace")
+        return true;
+    if (path.extension() == ".bz2") {
+        if (path.stem().extension() == ".acd1")
+            return true;
+    }
+    return false;
 }
 
 // ----------------------------------------------------------------------
@@ -49,38 +49,43 @@ class SerumIds
     using SerumIdRoot = acmacs::named_t<std::string, struct SerumIdRootTag>;
     using SerumEntry = std::tuple<Name, Reassortant, Annotations, SerumId, Passage>;
     using TableEntry = std::tuple<acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate>;
-    
+    using Entry = std::tuple<SerumIdRoot, SerumId, Name, Reassortant, Annotations, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate, Passage>;
+
     SerumIds() = default;
 
-      // void add(const Name& name, const Reassortant& reassortant, const Annotations& annotations, const SerumId& serum_id, const Passage& passage);
-    void add(const SerumEntry& serum, const TableEntry& table);
+    constexpr size_t size() const { return data_.size(); }
+    void sort() { std::sort(data_.begin(), data_.end()); /* data_.erase(std::unique(data_.begin(), data_.end()), data_.end()); */ }
 
+    void add(const SerumEntry& serum, const TableEntry& table)
+        {
+            data_.emplace_back(serum_id_root(serum, table), std::get<SerumId>(serum),
+                               std::get<Name>(serum), std::get<Reassortant>(serum), std::get<Annotations>(serum),
+                               std::get<acmacs::chart::Lab>(table), std::get<acmacs::chart::Assay>(table), std::get<acmacs::chart::RbcSpecies>(table), std::get<acmacs::chart::TableDate>(table),
+                               std::get<Passage>(serum));
+        }
+
+    void print() const
+        {
+            for (const auto& entry : data_)
+                std::cout << std::get<SerumIdRoot>(entry) << ' ' << std::get<SerumId>(entry) << ' ' << std::get<Name>(entry) << ' ' << std::get<acmacs::chart::TableDate>(entry) << '\n';
+        }
+    
  private:
-    std::map<SerumIdRoot, std::map<SerumId, std::vector<std::tuple<SerumEntry, TableEntry>>>> data_;
+    std::vector<Entry> data_;
 
     SerumIdRoot serum_id_root(const SerumEntry& serum, const TableEntry& table) const
         {
-            return SerumIdRoot(std::get<SerumId>(serum));
+            const auto& serum_id = std::get<SerumId>(serum);
+            if (std::get<acmacs::chart::Lab>(table) == "MELB") {
+                if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R') && serum_id[5] == '-' && serum_id.back() == 'D')
+                    return SerumIdRoot(serum_id.substr(0, 5));
+                else
+                    return SerumIdRoot(serum_id);
+            }
+            else
+                return SerumIdRoot(serum_id);
         }
-    
-};
 
-struct NameId
-{
-  NameId(std::string n, std::string si, std::string d) : name(n), serum_id(si), date(d) {}
-  bool operator<(const NameId& rhs) const { if (name == rhs.name) { if (serum_id == rhs.serum_id) return date < rhs.date; else return serum_id < rhs.serum_id; } else return name < rhs.name; }
-  bool operator==(const NameId& rhs) const { return name == rhs.name && serum_id == rhs.serum_id && date == rhs.date; }
-  bool operator!=(const NameId& rhs) const { return !operator==(rhs); }
-  std::string name;
-  std::string serum_id;
-  std::string date;
-};
-
-struct NameIds
-{
-  NameIds(std::string n) : name(n) {}
-  std::string name;
-  std::vector<std::pair<std::string, size_t>> id_count;
 };
 
 // ----------------------------------------------------------------------
@@ -90,26 +95,26 @@ int main(int /*argc*/, const char* /*argv*/[])
     int exit_code = 0;
     try {
         // Options opt(argc, argv);
-        std::vector<NameId> name_id;
+        SerumIds serum_ids;
         size_t charts_processed = 0;
         for (auto& entry : fs::directory_iterator(".")) {
             if (entry.is_regular_file() && is_acmacs_file(entry.path())) {
                 // std::cout << entry.path() << '\n';
                 auto chart = acmacs::chart::import_from_file(entry.path());
-                const std::string date = chart->info()->date();
+                std::tuple table(chart->info()->lab(), chart->info()->assay(), chart->info()->rbc_species(), chart->info()->date());
                 auto sera = chart->sera();
                 for (auto serum : *sera)
-                    name_id.emplace_back(serum->designation_without_serum_id(), serum->serum_id(), date);
+                    serum_ids.add({serum->name(), serum->reassortant(), serum->annotations(), serum->serum_id(), serum->passage()}, table);
+                  // name_id.emplace_back(serum->designation_without_serum_id(), serum->serum_id(), date);
                 ++charts_processed;
             }
         }
         std::cout << charts_processed << " charts processed\n";
-        std::sort(name_id.begin(), name_id.end());
-        // std::cout << name_id.size() << " sera found\n";
-        // name_id.erase(std::unique(name_id.begin(), name_id.end()),
-        // name_id.end());
-        std::cout << name_id.size() << " sera found\n";
-
+        std::cout << serum_ids.size() << " entries\n";
+        serum_ids.sort();
+          // std::cout << serum_ids.size() << " entries\n";
+        serum_ids.print();
+        
         // std::vector<std::pair<std::string, std::vector<std::string>>> name_ids;
         // for (const auto& entry : name_id) {
         //     if (name_ids.empty() || name_ids.back().first != entry.first)
