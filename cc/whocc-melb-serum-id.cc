@@ -157,7 +157,7 @@ struct Options : public argv
 {
     Options(int a_argc, const char* const a_argv[], on_error on_err = on_error::exit) : argv() { parse(a_argc, a_argv, on_err); }
 
-    option<str> fix{*this, "fix", dflt{""}};
+    option<str_array> fix{*this, "fix"};
     // argument<str> period{*this, arg_name{"monthly|yearly|weekly"}, mandatory};
     // argument<Date> start{*this, arg_name{"start-date"}, mandatory};
     // argument<Date> end{*this, arg_name{"end-date"}, mandatory};
@@ -174,9 +174,9 @@ int main(int argc, const char* argv[])
         SerumIds serum_ids;
         size_t charts_processed = 0;
         for (auto& entry : fs::directory_iterator(".")) {
-            if (entry.is_regular_file() && is_acmacs_file(entry.path())) {
+            if (const auto pathname = entry.path(); entry.is_regular_file() && is_acmacs_file(pathname)) {
                 // std::cout << entry.path() << '\n';
-                auto chart = acmacs::chart::import_from_file(entry.path());
+                auto chart = acmacs::chart::import_from_file(pathname);
                 if (!opt.fix.has_value()) { // scan
                     std::tuple table(chart->info()->virus_type(), chart->info()->lab(), chart->info()->assay(), chart->info()->rbc_species(), chart->info()->date());
                     auto sera = chart->sera();
@@ -184,7 +184,7 @@ int main(int argc, const char* argv[])
                         serum_ids.add({serum->name(), serum->reassortant(), serum->annotations(), serum->serum_id(), serum->passage()}, table);
                 }
                 else {          // fix
-                    std::cerr << "FIX\n";
+                    std::cerr << "FIX " << acmacs::argv::detail::to_string(opt.fix.get()) << '\n';
                 }
                 ++charts_processed;
             }
