@@ -7,8 +7,10 @@
 #include "acmacs-base/filesystem.hh"
 #include "acmacs-base/named-type.hh"
 #include "acmacs-base/string.hh"
+#include "acmacs-base/string-split.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/chart.hh"
+#include "acmacs-chart-2/chart-modify.hh"
 
 // ----------------------------------------------------------------------
 
@@ -172,6 +174,14 @@ int main(int argc, const char* argv[])
     try {
         Options opt(argc, argv);
         SerumIds serum_ids;
+        std::vector<std::pair<std::string, std::string>> fix_data;
+        if (opt.fix.has_value()) {
+            for (const auto& fix_entry : opt.fix.get()) {
+                const auto fields = acmacs::string::split(fix_entry, "^");
+                fix_data.emplace_back(fields[0], fields[1]);
+            }
+        }
+
         size_t charts_processed = 0;
         for (auto& entry : fs::directory_iterator(".")) {
             if (const auto pathname = entry.path(); entry.is_regular_file() && is_acmacs_file(pathname)) {
@@ -183,18 +193,31 @@ int main(int argc, const char* argv[])
                     for (auto serum : *sera)
                         serum_ids.add({serum->name(), serum->reassortant(), serum->annotations(), serum->serum_id(), serum->passage()}, table);
                 }
-                else {          // fix
-                    std::cerr << "FIX " << acmacs::argv::detail::to_string(opt.fix.get()) << '\n';
+                else { // fix
+                    acmacs::chart::ChartModify chart_modify{chart};
+                    auto sera = chart_modify.sera_modify();
+                    for (auto serum : *sera) {
+                        const auto sid = serum->serum_id();
+                        for (const auto& fix : fix_data) {
+                            if (sid == fix.first) {
+                                std::cout << chart->info()->make_name() << " FIX " << serum->name() << ' ' << serum->reassortant() << ' ' << string::join(" ", serum->annotations()) << ' '
+                                          << serum->serum_id() << " --> " << fix.second << '\n';
+                                break;
+                            }
+                        }
+                    }
                 }
                 ++charts_processed;
             }
         }
         std::cout << charts_processed << " charts processed\n";
-        std::cout << serum_ids.size() << " entries\n";
-        serum_ids.sort();
-        serum_ids.scan();
-        // std::cout << serum_ids.size() << " entries\n";
-        serum_ids.print(false);
+        if (!opt.fix.has_value()) { // scan
+            std::cout << serum_ids.size() << " entries\n";
+            serum_ids.sort();
+            serum_ids.scan();
+            // std::cout << serum_ids.size() << " entries\n";
+            serum_ids.print(false);
+        }
     }
     catch (std::exception& err) {
         std::cerr << "ERROR: " << err.what() << '\n';
