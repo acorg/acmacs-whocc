@@ -93,9 +93,6 @@ class SerumIds
 
         void print(bool print_good) const
         {
-            // for (const auto& entry : data_)
-            //     std::cout << std::get<SerumIdRoot>(entry) << ' ' << std::get<SerumId>(entry) << ' ' << std::get<Name>(entry) << ' ' << std::get<acmacs::chart::TableDate>(entry) << '\n';
-
             const bool show_assay = std::get<acmacs::chart::VirusType>(*std::get<0>(per_root_.front())) == "A(H3N2)";
             const bool show_rbc = show_assay;
             for (const auto& per_root_entry : per_root_) {
@@ -109,6 +106,18 @@ class SerumIds
                         for (const auto& table : tabs)
                             std::cout << ' ' << table;
                         std::cout << '\n';
+                    }
+                    if (!good) {
+                        const auto& sids = std::get<2>(per_root_entry);
+                        if (std::get<SerumId>(*std::get<0>(sids.front())) != std::get<SerumId>(*std::get<0>(sids.back()))) {
+                            const auto sid = std::max_element(sids.begin(), sids.end(), [](const auto& e1, const auto& e2) -> bool { return (std::get<1>(e1) - std::get<0>(e1)) <  (std::get<1>(e2) - std::get<0>(e2)); });
+                            for (auto ep = sids.begin(); ep != sids.end(); ++ep) {
+                                if (ep != sid) {
+                                    const bool same_size = (std::get<1>(*ep) - std::get<0>(*ep)) == (std::get<1>(*sid) - std::get<0>(*sid));
+                                    std::cout << "    " << (same_size ? "?? " : "") << "--fix " << std::get<SerumId>(*std::get<0>(*ep)) << '^' << std::get<SerumId>(*std::get<0>(*sid)) << '\n';
+                                }
+                            }
+                        }
                     }
                 }
             }
