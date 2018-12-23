@@ -210,12 +210,15 @@ class FixSerumIds
     {
         auto sera = chart.sera_modify();
         bool modified = false;
-        for (auto serum : *sera) {
-            const auto sid = serum->serum_id();
+        for (size_t serum_no = 0; serum_no < sera->size(); ++ serum_no) {
+            auto& serum = sera->at(serum_no);
+            const auto sid = serum.serum_id();
             for (const auto& fix : data_) {
                 if (sid == fix.first) {
-                    std::cout << chart.info()->make_name() << " FIX " << serum->name() << ' ' << serum->reassortant() << ' ' << string::join(" ", serum->annotations()) << ' ' << serum->serum_id()
+                    std::cout << chart.info()->make_name() << " FIX " << serum.name() << ' ' << serum.reassortant() << ' ' << string::join(" ", serum.annotations()) << ' ' << serum.serum_id()
                               << " --> " << fix.second << '\n';
+                    serum.serum_id(fix.second);
+                    modified = true;
                     break;
                 }
             }
@@ -270,41 +273,6 @@ int main(int argc, const char* argv[])
             std::cout << charts_processed << " charts processed\n";
             serum_ids.print(false);
         }
-        // for (auto& entry : fs::directory_iterator(".")) {
-        //     if (const auto pathname = entry.path(); entry.is_regular_file() && is_acmacs_file(pathname)) {
-        //         // std::cout << entry.path() << '\n';
-        //         auto chart = acmacs::chart::import_from_file(pathname);
-        //         if (!opt.fix.has_value()) { // scan
-        //             std::tuple table(chart->info()->virus_type(), chart->info()->lab(), chart->info()->assay(), chart->info()->rbc_species(), chart->info()->date());
-        //             auto sera = chart->sera();
-        //             for (auto serum : *sera)
-        //                 serum_ids.add({serum->name(), serum->reassortant(), serum->annotations(), serum->serum_id(), serum->passage()}, table);
-        //         }
-        //         else { // fix
-        //             acmacs::chart::ChartModify chart_modify{chart};
-        //             auto sera = chart_modify.sera_modify();
-        //             for (auto serum : *sera) {
-        //                 const auto sid = serum->serum_id();
-        //                 for (const auto& fix : fix_data) {
-        //                     if (sid == fix.first) {
-        //                         std::cout << chart->info()->make_name() << " FIX " << serum->name() << ' ' << serum->reassortant() << ' ' << string::join(" ", serum->annotations()) << ' '
-        //                                   << serum->serum_id() << " --> " << fix.second << '\n';
-        //                         break;
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         ++charts_processed;
-        //     }
-        // }
-        // std::cout << charts_processed << " charts processed\n";
-        // if (!opt.fix.has_value()) { // scan
-        //     std::cout << serum_ids.size() << " entries\n";
-        //     serum_ids.sort();
-        //     serum_ids.scan();
-        //     // std::cout << serum_ids.size() << " entries\n";
-        //     serum_ids.print(false);
-        // }
     }
     catch (std::exception& err) {
         std::cerr << "ERROR: " << err.what() << '\n';
