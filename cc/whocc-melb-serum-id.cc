@@ -91,8 +91,13 @@ class SerumIds
                                                           [](const auto& e1, const auto& e2) -> bool { return (std::get<1>(e1) - std::get<0>(e1)) < (std::get<1>(e2) - std::get<0>(e2)); });
                         for (auto ep = sids.begin(); ep != sids.end(); ++ep) {
                             if (ep != sid) {
-                                const bool same_size = (std::get<1>(*ep) - std::get<0>(*ep)) == (std::get<1>(*sid) - std::get<0>(*sid));
-                                std::cout << "    " << (same_size ? "?? " : "") << "--fix " << std::get<SerumId>(*std::get<0>(*ep)) << '^' << std::get<SerumId>(*std::get<0>(*sid)) << '\n';
+                                std::cout << "  --fix ";
+                                const auto sid1 = std::get<SerumId>(*std::get<0>(*ep)), sid2 = std::get<SerumId>(*std::get<0>(*sid));
+                                if ((std::get<1>(*ep) - std::get<0>(*ep)) == (std::get<1>(*sid) - std::get<0>(*sid)) && sid2.size() < sid1.size())
+                                    std::cout << sid2 << '^' << sid1;
+                                else
+                                    std::cout << sid1 << '^' << sid2;
+                                std::cout << '\n';
                             }
                         }
                     }
