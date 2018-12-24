@@ -144,7 +144,7 @@ class SerumIds
     {
         const auto& serum_id = std::get<SerumId>(serum);
         if (std::get<acmacs::chart::Lab>(table) == "MELB") {
-            if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R') && serum_id[5] == '-' && serum_id.back() == 'D')
+            if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R' || serum_id[0] == 'A') && serum_id[5] == '-' && serum_id.back() == 'D')
                 return SerumIdRoot(serum_id.substr(0, 5));
             else
                 return SerumIdRoot(serum_id);
