@@ -1,5 +1,5 @@
 #+STARTUP: showall
-Time-stamp: <2018-12-27 22:18:50 eu>
+Time-stamp: <2018-12-27 22:27:21 eu>
 * previous fasta files downloaded from gisaid
 gisaid-all-20180815-2006-20180715.fas.xz
 gisaid-all-20180821-2017-20180715.fas.xz
@@ -59,11 +59,12 @@ just run it without arguments:
 ~/AD/sources/ssm-report/bin/gisaid-fasta-install
 ss
 #+END_SRC
-* Update seqdb
+* Update seqdb (5.5 min on dael)
 #+BEGIN_SRC sh
 rsync -av 'albertine:AD/data/hidb5.*' ~/AD/data
 if [[ -f ~/AD/data/seqdb.json.xz ]]; then mv ~/AD/data/seqdb.json.xz ~/AD/data/seqdb.$(gstat -c %y ~/AD/data/seqdb.json.xz | cut -d ' ' -f 1).json.xz; fi
 seqdb-create --db ~/AD/data/seqdb.json.xz --match-hidb --clades --report-not-aligned-prefixes 32 --save-not-found-locations /d/not-found.txt ~/ac/tables-store/sequences/*.fas.*
+rsync -av ~/AD/data/seqdb*.xz albertine:AD/data
 #+END_SRC
 
 * ---- local vars
