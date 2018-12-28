@@ -1,5 +1,5 @@
 {
-    "H1": {
+    "h1": {
         "sequences": {"base": "SWITZERLAND/9772556/2013 SIAT2", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
             "week": {"garli_num_runs": 128, "garli_stoptime": 604800, "raxml_num_runs": 128, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
@@ -7,7 +7,7 @@
             "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
     },
-    "H3": {
+    "h3": {
         "sequences": {"base": "HAWAII/22/2012 MDCK", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
             "week": {"garli_num_runs": 128, "garli_stoptime": 604800, "raxml_num_runs": 128, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
@@ -17,7 +17,7 @@
             "day1": {"?": "just H3 completed in 27h, raxml: 26h, garli: 1h, score 39281 (/syn/eu/ac/results/whocc-tree/2018-0718-H3-1)", "garli_num_runs": 8, "garli_stoptime": 3600, "raxml_num_runs": 8, "raxml_model_optimization_precision": 10, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
     },
-    "BV": {
+    "bv": {
         "sequences": {"base": "VICTORIA/830/2013 MDCK2", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
             "week": {"garli_num_runs": 128, "garli_stoptime": 604800, "raxml_num_runs": 128, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
@@ -25,7 +25,7 @@
             "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
     },
-    "BY": {
+    "by": {
         "sequences": {"base": "CHRISTCHURCH/503/2013 MDCK1", "recent": 4000, "hamming_distance_threshold": 160},
         "tree_maker": {
             "week": {"garli_num_runs": 128, "garli_stoptime": 604800, "raxml_num_runs": 128, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},

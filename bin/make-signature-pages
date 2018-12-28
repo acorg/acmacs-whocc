@@ -2,7 +2,7 @@
 # -*- Python -*-
 # ======================================================================
 
-import sys, os, socket, json, datetime #, subprocess, time, shutil, pprint
+import sys, os, socket, json, datetime, shutil, subprocess
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
@@ -12,6 +12,9 @@ STATE_FILE = None
 SUBTYPE = None
 DATEFMT = "%Y-%m-%d %H:%M:%S"
 STATE = None
+EMACS_PREFIX = f"/scp:{socket.gethostname()}:"
+
+class Error (Exception): pass
 
 # States:
 # "export_sequences"
@@ -21,14 +24,16 @@ STATE = None
 
 def main(args):
     if socket.gethostname() != "i19":
-        raise RuntimeError("The script must be run on i19")
-    if not os.getenv("ACMACSD_ROOT") or not Path(os.getenv("ACMACSD_ROOT"), "data", "hidb5.h1.json.xz") or not Path(args.seqdb).exists():
-        raise RuntimeError("ACMACSD_ROOT not set or no hidb in $ACMACSD_ROOT/data")
+        raise Error("The script must be run on i19")
+    if not os.getenv("ACMACSD_ROOT") or not Path(os.getenv("ACMACSD_ROOT"), "data", "hidb5.h1.json.xz") or not Path(args.seqdb).expanduser().exists():
+        raise Error("ACMACSD_ROOT not set or no hidb in $ACMACSD_ROOT/data")
+    sys.path[1:1] = [os.getenv("ACMACSD_ROOT") + "/py"]
     global ROOT_DIR, STATE_FILE, SUBTYPE
     SUBTYPE = args.subtype.lower()
     if SUBTYPE not in ["h1", "h3", "bv", "by"]:
-        raise RuntimeError(f"Invalid subtype: {SUBTYPE}")
+        raise Error(f"Invalid subtype: {SUBTYPE}")
     ROOT_DIR = Path("/syn/eu/ac/results/signature-pages", args.tag, SUBTYPE)
+    print(f"{EMACS_PREFIX}{ROOT_DIR}")
     STATE_FILE = ROOT_DIR.joinpath("state.json")
     if not ROOT_DIR.exists() or not STATE_FILE.exists():
         initialize(args)
@@ -41,12 +46,12 @@ def run():
     global STATE
     STATE = load_state()
     STATE.pop("error", None)
-    while state["state"] != "completed":
+    while STATE["state"] != "completed":
         current_state = STATE["state"]
         globals()["state_" + current_state]()
         save_state(STATE)
         if current_state == STATE["state"]:
-            raise RuntimeError(f"state not changed from {current_state}")
+            raise Error(f"state not changed from {current_state}")
     email_success()
 
 # ======================================================================
@@ -78,7 +83,6 @@ def state_export_sequences():
 
 def initialize(args):
     ROOT_DIR.mkdir(parents=True, exist_ok=True)
-    ROOT_DIR.joinpath("log").mkdir()
     if args.seqdb:
         shutil.copyfile(str(Path(args.seqdb).expanduser()), str(seqdb_file()))
     config = json.load(Path(os.getenv("ACMACSD_ROOT"), "sources", "acmacs-whocc", "conf", "make-signature-pages.config.json").open("r"))
@@ -90,12 +94,12 @@ def initialize(args):
 def email_error(err):
     from acmacs_base.email import send
     subject = f"FAILED: {socket.gethostname()} {sys.argv}"
-    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n/scp:i19:{ROOT_DIR}\n\n{err}")
+    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{EMACS_PREFIX}{ROOT_DIR}\n\n{err}")
 
 def email_success():
     from acmacs_base.email import send
     subject = f"completed: {socket.gethostname()} {sys.argv}"
-    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n/scp:i19:{ROOT_DIR}")
+    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{EMACS_PREFIX}{ROOT_DIR}")
 
 # ----------------------------------------------------------------------
 
@@ -128,13 +132,13 @@ try:
     exit_code = main(args)
 except Error as err:
     logging.error(str(err))
-    email_error(err)
+    email_error(f"{err}\n{traceback.format_exc()}")
     STATE["error"] = str(err)
     save_state(STATE)
     exit_code = 2
 except Exception as err:
     logging.error('{}\n{}'.format(err, traceback.format_exc()))
-    email_error(err)
+    email_error(f"{err}\n{traceback.format_exc()}")
     STATE["error"] = str(err)
     save_state(STATE)
     exit_code = 1
