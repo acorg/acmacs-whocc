@@ -36,7 +36,8 @@ def main(args):
         raise Error(f"Invalid subtype: {SUBTYPE}")
     ROOT_DIR = Path("/syn/eu/ac/results/signature-pages", args.tag, SUBTYPE).expanduser().resolve()
     print(f"{ROOT_DIR}")
-    fork()
+    if args.daemon:
+        fork()
     STATE_FILE = ROOT_DIR.joinpath("state.json")
     if not ROOT_DIR.exists() or not STATE_FILE.exists():
         initialize(args)
@@ -104,6 +105,12 @@ def state_tree_wait():
 
 # ----------------------------------------------------------------------
 
+def state_draw_trees():
+    tree_file = ROOT_DIR.joinpath("tree.json.xz")
+    settings_file = ROOT_DIR.joinpath("tree.settings.json")
+    settings_no_aa_file = ROOT_DIR.joinpath("tree.settings-no-aa.json")
+    pdfs = [ROOT_DIR.joinpath("aa-at-pos.pdf"), ROOT_DIR.joinpath("all-hz-sections.pdf"), ROOT_DIR.joinpath("tree.pdf"), ROOT_DIR.joinpath("no-aa.pdf")]
+    
 # ======================================================================
 
 def fork():
@@ -154,7 +161,7 @@ def save_state(state):
     except TypeError:
         module_logger.debug(f"STATE\n{pprint.pformat(state)}")
         raise
-    
+
 def load_state():
     return json.load(STATE_FILE.open("r"))
 
@@ -173,6 +180,7 @@ try:
     parser.add_argument('-f', '--flu', action='store', dest='subtype', required=True)
     parser.add_argument('--seqdb', action='store', dest='seqdb', default="~/AD/data/seqdb.json.xz", help="use the specified seqdb instead of making a new one")
     parser.add_argument('-s', '--tree-maker-speed', action='store', dest='tree_maker_speed', default="week", help="\"week\", \"day\" or see ../conf/make-signature-pages.config.json")
+    parser.add_argument('--no-daemon', action='store_false', dest='daemon', default=True)
 
     args = parser.parse_args()
     exit_code = main(args)
