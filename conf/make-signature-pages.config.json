@@ -22,7 +22,8 @@
         "tree_maker": {
             "week": {"garli_num_runs": 128, "garli_stoptime": 604800, "raxml_num_runs": 128, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "12days": {"garli_num_runs": 256, "garli_stoptime": 604800, "raxml_num_runs": 256, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
-            "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
+            "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "day": {"garli_num_runs": 8, "garli_stoptime": 3600, "raxml_num_runs": 8, "raxml_model_optimization_precision": 10, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
         }
     },
     "by": {

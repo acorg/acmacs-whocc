@@ -18,7 +18,9 @@ class Error (Exception): pass
 
 # States:
 # "export_sequences"
-# "make_trees_init"
+# "tree_init"
+# "tree_update_config"
+# "tree_wait"
 
 # ======================================================================
 
@@ -32,8 +34,9 @@ def main(args):
     SUBTYPE = args.subtype.lower()
     if SUBTYPE not in ["h1", "h3", "bv", "by"]:
         raise Error(f"Invalid subtype: {SUBTYPE}")
-    ROOT_DIR = Path("/syn/eu/ac/results/signature-pages", args.tag, SUBTYPE)
-    print(f"{EMACS_PREFIX}{ROOT_DIR}")
+    ROOT_DIR = Path("/syn/eu/ac/results/signature-pages", args.tag, SUBTYPE).expanduser().resolve()
+    print(f"{ROOT_DIR}")
+    fork()
     STATE_FILE = ROOT_DIR.joinpath("state.json")
     if not ROOT_DIR.exists() or not STATE_FILE.exists():
         initialize(args)
@@ -69,17 +72,55 @@ def state_export_sequences():
         "--base-seq", STATE["config"]["sequences"]["base"],
         output_fas
     ]
-    module_logger.info(f"exporting fasta: {output_fas}")
-    module_logger.info(f"running: {cmd}")
-    module_logger.info(f"log: {log_file}")
+    module_logger.info(f"exporting fasta: {output_fas}\n  {cmd}\n  log: {log_file}")
     subprocess.check_call([str(field) for field in cmd], stdout=log_file.open("w"), stderr=subprocess.STDOUT)
-    STATE["state"] = "make_trees_init"
+    STATE["source_fasta"] = str(output_fas)
+    STATE["state"] = "tree_init"
 
 # ----------------------------------------------------------------------
+
+def state_tree_init():
+    from tree_maker import config as config_m
+    module_logger.info(f"initializing tree maker config")
+    config = config_m.get_default_config()
+    config.update(STATE["config"]["tree_maker"][STATE["tree_maker"]])
+    config["source"] = str(Path(STATE["source_fasta"]).resolve())
+    STATE["tree_config"] = config
+    STATE["state"] = "tree_wait"
+
+# ----------------------------------------------------------------------
+
+def state_tree_wait():
+    from tree_maker import maker as maker_m
+    if not STATE.get("tree_state"):
+        STATE["tree_state"] = {"state": "init", "working_dir": str(ROOT_DIR)}
+    module_logger.info(f"creating tree maker runner")
+    runner = maker_m.create_runner(config=STATE["tree_config"], state=STATE["tree_state"])
+    # while STATE["tree_state"] != "completed":
+    #     runner.step()
+    #     module_logger.info(f"making tree: {STATE['tree_state']['state']}")
+    #     save_state(STATE)
+    STATE["state"] = "draw_trees"
 
 # ----------------------------------------------------------------------
 
 # ======================================================================
+
+def fork():
+    if os.fork() == 0:
+        # child
+        os.setsid()
+        sys.stdin.close()
+        sys.stdout.close()
+        sys.stderr.close()
+        os.close(0)
+        os.close(1)
+        os.close(2)
+    else:
+        # parent
+        exit(0)
+
+# ----------------------------------------------------------------------
 
 def initialize(args):
     ROOT_DIR.mkdir(parents=True, exist_ok=True)
