@@ -2,7 +2,7 @@
 # -*- Python -*-
 # ======================================================================
 
-import sys, os, socket, json, datetime, shutil, subprocess
+import sys, os, socket, json, datetime, shutil, subprocess, pprint
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
@@ -96,10 +96,10 @@ def state_tree_wait():
         STATE["tree_state"] = {"state": "init", "working_dir": str(ROOT_DIR)}
     module_logger.info(f"creating tree maker runner")
     runner = maker_m.create_runner(config=STATE["tree_config"], state=STATE["tree_state"])
-    # while STATE["tree_state"] != "completed":
-    #     runner.step()
-    #     module_logger.info(f"making tree: {STATE['tree_state']['state']}")
-    #     save_state(STATE)
+    while STATE["tree_state"] != "completed":
+        runner.step()
+        module_logger.info(f"making tree: {STATE['tree_state']['state']}")
+        save_state(STATE)
     STATE["state"] = "draw_trees"
 
 # ----------------------------------------------------------------------
@@ -148,8 +148,13 @@ def setup_logging():
     logging.basicConfig(filename=ROOT_DIR.joinpath("log.log"), level=logging.DEBUG, format="%(levelname)s %(asctime)s: %(message)s", datefmt=DATEFMT)
 
 def save_state(state):
-    json.dump(state, STATE_FILE.open("w"), indent=2)
-
+    from acmacs_base import json
+    try:
+        json.write_json(path=STATE_FILE, data=state, indent=2, compact=True)
+    except TypeError:
+        module_logger.debug(f"STATE\n{pprint.pformat(state)}")
+        raise
+    
 def load_state():
     return json.load(STATE_FILE.open("r"))
 
