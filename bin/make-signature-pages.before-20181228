@@ -1,0 +1,336 @@
+#! /usr/bin/env python3
+# -*- Python -*-
+# ======================================================================
+
+# States
+# init, make_seqdb, export_sequences,
+# make_trees_init, make_trees_update_config, make_trees_wait, make_trees_completed, make_trees_failed
+
+import sys, os, json, socket, subprocess, time, shutil, pprint
+from pathlib import Path
+# sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
+import logging; module_logger = logging.getLogger(__name__)
+
+# ======================================================================
+
+ROOT_DIR = None
+CONFIG = None
+STATE_FILE = None
+
+class Error (Exception): pass
+
+def main(args):
+    # if socket.gethostname() != "i19":
+    #     raise RuntimeError("The script must be run on i19")
+    if not os.getenv("ACMACSD_ROOT") or not Path(os.getenv("ACMACSD_ROOT"), "data", "hidb5.h1.json.xz"):
+        raise RuntimeError("ACMACSD_ROOT not set or no hidb in $ACMACSD_ROOT/data")
+    global ROOT_DIR, STATE_FILE
+    ROOT_DIR = Path("/syn/eu/ac/results/whocc-tree", args.tag)
+    STATE_FILE = ROOT_DIR.joinpath("state.json")
+    if not ROOT_DIR.exists() or not STATE_FILE.exists():
+        initialize(args)
+    run()
+
+# ----------------------------------------------------------------------
+
+def initialize(args):
+    ROOT_DIR.mkdir(parents=True, exist_ok=True)
+    ROOT_DIR.joinpath("log").mkdir()
+    if args.subtype:
+        subtypes = [args.subtype]
+    else:
+        subtypes = ["H1", "H3", "BV", "BY"]
+    state = {"state": "init", "tree_maker": args.tree_maker_speed, "subtypes": subtypes, "tree": {"running": [], "completed": [], "failed": [], "done": []}}
+    save_state(state)
+    if args.seqdb:
+        shutil.copyfile(args.seqdb, str(_seqdb_file()))
+
+# ----------------------------------------------------------------------
+
+def run():
+    global CONFIG
+    CONFIG = json.load(Path(os.getenv("ACMACSD_ROOT"), "sources", "acmacs-whocc", "conf", "make-signature-pages.config.json").open("r"))
+    # for to_remove in (subtype for subtype in CONFIG if subtype[0] == "?" or subtype[-1] == "?"):
+    #     del CONFIG[subtype]
+    state = load_state()
+    while True:
+        current_state = state["state"]
+        globals()["state_" + current_state](state)
+        save_state(state)
+        if current_state == state["state"]:
+            raise Error("state not changed from " + current_state)
+
+# ----------------------------------------------------------------------
+
+def state_init(state):
+    if not _seqdb_file().exists():
+        state["state"] = "make_seqdb"
+    else:
+        state["state"] = "export_sequences"
+
+# ----------------------------------------------------------------------
+
+def state_make_seqdb(state):
+    module_logger.info("making seqdb (~7min)")
+    cmd = [
+        os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-create"),
+        "--db", ROOT_DIR.joinpath("seqdb.json.xz"),
+        "--match-hidb", "--clades",
+        os.path.expandvars("${HOME}/ac/tables-store/sequences/*.fas.bz2")
+        ]
+    _system(cmd, "seqdb-create.log")
+    state["state"] = "export_sequences"
+
+# ----------------------------------------------------------------------
+
+sSeqdbExportFlu = {"H1": "h1", "H3": "h3", "BV": "bvic", "BY": "byam"}
+
+def state_export_sequences(state):
+    log = ROOT_DIR.joinpath("log", "seqdb-export.log").open("w")
+    for subtype in state["subtypes"]:
+        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        module_logger.info("exporting fasta for %s", subtype)
+        cmd = [
+            os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"),
+            "--db", str(ROOT_DIR.joinpath("seqdb.json.xz")),
+            "--flu", sSeqdbExportFlu[subtype],
+            "--recent", CONFIG[subtype]["sequences"]["recent"],
+            "--hamming-distance-threshold", CONFIG[subtype]["sequences"]["hamming_distance_threshold"],
+            "--tree-maker",
+            "--base-seq", CONFIG[subtype]["sequences"]["base"],
+            output_dir.joinpath("source.fas")
+            ]
+        _system(cmd, log)
+    state["state"] = "make_trees_init"
+
+# ----------------------------------------------------------------------
+
+def state_make_trees_init(state):
+    module_logger.info("initializing tree-maker")
+    log = ROOT_DIR.joinpath("log", "tree-maker.log").open("a")
+    for subtype in state["subtypes"]:
+        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+        _system([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", output_dir, "init"], log)
+    state["state"] = "make_trees_update_config"
+
+# ----------------------------------------------------------------------
+
+def state_make_trees_update_config(state):
+    module_logger.info("updating configs for tree-maker")
+    for subtype in state["subtypes"]:
+        output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+        config_file = output_dir.joinpath("tree-maker.config")
+        config = json.load(config_file.open())
+        config_file.rename(output_dir.joinpath("tree-maker.orig.config"))
+        config.update(CONFIG[subtype]["tree_maker"][state["tree_maker"]])
+        json.dump(config, config_file.open("w"), indent=2, sort_keys=True)
+    state["state"] = "make_trees_wait"
+
+# ----------------------------------------------------------------------
+
+sTreeMakerProc = {}
+
+def state_make_trees_wait(state):
+    global sTreeMakerProc
+    module_logger.info("running tree-maker")
+    log = ROOT_DIR.joinpath("log", "tree-maker.log").open("a")
+    for subtype in state["subtypes"]:
+        if (subtype not in sTreeMakerProc) and (subtype not in (state["tree"]["completed"] + state["tree"]["done"] + state["tree"]["failed"])):
+            module_logger.info("executing tree-maker wait for {}".format(subtype))
+            output_dir = ROOT_DIR.joinpath("tree-maker", subtype)
+            sTreeMakerProc[subtype] = subprocess.Popen([os.path.expandvars("${ACMACSD_ROOT}/bin/tree-maker"), "--dir", str(output_dir), "wait"], stdout=log, stderr=subprocess.STDOUT)
+            _set_add(state["tree"]["running"], subtype)
+    save_state(state)
+    wait_for_tree_maker = bool(sTreeMakerProc)
+    while wait_for_tree_maker:
+        for subtype, proc in sTreeMakerProc.items():
+            try:
+                proc.communicate(timeout=1)
+                if proc.returncode != 0:
+                    module_logger.warning("tree-maker for {} FAILED with code {}".format(subtype, proc.returncode))
+                    state["failure_messages"] = state.get("failure_messages", []) + ["tree-maker for {} FAILED with code {}".format(subtype, proc.returncode)]
+                    _set_add(state["tree"]["failed"], subtype)
+                else:
+                    module_logger.info("tree-maker for {} completed".format(subtype))
+                    _set_add(state["tree"]["completed"], subtype)
+                _set_remove(state["tree"]["running"], subtype)
+                save_state(state)
+                # pprint.pprint(state)
+            except subprocess.TimeoutExpired:
+                pass
+        # if a subtype done, state["state"] = "make_trees_done", then return back to "make_trees_wait"
+        for subtype in state["tree"]["completed"] + state["tree"]["failed"]:
+            if subtype in sTreeMakerProc:
+                del sTreeMakerProc[subtype]
+                wait_for_tree_maker = False
+        if wait_for_tree_maker:
+            time.sleep(60)
+    if state["tree"]["completed"]:
+        state["state"] = "make_trees_completed"
+    elif state["tree"]["failed"]:
+        state["state"] = "make_trees_failed"
+
+# ----------------------------------------------------------------------
+
+sAAAtPosThreshold = {"H1": 100, "H3": 100, "BV": 100, "BY": 100}
+
+sTreeMods = {
+    "H1": [],
+    "H3": [{"d1": 0.04, "mod": "hide-if-cumulative-edge-length-bigger-than"}],
+    "BV": [],
+    "BY": []
+    }
+
+sCladeWidth = {"H1": 60, "H3": 200, "BV": 50, "BY": 50}
+
+def state_make_trees_completed(state):
+    log = ROOT_DIR.joinpath("log", "sigp.log").open("a")
+    sigp = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
+    for subtype in state["tree"]["completed"][:]: # clone list because it is modified at the end of the loop
+        module_logger.info("making pdfs for " + subtype)
+        tree_file = ROOT_DIR.joinpath(subtype + ".tree.json.xz")
+        try:
+            tree_file.symlink_to(ROOT_DIR.joinpath("tree-maker", subtype, "tree.json.xz"))
+        except FileExistsError:
+            pass
+        settings_file = ROOT_DIR.joinpath(subtype + ".tree.settings.json")
+        settings_no_aa_file = ROOT_DIR.joinpath(subtype + ".tree.settings-no-aa.json")
+        pdfs = [ROOT_DIR.joinpath(subtype + ".aa-at-pos.pdf"), ROOT_DIR.joinpath(subtype + ".all-hz-sections.pdf"), ROOT_DIR.joinpath(subtype + ".pdf"), ROOT_DIR.joinpath(subtype + ".no-aa.pdf")]
+        _system([sigp, tree_file, pdfs[0], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[subtype], "--not-show-hz-sections"], log)
+        _system([sigp, tree_file, pdfs[1], "-s", settings_file], log)
+
+        with settings_file.open("r") as fd:
+            settings = json.load(fd)
+        settings["aa_at_pos"]["width"] = 0 #  hide aa-at-pos
+        settings["signature_page"]["layout"] = "tree-ts-clades"
+        settings["signature_page"]["time_series_width"] = 300
+        settings["signature_page"]["clades_width"] = sCladeWidth[subtype]
+        settings["tree"]["mods"] = sTreeMods[subtype]
+        # edit settings:
+        #   avoid long braches
+        with settings_file.open("w") as fd:
+            json.dump(settings, fd)
+        _system([sigp, tree_file, pdfs[2], "-s", settings_file], log)
+        _system([sigp, tree_file, pdfs[3], "--init-settings", settings_no_aa_file], log)
+        make_html(subtype, pdfs)
+        _set_add(state["tree"]["done"], subtype)
+        _set_remove(state["tree"]["completed"], subtype)
+    if state["tree"]["running"]:
+        state["state"] = "make_trees_wait"
+    module_logger.info("making trees done")
+
+# ----------------------------------------------------------------------
+
+sHtml = """
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      object.horizontal {{ width: 1360px; height: 910px; }}
+      object.vertical {{ width: 565px; height: 870px; }}
+      p {{ width: 40em; }}
+    </style>
+    <title>{subtype}: split into HZ sections</title>
+  </head>
+  <body>
+    <h2>{subtype}: split into HZ sections</h2>
+    <h3>Amino acids at the most diverse positions</h3>
+    <p>Central part shows amino acids at the most diverse positions (from left to right, position numbers are at the bottom).
+    The most popular AA is transparent (not shown), the second most popular AA shown with red line, the third with yellow line.
+    Zoom in to see AA name in each line.
+    </p>
+    <{tag} class="horizontal" {src}="{pdf0}{toolbar}" ></{tag}>
+    <h3>Split into HZ sections by amino acids</h3>
+    <p>If for given position there is a long enough sequence of nodes having the same AA
+       (interruption with few nodes having another AA is allowed),
+       then boundaries of that sequences are used to generate HZ lines.
+       Number at the left shows node index (for reference purposes), dotted line is a HZ line,
+       black dashes on the dotted line mark position(s) that triggered creating this HZ line.
+    </p>
+    <{tag} class="horizontal" {src}="{pdf1}{toolbar}" ></{tag}>
+    <h3>Tree with HZ sections</h3>
+    <{tag} class="vertical" {src}="{pdf2}{toolbar}" ></{tag}>
+    <h3>Tree without HZ sections generated by AA</h3>
+    <{tag} class="vertical" {src}="{pdf3}{toolbar}" ></{tag}>
+  </body>
+</html>
+"""
+
+def make_html(subtype, pdfs):
+    for infix, tag, src, toolbar in [[".safari", "img", "src", ""], ["", "object", "data", ""]]: # "#toolbar=0"
+        output = ROOT_DIR.joinpath(subtype + infix + ".html")
+        module_logger.info("making https://notebooks.antigenic-cartography.org/eu/" + str(output).replace("/syn/eu/ac/", ""))
+        with output.open("w") as fd:
+            fd.write(sHtml.format(pdf0=pdfs[0].name, pdf1=pdfs[1].name, pdf2=pdfs[2].name, pdf3=pdfs[3].name, subtype=subtype, tag=tag, src=src, toolbar=toolbar))
+
+# ----------------------------------------------------------------------
+
+def state_make_trees_failed(state):
+    raise Error("Making trees failed for: " + str(state["tree"]["failed"]))
+
+# ----------------------------------------------------------------------
+
+def state_fail(state):
+    raise Error("state fail: " + state.get("failure_messages", ["no message"]).join("\n"))
+
+# ----------------------------------------------------------------------
+
+def save_state(state):
+    json.dump(state, STATE_FILE.open("w"), indent=2)
+
+def load_state():
+    return json.load(STATE_FILE.open("r"))
+
+def _seqdb_file():
+    return ROOT_DIR.joinpath("seqdb.json.xz")
+
+def _set_add(data, to_add):
+    if to_add not in data:
+        data.append(to_add)
+
+def _set_remove(data, to_remove):
+    try:
+        data.remove(to_remove)
+    except ValueError:
+        pass
+
+def _system(cmd, log):
+    if isinstance(log, str):
+        log = ROOT_DIR.joinpath("log", log).open("w")
+    elif isinstance(log, Path):
+        log = log.open("w")
+    subprocess.check_call([str(field) for field in cmd], stdout=log, stderr=subprocess.STDOUT)
+
+# ----------------------------------------------------------------------
+
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
+    parser.add_argument('-t', '--tag', action='store', dest='tag', required=True)
+    parser.add_argument('-s', '--subtype', action='store', dest='subtype', default=None, help="run for this subtype only")
+    parser.add_argument('--seqdb', action='store', dest='seqdb', default=None, help="use the specified seqdb instead of making a new one")
+    parser.add_argument('--tree-maker-speed', action='store', dest='tree_maker_speed', default="week", help="\"week\", \"day\" or see ../conf/make-signature-pages.config.json")
+
+    args = parser.parse_args()
+    if args.verbose:
+        args.loglevel = logging.DEBUG
+    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    exit_code = main(args)
+except Error as err:
+    logging.error(str(err))
+    exit_code = 2
+except Exception as err:
+    logging.error('{}\n{}'.format(err, traceback.format_exc()))
+    exit_code = 1
+exit(exit_code)
+
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:

@@ -1,6 +1,16 @@
-Time-stamp: <2018-07-16 11:44:22 eu>
-* Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]]
-* Run on albertine ~/AD/sources/acmacs-whocc/bin/make-signature-pages -t $(date '+%Y-%m%d')
+Time-stamp: <2018-12-28 09:36:53 eu>
+* Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
+* Check config
+~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
+* On albertine
+#+BEGIN_SRC sh
+~/AD/sources/acmacs-whocc/bin/make-signature-pages -t $(date '+%Y-%m%d') -f <h1 h3 bv by> -s <week day>
+#+END_SRC
+Command above creates directory, submits to condor and then runs in background.
+If processing directory exists, program starts again from the last saved state.
+Program sends email on completion or failure.
+* OLD (before <2018-12-28 Fri>)
+Run on albertine ~/AD/sources/acmacs-whocc/bin/make-signature-pages.before-20181228 -t $(date '+%Y-%m%d')
 * OLD (before <2018-07-16 Mon>)
 ** Making tree for the signature page from the WHO CC sequence and HI tables
 *** download sequences from gisaid (see GISAID.md) in put it into ~/ac/tables-store/sequences/gisaid-all-20160101-$(date +%Y%m%d).fas.bz2
