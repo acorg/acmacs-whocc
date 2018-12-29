@@ -41,7 +41,7 @@ def main(args):
     STATE_FILE = ROOT_DIR.joinpath("state.json")
     if not ROOT_DIR.exists() or not STATE_FILE.exists():
         initialize(args)
-    setup_logging()
+    logging.basicConfig(filename=ROOT_DIR.joinpath("log.log"), level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s", datefmt=DATEFMT)
     run()
 
 # ----------------------------------------------------------------------
@@ -74,7 +74,7 @@ def state_export_sequences():
         output_fas
     ]
     module_logger.info(f"exporting fasta: {output_fas}\n  {cmd}\n  log: {log_file}")
-    subprocess.check_call([str(field) for field in cmd], stdout=log_file.open("w"), stderr=subprocess.STDOUT)
+    check_call(cmd, log_file)
     STATE["source_fasta"] = str(output_fas)
     STATE["state"] = "tree_init"
 
@@ -105,12 +105,65 @@ def state_tree_wait():
 
 # ----------------------------------------------------------------------
 
+sAAAtPosThreshold = {"h1": 100, "h3": 100, "bv": 100, "by": 100}
+
+sTreeMods = {
+    "h1": [],
+    "h3": [{"d1": 0.04, "mod": "hide-if-cumulative-edge-length-bigger-than"}],
+    "bv": [],
+    "by": []
+    }
+
+sCladeWidth = {"h1": 60, "h3": 200, "bv": 50, "by": 50}
+
 def state_draw_trees():
+    log_file = ROOT_DIR.joinpath("trees.log")
+    sigp = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
     tree_file = ROOT_DIR.joinpath("tree.json.xz")
     settings_file = ROOT_DIR.joinpath("tree.settings.json")
     settings_no_aa_file = ROOT_DIR.joinpath("tree.settings-no-aa.json")
-    pdfs = [ROOT_DIR.joinpath("aa-at-pos.pdf"), ROOT_DIR.joinpath("all-hz-sections.pdf"), ROOT_DIR.joinpath("tree.pdf"), ROOT_DIR.joinpath("no-aa.pdf")]
-    
+    pdfs = {k: str(ROOT_DIR.joinpath(f"{k}.pdf")) for k in ["aa-at-pos", "all-hz-sections", "tree", "no-aa"]}
+    check_call([sigp, tree_file, pdfs["aa-at-pos"], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
+    check_call([sigp, tree_file, pdfs["all-hz-sections"], "-s", settings_file], log_file)
+
+    settings = json.load(settings_file.open("r"))
+    settings["aa_at_pos"]["width"] = 0 #  hide aa-at-pos
+    settings["signature_page"]["layout"] = "tree-ts-clades"
+    settings["signature_page"]["time_series_width"] = 300
+    settings["signature_page"]["clades_width"] = sCladeWidth[SUBTYPE]
+    settings["tree"]["mods"] = sTreeMods[SUBTYPE]
+    json.dump(settings, settings_file.open("w"))
+
+    check_call([sigp, tree_file, pdfs["tree"], "-s", settings_file], log_file)
+    check_call([sigp, tree_file, pdfs["no-aa"], "--init-settings", settings_no_aa_file], log_file)
+
+    STATE["tree_pdfs"] = pdfs
+    STATE["state"] = "get_merges"
+
+# ----------------------------------------------------------------------
+
+def state_get_merges():
+    # STATE["state"] = "draw_signature_pages"
+    # STATE["state"] = "h1_overlay"
+
+# ----------------------------------------------------------------------
+
+def state_h1_overlay():
+    pass
+    # STATE["state"] = "draw_signature_pages"
+
+# ----------------------------------------------------------------------
+
+def state_draw_signature_pages():
+    pass
+    # STATE["state"] = "index_html"
+
+# ----------------------------------------------------------------------
+
+def state_index_html():
+    pass
+    # STATE["state"] = "completed"
+
 # ======================================================================
 
 def fork():
@@ -151,8 +204,9 @@ def email_success():
 
 # ----------------------------------------------------------------------
 
-def setup_logging():
-    logging.basicConfig(filename=ROOT_DIR.joinpath("log.log"), level=logging.DEBUG, format="%(levelname)s %(asctime)s: %(message)s", datefmt=DATEFMT)
+def check_call(cmd, log_file):
+    module_logger.info(str(cmd))
+    subprocess.check_call([str(field) for field in cmd], stdout=log_file.open("a"), stderr=subprocess.STDOUT)
 
 def save_state(state):
     from acmacs_base import json
