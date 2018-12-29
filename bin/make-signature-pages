@@ -143,8 +143,12 @@ def state_draw_trees():
 # ----------------------------------------------------------------------
 
 def state_get_merges():
-    # STATE["state"] = "draw_signature_pages"
-    # STATE["state"] = "h1_overlay"
+    from acmacs_whocc.acmacs import get_recent_merges
+    get_recent_merges(target_dir=ROOT_DIR, subtype=SUBTYPE)
+    if SUBTYPE == "h1":
+        STATE["state"] = "h1_overlay"
+    else:
+        STATE["state"] = "draw_signature_pages"
 
 # ----------------------------------------------------------------------
 
