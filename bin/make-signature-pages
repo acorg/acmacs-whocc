@@ -124,7 +124,7 @@ def state_draw_trees():
     settings_file = ROOT_DIR.joinpath("tree.settings.json")
     pdfs = {k: str(ROOT_DIR.joinpath(f"{k}.pdf")) for k in ["tree", "tree-aa-at-pos"]} # , "all-hz-sections"
     check_call([sigp, tree_file, pdfs["tree"], "--init-settings", settings_file], log_file)
-    check_call([sigp, tree_file, pdfs["aa-at-pos"], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
+    check_call([sigp, tree_file, pdfs["tree-aa-at-pos"], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
 
     # settings_no_aa_file = ROOT_DIR.joinpath("tree.settings-no-aa.json")
     # check_call([sigp, tree_file, pdfs["all-hz-sections"], "-s", settings_file], log_file)
