@@ -2,7 +2,7 @@
 # -*- Python -*-
 # ======================================================================
 
-import sys, os, socket, json, datetime, shutil, subprocess, pprint
+import sys, os, socket, datetime, shutil, subprocess, pprint
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
@@ -117,27 +117,19 @@ sTreeMods = {
 sCladeWidth = {"h1": 60, "h3": 200, "bv": 50, "by": 50}
 
 def state_draw_trees():
+    from acmacs_base import json
     log_file = ROOT_DIR.joinpath("trees.log")
     sigp = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
     tree_file = ROOT_DIR.joinpath("tree.json.xz")
     settings_file = ROOT_DIR.joinpath("tree.settings.json")
-    settings_no_aa_file = ROOT_DIR.joinpath("tree.settings-no-aa.json")
-    pdfs = {k: str(ROOT_DIR.joinpath(f"{k}.pdf")) for k in ["aa-at-pos", "all-hz-sections", "tree", "no-aa"]}
+    pdfs = {k: str(ROOT_DIR.joinpath(f"{k}.pdf")) for k in ["tree", "tree-aa-at-pos"]} # , "all-hz-sections"
+    check_call([sigp, tree_file, pdfs["tree"], "--init-settings", settings_file], log_file)
     check_call([sigp, tree_file, pdfs["aa-at-pos"], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
-    check_call([sigp, tree_file, pdfs["all-hz-sections"], "-s", settings_file], log_file)
 
-    settings = json.load(settings_file.open("r"))
-    settings["aa_at_pos"]["width"] = 0 #  hide aa-at-pos
-    settings["signature_page"]["layout"] = "tree-ts-clades"
-    settings["signature_page"]["time_series_width"] = 300
-    settings["signature_page"]["clades_width"] = sCladeWidth[SUBTYPE]
-    settings["tree"]["mods"] = sTreeMods[SUBTYPE]
-    json.dump(settings, settings_file.open("w"))
+    # settings_no_aa_file = ROOT_DIR.joinpath("tree.settings-no-aa.json")
+    # check_call([sigp, tree_file, pdfs["all-hz-sections"], "-s", settings_file], log_file)
 
-    check_call([sigp, tree_file, pdfs["tree"], "-s", settings_file], log_file)
-    check_call([sigp, tree_file, pdfs["no-aa"], "--init-settings", settings_no_aa_file], log_file)
-
-    STATE["tree_pdfs"] = pdfs
+    STATE["pdfs"] = pdfs
     STATE["state"] = "get_merges"
 
 # ----------------------------------------------------------------------
@@ -187,10 +179,11 @@ def fork():
 # ----------------------------------------------------------------------
 
 def initialize(args):
+    from acmacs_base import json
     ROOT_DIR.mkdir(parents=True, exist_ok=True)
     if args.seqdb:
         shutil.copyfile(str(Path(args.seqdb).expanduser()), str(seqdb_file()))
-    config = json.load(Path(os.getenv("ACMACSD_ROOT"), "sources", "acmacs-whocc", "conf", "make-signature-pages.config.json").open("r"))
+    config = json.read(Path(os.getenv("ACMACSD_ROOT"), "sources", "acmacs-whocc", "conf", "make-signature-pages.config.json"))
     state = {"state": "export_sequences", "start": datetime.datetime.now().strftime(DATEFMT), "tree_maker": args.tree_maker_speed, "subtype": SUBTYPE, "config": config[SUBTYPE]}
     save_state(state)
 
@@ -215,13 +208,14 @@ def check_call(cmd, log_file):
 def save_state(state):
     from acmacs_base import json
     try:
-        json.write_json(path=STATE_FILE, data=state, indent=2, compact=True)
+        json.write(path=STATE_FILE, data=state, indent=2, compact=True)
     except TypeError:
         module_logger.debug(f"STATE\n{pprint.pformat(state)}")
         raise
 
 def load_state():
-    return json.load(STATE_FILE.open("r"))
+    from acmacs_base import json
+    return json.read(STATE_FILE)
 
 def seqdb_file():
     return ROOT_DIR.joinpath("seqdb.json.xz")
