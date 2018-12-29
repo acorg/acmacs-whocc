@@ -31,6 +31,7 @@ LDLIBS = \
 install: $(TARGETS)
 	ln -sf $(DIST)/* $(AD_BIN)
 	ln -sf $(abspath bin)/* $(AD_BIN)
+	$(call symbolic_link,$(abspath py)/acmacs_whocc,$(AD_PY)/acmacs_whocc)
 	mkdir -p $(AD_SHARE)/js/who; ln -sf $(SRC_DIR)/acmacs-whocc/js/* $(AD_SHARE)/js/who
 
 test: install
