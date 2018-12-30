@@ -121,10 +121,9 @@ def state_draw_trees():
     from acmacs_base import json
     log_file = ROOT_DIR.joinpath("trees.log")
     tree_file = ROOT_DIR.joinpath("tree.json.xz")
-    settings_file = ROOT_DIR.joinpath("tree.settings.json")
     pdfs = {k: str(ROOT_DIR.joinpath(f"{k}.pdf")) for k in ["tree", "tree-aa-at-pos"]} # , "all-hz-sections"
-    check_call([SIGP, tree_file, pdfs["tree"], "--init-settings", settings_file], log_file)
-    check_call([SIGP, tree_file, pdfs["tree-aa-at-pos"], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
+    check_call([SIGP, tree_file, pdfs["tree"], "--init-settings", ROOT_DIR.joinpath("tree.settings.json")], log_file)
+    check_call([SIGP, tree_file, pdfs["tree-aa-at-pos"], "--init-settings", ROOT_DIR.joinpath("tree-aa-at-pos.settings.json"), "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
 
     # settings_no_aa_file = ROOT_DIR.joinpath("tree.settings-no-aa.json")
     # check_call([SIGP, tree_file, pdfs["all-hz-sections"], "-s", settings_file], log_file)
