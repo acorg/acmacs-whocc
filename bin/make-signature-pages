@@ -13,6 +13,7 @@ SUBTYPE = None
 DATEFMT = "%Y-%m-%d %H:%M:%S"
 STATE = None
 EMACS_PREFIX = f"/scp:{socket.gethostname()}:"
+SIGP = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
 
 class Error (Exception): pass
 
@@ -119,15 +120,14 @@ sCladeWidth = {"h1": 60, "h3": 200, "bv": 50, "by": 50}
 def state_draw_trees():
     from acmacs_base import json
     log_file = ROOT_DIR.joinpath("trees.log")
-    sigp = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
     tree_file = ROOT_DIR.joinpath("tree.json.xz")
     settings_file = ROOT_DIR.joinpath("tree.settings.json")
     pdfs = {k: str(ROOT_DIR.joinpath(f"{k}.pdf")) for k in ["tree", "tree-aa-at-pos"]} # , "all-hz-sections"
-    check_call([sigp, tree_file, pdfs["tree"], "--init-settings", settings_file], log_file)
-    check_call([sigp, tree_file, pdfs["tree-aa-at-pos"], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
+    check_call([SIGP, tree_file, pdfs["tree"], "--init-settings", settings_file], log_file)
+    check_call([SIGP, tree_file, pdfs["tree-aa-at-pos"], "--init-settings", settings_file, "--show-aa-at-pos", "--aa-at-pos-hz-section-threshold", sAAAtPosThreshold[SUBTYPE], "--not-show-hz-sections"], log_file)
 
     # settings_no_aa_file = ROOT_DIR.joinpath("tree.settings-no-aa.json")
-    # check_call([sigp, tree_file, pdfs["all-hz-sections"], "-s", settings_file], log_file)
+    # check_call([SIGP, tree_file, pdfs["all-hz-sections"], "-s", settings_file], log_file)
 
     STATE["pdfs"] = pdfs
     STATE["state"] = "get_merges"
@@ -151,14 +151,51 @@ def state_h1_overlay():
 # ----------------------------------------------------------------------
 
 def state_draw_signature_pages():
-    pass
+    tree_settings_file = ROOT_DIR.joinpath("tree.settings.json")
+    tree_file = ROOT_DIR.joinpath("tree.json.xz")
+    log_file = ROOT_DIR.joinpath("sigp.log")
+    for chart_pathname in ROOT_DIR.glob("*.ace"):
+        # lab, subtype, assay = chart_pathname.stem.split("-")
+        settings_file = ROOT_DIR.joinpath(f"{chart_pathname.stem}.settings.json")
+        pdf = ROOT_DIR.joinpath(f"{chart_pathname.stem}.pdf")
+        STATE["pdfs"][f"sigp-{chart_pathname.stem}"] = pdf
+        check_call([SIGP, tree_file, pdf, "-s", tree_settings_file, "--init-settings", settings_file, "--chart", chart_pathname], log_file)
     # STATE["state"] = "index_html"
 
 # ----------------------------------------------------------------------
 
+sHtml = """
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      object.horizontal {{ width: 1360px; height: 910px; }}
+      object.vertical {{ width: 565px; height: 870px; }}
+      p {{ width: 40em; }}
+    </style>
+    <title>{subtype}: Trees and signature pages</title>
+  </head>
+  <body>
+    <h2>{subtype}: Trees and signature pages</h2>
+    <h3>Tree</h3>
+    <{tag} class="horizontal" {src}="{pdf_tree}{toolbar}" ></{tag}>
+    <h3>Amino acids at the most diverse positions</h3>
+    <p>Central part shows amino acids at the most diverse positions (from left to right, position numbers are at the bottom).
+    The most popular AA is transparent (not shown), the second most popular AA shown with red line, the third with yellow line.
+    Zoom in to see AA name in each line.
+    </p>
+    <{tag} class="horizontal" {src}="{pdf_tree_aa_at_pos}{toolbar}" ></{tag}>
+  </body>
+</html>
+"""
+
 def state_index_html():
-    pass
-    # STATE["state"] = "completed"
+    for infix, tag, src, toolbar in [[".safari", "img", "src", ""], ["", "object", "data", ""]]: # "#toolbar=0"
+        output = ROOT_DIR.joinpath(f"index{infix}.html")
+        module_logger.info("making https://notebooks.antigenic-cartography.org/eu/" + str(output).replace("/syn/eu/ac/", ""))
+        output.open("w").write(sHtml.format(pdf_tree=STATE["pdfs"]["tree"], pdf_tree_aa_at_pos=STATE["pdfs"]["tree-aa-at-pos"], subtype=SUBTYPE, tag=tag, src=src, toolbar=toolbar))
+    STATE["state"] = "completed"
 
 # ======================================================================
 
