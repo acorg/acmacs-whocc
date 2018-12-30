@@ -17,11 +17,18 @@ SIGP = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
 
 class Error (Exception): pass
 
+# Config: ~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
+
 # States:
 # "export_sequences"
 # "tree_init"
 # "tree_update_config"
 # "tree_wait"
+# "draw_trees"
+# "get_merges"
+# "h1_overlay"
+# "draw_signature_pages"
+# "index_html"
 
 # ======================================================================
 
@@ -98,7 +105,7 @@ def state_tree_wait():
         STATE["tree_state"] = {"state": "init", "working_dir": str(ROOT_DIR)}
     module_logger.info(f"creating tree maker runner")
     runner = maker_m.create_runner(config=STATE["tree_config"], state=STATE["tree_state"])
-    while STATE["tree_state"] != "completed":
+    while STATE["tree_state"]["state"] != "completed":
         runner.step()
         module_logger.info(f"making tree: {STATE['tree_state']['state']}")
         save_state(STATE)
