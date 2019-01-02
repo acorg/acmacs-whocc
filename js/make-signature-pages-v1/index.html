@@ -3,12 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <style>
+      object.horizontal { width: 1360px; height: 910px; }
+      object.vertical { width: 565px; height: 870px; }
+      ul {list-style-type: none; padding-left: 0; }
+      #signature-pages li { margin-bottom: 4em; }
+      #logs { margin-left: 1em; }
     </style>
     <script>
+      var body;
+      const labs = ["cdc", "nimr", "niid", "melb"];
+      const lab_to_name = {"cdc": "CDC", "nimr": "Crick", "niid": "NIID", "melb": "VIDRL"};
+      const subtype_to_title = {h1: "A(H1N1)", h3: "A(H3N2)", bv: "B/Vic", by: "B/Yam"};
+      const isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && safari.pushNotification));
+      
       function main() {
-          const ul = document.getElementsByTagName("body")[0].appendChild(document.createElement("ul"));
-          ul.innerHTML = "<li id='signature-pages'></li><li id='trees'></li><li id='logs'></li>";
-          document.getElementById("logs").innerHTML = "Logs:<ul><li><a href='log.log'>main log</a></li><li><a href='seqdb-export.log'>seqdb-export.log</a></li><li><a href='sigp.log'>sigp.log</a></li><li><a href='trees.log'>trees.log</a></li><li id='h1-merge-log'><a href='h1-merge.log'>h1-merge.log</a></li></ul>";
+          body = document.getElementsByTagName("body")[0];
+          body.appendChild(document.createElement("h2")).setAttribute("id", "title");
+          const ul = body.appendChild(document.createElement("ul"));
+          ul.innerHTML = "<li><ul id='signature-pages'></ul></li><li><ul id='trees'></ul></li><li>Logs:<ul id='logs'></ul></li>";
+          document.getElementById("logs").innerHTML = "<li><a href='log.log'>main log</a></li><li><a href='seqdb-export.log'>seqdb-export.log</a></li><li><a href='sigp.log'>sigp.log</a></li><li><a href='trees.log'>trees.log</a></li><li id='h1-merge-log'><a href='h1-merge.log'>h1-merge.log</a></li>";
           
           fetch("state.json").then(function(response) {
               response.json().then(handle);
@@ -20,6 +33,39 @@
           if (data.subtype !== "h1") {
               document.getElementById("h1-merge-log").style.display = "none";
           }
+
+          document.getElementById("title").innerHTML = subtype_to_title[data.subtype] || "";
+
+          const ul_sigp = document.getElementById("signature-pages");
+          for (let lab of labs) {
+              for (let assay of ["hi", "neut"]) {
+                  const pdf_tag = `sigp-${lab}-${data.subtype}-${assay}`;
+                  // console.log(pdf_tag);
+                  if (data.pdfs[pdf_tag]) {
+                      const pdf_name = show_pdf(pdf_path(data.pdfs[pdf_tag]), "horizontal");
+                      // ul_sigp.appendChild(document.createElement("li")).innerHTML = `${lab_to_name[lab]} ${assay.toUpperCase()} ${pdf_name}`;
+                      ul_sigp.appendChild(document.createElement("li")).innerHTML = pdf_name;
+                  }
+              }
+          }
+
+          const ul_trees = document.getElementById("trees");
+          if (data.pdfs.tree)
+              ul_trees.appendChild(document.createElement("li")).innerHTML = show_pdf(pdf_path(data.pdfs.tree), "vertical");
+          if (data.pdfs["tree-aa-at-pos"])
+              ul_trees.appendChild(document.createElement("li")).innerHTML = show_pdf(pdf_path(data.pdfs["tree-aa-at-pos"]), "horizontal");
+      }
+
+      function pdf_path(fullpath) {
+          const fields = fullpath.split('/');
+          return fields[fields.length - 1];
+      }
+      
+      function show_pdf(address, cls) {
+          if (isSafari)
+              return `<img src="${address}">`
+          else
+              return `<object class="${cls}" data="${address}">`
       }
       
     </script>

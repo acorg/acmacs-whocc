@@ -193,39 +193,6 @@ def state_index_html():
         shutil.copy2(str(src), str(ROOT_DIR))
     STATE["state"] = "completed"
 
-# sHtml = """
-# <!DOCTYPE html>
-# <html>
-#   <head>
-#     <meta charset="utf-8" />
-#     <style>
-#       object.horizontal {{ width: 1360px; height: 910px; }}
-#       object.vertical {{ width: 565px; height: 870px; }}
-#       p {{ width: 40em; }}
-#     </style>
-#     <title>{subtype}: Trees and signature pages</title>
-#   </head>
-#   <body>
-#     <h2>{subtype}: Trees and signature pages</h2>
-#     <h3>Tree</h3>
-#     <{tag} class="horizontal" {src}="{pdf_tree}{toolbar}" ></{tag}>
-#     <h3>Amino acids at the most diverse positions</h3>
-#     <p>Central part shows amino acids at the most diverse positions (from left to right, position numbers are at the bottom).
-#     The most popular AA is transparent (not shown), the second most popular AA shown with red line, the third with yellow line.
-#     Zoom in to see AA name in each line.
-#     </p>
-#     <{tag} class="horizontal" {src}="{pdf_tree_aa_at_pos}{toolbar}" ></{tag}>
-#   </body>
-# </html>
-# """
-
-# def state_index_html():
-#     for infix, tag, src, toolbar in [[".safari", "img", "src", ""], ["", "object", "data", ""]]: # "#toolbar=0"
-#         output = ROOT_DIR.joinpath(f"index{infix}.html")
-#         module_logger.info("making https://notebooks.antigenic-cartography.org/eu/" + str(output).replace("/syn/eu/ac/", ""))
-#         output.open("w").write(sHtml.format(pdf_tree=STATE["pdfs"]["tree"], pdf_tree_aa_at_pos=STATE["pdfs"]["tree-aa-at-pos"], subtype=SUBTYPE, tag=tag, src=src, toolbar=toolbar))
-#     STATE["state"] = "completed"
-
 # ======================================================================
 
 def fork():
