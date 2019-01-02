@@ -43,10 +43,13 @@ def main(args):
     if SUBTYPE not in ["h1", "h3", "bv", "by"]:
         raise Error(f"Invalid subtype: {SUBTYPE}")
     ROOT_DIR = Path("/syn/eu/ac/results/signature-pages", args.tag, SUBTYPE).expanduser().resolve()
+    STATE_FILE = ROOT_DIR.joinpath("state.json")
+    if args.show_state:
+        show_state()
+        exit(0)
     print(f"{ROOT_DIR}")
     if args.daemon:
         fork()
-    STATE_FILE = ROOT_DIR.joinpath("state.json")
     if not ROOT_DIR.exists() or not STATE_FILE.exists():
         initialize(args)
     logging.basicConfig(filename=ROOT_DIR.joinpath("log.log"), level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s", datefmt=DATEFMT)
@@ -230,6 +233,13 @@ def initialize(args):
     state = {"state": "export_sequences", "start": datetime.datetime.now().strftime(DATEFMT), "tree_maker": args.tree_maker_speed, "subtype": SUBTYPE, "config": config[SUBTYPE]}
     save_state(state)
 
+def show_state():
+    if not ROOT_DIR.exists() or not STATE_FILE.exists():
+        print("initial")
+    else:
+        state = load_state()
+        print(state["state"])
+        
 # ----------------------------------------------------------------------
 
 def email_error(err):
@@ -276,6 +286,7 @@ try:
     parser.add_argument('--seqdb', action='store', dest='seqdb', default="~/AD/data/seqdb.json.xz", help="use the specified seqdb instead of making a new one")
     parser.add_argument('-s', '--tree-maker-speed', action='store', dest='tree_maker_speed', default="week", help="\"week\", \"day\" or see ../conf/make-signature-pages.config.json")
     parser.add_argument('--no-daemon', action='store_false', dest='daemon', default=True)
+    parser.add_argument('--show-state', action='store_true', dest='show_state', default=False)
 
     args = parser.parse_args()
     exit_code = main(args)
