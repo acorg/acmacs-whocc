@@ -32,6 +32,7 @@ class Error (Exception): pass
 # "h1_overlay"
 # "h1_overlay_relax"
 # "draw_signature_pages"
+# "report_pdf"
 # "index_html"
 
 # ======================================================================
@@ -184,9 +185,12 @@ def state_draw_signature_pages():
         pdf = ROOT_DIR.joinpath(f"{chart_pathname.stem}.pdf")
         STATE["pdfs"][f"sigp-{chart_pathname.stem}"] = pdf
         check_call([SIGP, tree_file, pdf, "-s", tree_settings_file, "--init-settings", settings_file, "--chart", chart_pathname], log_file)
-    STATE["state"] = "index_html"
+    STATE["state"] = "report_pdf"
 
 # ----------------------------------------------------------------------
+
+def state_report_pdf():
+    STATE["state"] = "index_html"
 
 def state_index_html():
     for src in ACMACSD_ROOT.joinpath("share", "js", "who", "make-signature-pages-v1").glob("*"):
@@ -226,7 +230,7 @@ def show_state():
     else:
         state = load_state()
         print(state["state"])
-        
+
 # ----------------------------------------------------------------------
 
 def email_error(err):

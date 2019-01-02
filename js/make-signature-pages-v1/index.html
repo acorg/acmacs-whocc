@@ -8,6 +8,7 @@
       ul {list-style-type: none; padding-left: 0; }
       #signature-pages li { margin-bottom: 4em; }
       #logs { margin-left: 1em; }
+      #pdf-with-all { margin-bottom: 2em; }
     </style>
     <script>
       var body;
@@ -20,7 +21,7 @@
           body = document.getElementsByTagName("body")[0];
           body.appendChild(document.createElement("h2")).setAttribute("id", "title");
           const ul = body.appendChild(document.createElement("ul"));
-          ul.innerHTML = "<li><ul id='signature-pages'></ul></li><li><ul id='trees'></ul></li><li>Logs:<ul id='logs'></ul></li>";
+          ul.innerHTML = `<li id="pdf-with-all"></li><li><ul id="signature-pages"></ul></li><li><ul id="trees"></ul></li><li>Logs:<ul id="logs"></ul></li>`;
           document.getElementById("logs").innerHTML = "<li><a href='log.log'>main log</a></li><li><a href='seqdb-export.log'>seqdb-export.log</a></li><li><a href='sigp.log'>sigp.log</a></li><li><a href='trees.log'>trees.log</a></li><li id='h1-merge-log'><a href='h1-merge.log'>h1-merge.log</a></li>";
           
           fetch("state.json").then(function(response) {
@@ -35,6 +36,7 @@
           }
 
           document.getElementById("title").innerHTML = subtype_to_title[data.subtype] || "";
+          document.getElementById("pdf-with-all").innerHTML = `<a href="report-${data.subtype}.pdf">Pdf with all signature pages for ${subtype_to_title[data.subtype]}</a>`;
 
           const ul_sigp = document.getElementById("signature-pages");
           for (let lab of labs) {
