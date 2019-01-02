@@ -189,8 +189,9 @@ def state_draw_signature_pages():
 # ----------------------------------------------------------------------
 
 def state_index_html():
-    shutil.copytree(str(ACMACSD_ROOT.joinpath("share", "js", "who", "make-signature-pages-v1")), str("ROOT_DIR"))
-    # STATE["state"] = "completed"
+    for src in ACMACSD_ROOT.joinpath("share", "js", "who", "make-signature-pages-v1").glob("*"):
+        shutil.copy2(str(src), str(ROOT_DIR))
+    STATE["state"] = "completed"
 
 # sHtml = """
 # <!DOCTYPE html>
@@ -269,7 +270,8 @@ def email_error(err):
 def email_success():
     from acmacs_base.email import send
     subject = f"completed: {socket.gethostname()} {sys.argv}"
-    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{EMACS_PREFIX}{ROOT_DIR}")
+    url = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR).replace("/syn/eu/ac/", "")
+    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{url}\n{EMACS_PREFIX}{ROOT_DIR}")
 
 # ----------------------------------------------------------------------
 
