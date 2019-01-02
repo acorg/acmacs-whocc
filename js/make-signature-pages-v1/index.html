@@ -4,12 +4,30 @@
     <meta charset="utf-8" />
     <style>
     </style>
+    <script>
+      function main() {
+          const ul = document.getElementsByTagName("body")[0].appendChild(document.createElement("ul"));
+          ul.innerHTML = "<li id='signature-pages'></li><li id='trees'></li><li id='logs'></li>";
+          document.getElementById("logs").innerHTML = "Logs:<ul><li><a href='log.log'>main log</a></li><li><a href='seqdb-export.log'>seqdb-export.log</a></li><li><a href='sigp.log'>sigp.log</a></li><li><a href='trees.log'>trees.log</a></li><li id='h1-merge-log'><a href='h1-merge.log'>h1-merge.log</a></li></ul>";
+          
+          fetch("state.json").then(function(response) {
+              response.json().then(handle);
+          });
+      }
+
+      function handle(data) {
+          console.log(data);
+          if (data.subtype !== "h1") {
+              document.getElementById("h1-merge-log").style.display = "none";
+          }
+      }
+      
+    </script>
     <title>Signature Pages</title>
   </head>
   <body>
     <!-- https://stackoverflow.com/questions/9899372/pure-javascript-equivalent-of-jquerys-ready-how-to-call-a-function-when-t -->
-    <script type="module">
-      import {main} from "./main.js";
+    <script>
       (function() {
           main();
       })();
