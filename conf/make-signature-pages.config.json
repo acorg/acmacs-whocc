@@ -40,7 +40,7 @@
         }
     },
     "? previous-timing": {
-        "week" {
+        "week": {
             "2018-0814": "12 days",
             "2018-0906": " 5 days 22 hours",
             "2018-1010": " 6 days  5 hours",
