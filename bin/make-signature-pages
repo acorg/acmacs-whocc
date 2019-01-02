@@ -190,6 +190,13 @@ def state_draw_signature_pages():
 # ----------------------------------------------------------------------
 
 def state_report_pdf():
+    # https://stackoverflow.com/questions/2507766/merge-convert-multiple-pdf-files-into-one-pdf
+    log_file = ROOT_DIR.joinpath("gs.log")
+    labs = ["cdc", "nimr", "niid", "melb"]
+    assays = ["hi", "neut"]
+    pdfs = [fn for fn in (ROOT_DIR.joinpath(f"{lab}-{STATE['subtype']}-{assay}.pdf") for lab in labs for assay in assays) if fn.exists()]
+    result = ROOT_DIR.joinpath(f"report-{STATE['subtype']}.pdf")
+    check_call(["gs", "-dBATCH", "-dNOPAUSE", "-q", "-sDEVICE=pdfwrite", "-dPDFSETTINGS=/prepress", f"-sOutputFile={result}"] + pdfs, log_file)
     STATE["state"] = "index_html"
 
 def state_index_html():
