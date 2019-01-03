@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      object.horizontal { width: 1360px; height: 910px; }
+      object.vertical { width: 565px; height: 870px; }
+      ul {list-style-type: none; padding-left: 0; }
+      #signature-pages li { margin-bottom: 4em; }
+      #logs { margin-left: 1em; }
+      #pdf-with-all { margin-bottom: 2em; }
+    </style>
+    <script>
+      var body;
+      
+      function main() {
+          body = document.getElementsByTagName("body")[0];
+          body.appendChild(document.createElement("h2")).setAttribute("id", "title");
+          
+          fetch("state.json").then(function(response) {
+              response.json().then(handle);
+          });
+      }
+
+      function handle(data) {
+          console.log(data);
+      }
+
+    </script>
+    <title>Signature Pages</title>
+  </head>
+  <body>
+    <!-- https://stackoverflow.com/questions/9899372/pure-javascript-equivalent-of-jquerys-ready-how-to-call-a-function-when-t -->
+    <script>
+      (function() {
+          main();
+      })();
+    </script>
+  </body>
+</html>

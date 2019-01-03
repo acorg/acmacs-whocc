@@ -18,6 +18,9 @@ SIGP = os.path.expandvars("${ACMACSD_ROOT}/bin/sigp")
 CHART_MERGE = os.path.expandvars("${ACMACSD_ROOT}/bin/chart-merge")
 CHART_RELAX_EXISTING = os.path.expandvars("${ACMACSD_ROOT}/bin/chart-relax-existing")
 
+LABS = ["cdc", "nimr", "niid", "melb"]
+ASSAYS = ["hi", "neut"]
+
 class Error (Exception): pass
 
 # Config: ~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
@@ -33,7 +36,9 @@ class Error (Exception): pass
 # "h1_overlay_relax"
 # "draw_signature_pages"
 # "report_pdf"
-# "index_html"
+# "index"
+# "index_common"
+# "completed"
 
 # ======================================================================
 
@@ -192,16 +197,33 @@ def state_draw_signature_pages():
 def state_report_pdf():
     # https://stackoverflow.com/questions/2507766/merge-convert-multiple-pdf-files-into-one-pdf
     log_file = ROOT_DIR.joinpath("gs.log")
-    labs = ["cdc", "nimr", "niid", "melb"]
-    assays = ["hi", "neut"]
-    pdfs = [fn for fn in (ROOT_DIR.joinpath(f"{lab}-{STATE['subtype']}-{assay}.pdf") for lab in labs for assay in assays) if fn.exists()]
-    result = ROOT_DIR.joinpath(f"report-{STATE['subtype']}.pdf")
-    check_call(["gs", "-dBATCH", "-dNOPAUSE", "-q", "-sDEVICE=pdfwrite", "-dPDFSETTINGS=/prepress", f"-sOutputFile={result}"] + pdfs, log_file)
-    STATE["state"] = "index_html"
+    STATE["date"] = ROOT_DIR.parent.name
+    pdfs = [fn for fn in (ROOT_DIR.joinpath(f"{lab}-{STATE['subtype']}-{assay}.pdf") for lab in LABS for assay in ASSAYS) if fn.exists()]
+    report_pdf = ROOT_DIR.joinpath(f"signature-pages-{STATE['date'].replace('-', '')}-{STATE['subtype']}.pdf")
+    check_call(["gs", "-dBATCH", "-dNOPAUSE", "-q", "-sDEVICE=pdfwrite", "-dPDFSETTINGS=/prepress", f"-sOutputFile={report_pdf}"] + pdfs, log_file)
+    STATE["report_pdf"] = report_pdf.name
+    STATE["state"] = "index"
 
-def state_index_html():
-    for src in ACMACSD_ROOT.joinpath("share", "js", "who", "make-signature-pages-v1").glob("*"):
-        shutil.copy2(str(src), str(ROOT_DIR))
+def state_index():
+    shutil.copy2(str(ACMACSD_ROOT.joinpath("share", "js", "who", "make-signature-pages-v1", "index.html")), str(ROOT_DIR))
+    STATE["state"] = "index_common"
+
+def state_index_common():
+    # https://stackoverflow.com/questions/2507766/merge-convert-multiple-pdf-files-into-one-pdf
+    log_file = ROOT_DIR.joinpath("gs.log")
+    parent_dir = ROOT_DIR.parent
+    report_pdf = parent_dir.joinpath(f"signature-pages-{STATE['date'].replace('-', '')}.pdf")
+    subdirs = sorted(ind.parent.name for ind in parent_dir.glob("*/index.html"))
+    pdfs = [fn for fn in (parent_dir.joinpath(subtype, f"{lab}-{subtype}-{assay}.pdf") for subtype in subdirs for lab in LABS for assay in ASSAYS) if fn.exists()]
+    check_call(["gs", "-dBATCH", "-dNOPAUSE", "-q", "-sDEVICE=pdfwrite", "-dPDFSETTINGS=/prepress", f"-sOutputFile={report_pdf}"] + pdfs, log_file)
+    state = {
+        "date": STATE["date"],
+        "subdirs": subdirs,
+        "report": report_pdf.name,
+    }
+    from acmacs_base import json
+    json.write(path=parent_dir.joinpath("state.json"), data=state, indent=2, compact=True)
+    shutil.copy2(str(ACMACSD_ROOT.joinpath("share", "js", "who", "make-signature-pages-v1", "index.common.html")), str(parent_dir.joinpath("index.html")))
     STATE["state"] = "completed"
 
 # ======================================================================
