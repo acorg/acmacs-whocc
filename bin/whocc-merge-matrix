@@ -36,9 +36,12 @@ def make_merge(source_set):
         raise RuntimeError(f"cannot extract dates from {source_set[0]} or {source_set[-1]}")
     date_range = f"{m1.group(1)}-{m2.group(1)}"
     merge_name = WORKING_DIR.joinpath(f"{date_range}.merge.ace")
-    log_file = WORKING_DIR.joinpath(f"{date_range}.merge.log")
-    check_call(["chart-merge", "-o", merge_name] + source_set, log_file=log_file)
-    print(merge_name)
+    if not merge_name.exists():
+        log_file = WORKING_DIR.joinpath(f"{date_range}.merge.log")
+        check_call(["chart-merge", "-o", merge_name] + source_set, log_file=log_file)
+        print(merge_name)
+    else:
+        print(merge_name, " -- already exists")
     return merge_name
 
 # ----------------------------------------------------------------------
@@ -47,8 +50,10 @@ def relax_merges(merges, args):
     result = []
     for merge in merges:
         merge_optimized = WORKING_DIR.joinpath(Path(merge.stem).stem + ".opt.ace")
-        check_call(["chart-relax", "-n", args.number_of_optimizations, "-d", args.number_of_dimensions, "-m", args.minimum_column_basis, "--rough",
-                    "--keep-projections", args.projections_to_keep, merge, merge_optimized])
+        if not merge_optimized.exists():
+            check_call(["chart-relax", "-n", args.number_of_optimizations, "-d", args.number_of_dimensions, "-m", args.minimum_column_basis, "--rough",
+                        "--keep-projections", args.projections_to_keep, merge, merge_optimized])
+            check_call(["chart-relax-existing", merge_optimized, merge_optimized])
         result.append(merge_optimized)
     return result
 
@@ -58,7 +63,8 @@ def grid_merges(merges, args):
     result = []
     for merge in merges:
         merge_grid = WORKING_DIR.joinpath(Path(merge.stem).stem + ".grid.ace")
-        check_call(["chart-grid-test", "--relax", merge, merge_grid])
+        if not merge_grid.exists():
+            check_call(["chart-grid-test", "--relax", merge, merge_grid])
         result.append(merge_grid)
     return result
 
