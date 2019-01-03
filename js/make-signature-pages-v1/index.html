@@ -36,7 +36,7 @@
           }
 
           document.getElementById("title").innerHTML = "Signature Pages " + (subtype_to_title[data.subtype] || "") + ` ${data.date}`;
-          document.getElementsByTagName("title")[0].innerHTML = `SP ${data.date}`;
+          document.getElementsByTagName("title")[0].innerHTML = `SP ${data.subtype.toUpperCase()} ${data.date}`;
           document.getElementById("pdf-with-all").innerHTML = `<a href="${data.report_pdf}">Pdf with all signature pages for ${subtype_to_title[data.subtype]}</a>`;
 
           const ul_sigp = document.getElementById("signature-pages");

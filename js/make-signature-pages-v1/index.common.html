@@ -3,11 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <style>
-      object.horizontal { width: 1360px; height: 910px; }
-      object.vertical { width: 565px; height: 870px; }
       ul {list-style-type: none; padding-left: 0; }
-      #signature-pages li { margin-bottom: 4em; }
-      #logs { margin-left: 1em; }
       #pdf-with-all { margin-bottom: 2em; }
     </style>
     <script>
@@ -16,6 +12,8 @@
       function main() {
           body = document.getElementsByTagName("body")[0];
           body.appendChild(document.createElement("h2")).setAttribute("id", "title");
+          const ul = body.appendChild(document.createElement("ul"));
+          ul.innerHTML = `<li id="pdf-with-all"></li><li><ul id="subdirs"></ul></li>`;
           
           fetch("state.json").then(function(response) {
               response.json().then(handle);
@@ -24,6 +22,11 @@
 
       function handle(data) {
           console.log(data);
+
+          document.getElementById("title").innerHTML = `Signature Pages ${data.date}`;
+          document.getElementsByTagName("title")[0].innerHTML = `SP ${data.date}`;
+          document.getElementById("pdf-with-all").innerHTML = `<a href="${data.report_pdf}">Pdf with all signature pages of ${data.date}</a>`;
+          document.getElementById("subdirs").innerHTML = data.subdirs.map(subdir => `<li><a href="${subdir}">${subdir.toUpperCase()}</a></li>`).join("");
       }
 
     </script>

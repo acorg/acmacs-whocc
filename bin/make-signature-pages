@@ -219,7 +219,7 @@ def state_index_common():
     state = {
         "date": STATE["date"],
         "subdirs": subdirs,
-        "report": report_pdf.name,
+        "report_pdf": report_pdf.name,
     }
     from acmacs_base import json
     json.write(path=parent_dir.joinpath("state.json"), data=state, indent=2, compact=True)
