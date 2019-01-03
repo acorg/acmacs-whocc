@@ -1,0 +1,113 @@
+#! /usr/bin/env python3
+# -*- Python -*-
+
+"""Makes merges of sets of recent tables (recent N tables, recent N*2
+tables, etc.), relaxes each merge and runs grid test, then generates
+web page showing all the results in the matrix form. Similar to
+https://notebooks.antigenic-cartography.org/eu/results/cdc/2018-1114-h1pdm-spb-61-2105-for-david-wentworth/matrix/
+(/scp:i19:/syn/eu/ac/results/cdc/2018-1114-h1pdm-spb-61-2105-for-david-wentworth/README)
+"""
+
+import sys, re, pprint, time, traceback
+if sys.version_info.major != 3: raise RuntimeError("Run script with python3")
+from pathlib import Path
+import logging; module_logger = logging.getLogger(__name__)
+
+# ----------------------------------------------------------------------
+
+WORKING_DIR = None
+
+def main(args):
+    global WORKING_DIR
+    WORKING_DIR = Path(args.working_dir).resolve()
+    sets = get_sets(args)
+    merges = [make_merge(source_set) for source_set in sets]
+    merge_optimized = relax_merges(merges, args)
+    merge_after_grid = grid_merges(merge_optimized, args)
+
+# ----------------------------------------------------------------------
+
+sDateExtractor = re.compile(r"-((?:19|20)\d\d[01]\d[0-3]\d)")
+
+def make_merge(source_set):
+    m1 = sDateExtractor.search(source_set[0])
+    m2 = sDateExtractor.search(source_set[-1])
+    if not m1 or not m2:
+        raise RuntimeError(f"cannot extract dates from {source_set[0]} or {source_set[-1]}")
+    date_range = f"{m1.group(1)}-{m2.group(1)}"
+    merge_name = WORKING_DIR.joinpath(f"{date_range}.merge.ace")
+    log_file = WORKING_DIR.joinpath(f"{date_range}.merge.log")
+    check_call(["chart-merge", "-o", merge_name] + source_set, log_file=log_file)
+    print(merge_name)
+    return merge_name
+
+# ----------------------------------------------------------------------
+
+def relax_merges(merges, args):
+    result = []
+    for merge in merges:
+        merge_optimized = WORKING_DIR.joinpath(Path(merge.stem).stem + "opt.ace")
+        check_call(["chart-relax", "-n", args.number_of_optimizations, "-d", args.number_of_dimensions, "-m", args.minimum_column_basis, "--rough",
+                    "--keep-projections", args.projections_to_keep, merge, merge_optimized])
+        result.append(merge_optimized)
+    return result
+
+# ----------------------------------------------------------------------
+
+def grid_merges(merges, args):
+    result = []
+    for merge in merges:
+        merge_grid = WORKING_DIR.joinpath(Path(merge.stem).stem + "grid.ace")
+        check_call(["chart-grid-test", "--relax", merge, merge_grid])
+        result.append(merge_grid)
+    return result
+
+# ----------------------------------------------------------------------
+
+def get_sets(args):
+    all_tables = sorted(args.pattern)
+    set_sizes = [set_size for set_size in range(args.step, len(all_tables), args.step)]
+    if set_sizes[-1] < len(all_tables):
+        set_sizes.append(len(all_tables))
+    sets = [all_tables[-set_size:] for set_size in set_sizes]
+    # pprint.pprint(sets, width=200)
+    return sets
+
+# ----------------------------------------------------------------------
+
+def check_call(cmd, log_file=None):
+    import subprocess
+    module_logger.info(str(cmd[:10]))
+    stdout = log_file.open("a") if log_file else None
+    subprocess.check_call([str(field) for field in cmd], stdout=stdout, stderr=subprocess.STDOUT)
+
+# ----------------------------------------------------------------------
+
+try:
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+
+    parser.add_argument("--debug", action="store_const", dest="loglevel", const=logging.DEBUG, default=logging.INFO, help="Enable debugging output.")
+
+    parser.add_argument("--step", type=int, dest="step", default=20, help="Number of tables to increment by.")
+    parser.add_argument("-n", "--number-of-optimizations", type=int, dest="number_of_optimizations", default=1000)
+    parser.add_argument("-d", "--number-of-dimensions", type=int, dest="number_of_dimensions", default=2)
+    parser.add_argument("-m", "--minimum-column-basis", dest="minimum_column_basis", default="none")
+    parser.add_argument("-k", "--projections-to-keep", type=int, dest="projections_to_keep", default=10)
+    parser.add_argument("--working-dir", dest="working_dir", default=".")
+
+    parser.add_argument("pattern", nargs="*")
+
+    args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    exit_code = main(args)
+except Exception as err:
+    logging.error(f"{err}\n{traceback.format_exc()}")
+    exit_code = 1
+exit(exit_code)
+
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
