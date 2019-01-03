@@ -46,7 +46,7 @@ def make_merge(source_set):
 def relax_merges(merges, args):
     result = []
     for merge in merges:
-        merge_optimized = WORKING_DIR.joinpath(Path(merge.stem).stem + "opt.ace")
+        merge_optimized = WORKING_DIR.joinpath(Path(merge.stem).stem + ".opt.ace")
         check_call(["chart-relax", "-n", args.number_of_optimizations, "-d", args.number_of_dimensions, "-m", args.minimum_column_basis, "--rough",
                     "--keep-projections", args.projections_to_keep, merge, merge_optimized])
         result.append(merge_optimized)
@@ -57,7 +57,7 @@ def relax_merges(merges, args):
 def grid_merges(merges, args):
     result = []
     for merge in merges:
-        merge_grid = WORKING_DIR.joinpath(Path(merge.stem).stem + "grid.ace")
+        merge_grid = WORKING_DIR.joinpath(Path(merge.stem).stem + ".grid.ace")
         check_call(["chart-grid-test", "--relax", merge, merge_grid])
         result.append(merge_grid)
     return result
@@ -77,7 +77,7 @@ def get_sets(args):
 
 def check_call(cmd, log_file=None):
     import subprocess
-    module_logger.info(str(cmd[:10]))
+    module_logger.info(str(cmd[:16]))
     stdout = log_file.open("a") if log_file else None
     subprocess.check_call([str(field) for field in cmd], stdout=stdout, stderr=subprocess.STDOUT)
 
