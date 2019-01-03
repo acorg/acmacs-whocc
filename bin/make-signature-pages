@@ -213,7 +213,7 @@ def state_index_common():
     log_file = ROOT_DIR.joinpath("gs.log")
     parent_dir = ROOT_DIR.parent
     report_pdf = parent_dir.joinpath(f"signature-pages-{STATE['date'].replace('-', '')}.pdf")
-    subdirs = sorted(ind.parent.name for ind in parent_dir.glob("*/index.html"))
+    subdirs = sorted((ind.parent.name for ind in parent_dir.glob("*/index.html")), key=lambda n: "A" + n if n[0] == "h" else n)
     pdfs = [fn for fn in (parent_dir.joinpath(subtype, f"{lab}-{subtype}-{assay}.pdf") for subtype in subdirs for lab in LABS for assay in ASSAYS) if fn.exists()]
     check_call(["gs", "-dBATCH", "-dNOPAUSE", "-q", "-sDEVICE=pdfwrite", "-dPDFSETTINGS=/prepress", f"-sOutputFile={report_pdf}"] + pdfs, log_file)
     state = {
