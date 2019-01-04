@@ -110,7 +110,11 @@ def make_row_maps(chart, max_grid_results, args):
 def make_map(path, projection, stem, args):
     pdf = WORKING_DIR.joinpath(stem + ".pdf")
     if not pdf.exists():
-        check_call(["map-draw", "--projection", projection, "--clade", "--point-scale", args.point_scale, path, pdf], log_file=WORKING_DIR.joinpath("map-draw.log"))
+        if args.draw_settings:
+            settings = ["-s", args.draw_settings]
+        else:
+            settings = ["--clade", "--point-scale", 3]
+        check_call(["map-draw", "--projection", projection, path, pdf] + settings, log_file=WORKING_DIR.joinpath("map-draw.log"))
     return pdf_to_png(pdf, WORKING_DIR.joinpath(stem + ".png"), args.png_size)
 
 # ----------------------------------------------------------------------
@@ -228,7 +232,7 @@ try:
     parser.add_argument("-r", "--reorient", dest="reorient_to", default=None)
     parser.add_argument("--working-dir", dest="working_dir", default=".")
     parser.add_argument("--png-size", dest="png_size", default=500)
-    parser.add_argument("--point-scale", dest="point_scale", default=3.0)
+    parser.add_argument("--draw-settings", dest="draw_settings", default=None)
 
     parser.add_argument("pattern", nargs="*")
 
