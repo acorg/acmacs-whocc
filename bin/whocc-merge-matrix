@@ -24,6 +24,7 @@ def main(args):
     merges = [make_merge(source_set) for source_set in sets]
     merge_optimized = relax_merges(merges, args)
     merge_after_grid = grid_merges(merge_optimized, args)
+    pprint.pprint(merge_after_grid)
 
 # ----------------------------------------------------------------------
 
@@ -65,6 +66,8 @@ def grid_merges(merges, args):
         merge_grid = WORKING_DIR.joinpath(Path(merge.stem).stem + ".grid.ace")
         if not merge_grid.exists():
             check_call(["chart-grid-test", "--relax", merge, merge_grid])
+            if args.reorient_to:
+                check_call(["chart-reorient", "-p", "-1", args.reorient_to, merge_grid, merge_grid])
         result.append(merge_grid)
     return result
 
@@ -105,6 +108,7 @@ try:
     parser.add_argument("-d", "--number-of-dimensions", type=int, dest="number_of_dimensions", default=2)
     parser.add_argument("-m", "--minimum-column-basis", dest="minimum_column_basis", default="none")
     parser.add_argument("-k", "--projections-to-keep", type=int, dest="projections_to_keep", default=10)
+    parser.add_argument("-r", "--reorient", dest="reorient_to", default=None)
     parser.add_argument("--working-dir", dest="working_dir", default=".")
 
     parser.add_argument("pattern", nargs="*")
