@@ -26,7 +26,8 @@ def main(args):
     merges_after_grid = grid_merges(merges_optimized, args)
     state = make_state(merges_after_grid, args)
     make_maps(state, args)
-    pprint.pprint(state)
+    # pprint.pprint(state)
+    make_index_html(state, args)
 
 # ----------------------------------------------------------------------
 
@@ -84,24 +85,45 @@ def make_state(merges, args):
 
 def make_maps(state, args):
     state["row_titles"] = ["-".join(chart["dates"]) for chart in state["charts"]]
-    state["column_titles"] = [f"grid-{gr+1}" for gr in range(state["max_grid_results"])] + [str(p+1) for p in range(5)]
-    state["grid"] = [make_row_maps(chart, state["max_grid_results"]) for chart in state["charts"]]
+    state["column_titles"] = [f"grid-{gr+1}" for gr in range(state["max_grid_results"])] + [""] + [str(p+1) for p in range(5)]
+    state["grid"] = [make_row_maps(chart, state["max_grid_results"], args) for chart in state["charts"]]
 
 # ----------------------------------------------------------------------
 
-def make_row_maps(chart, max_grid_results):
+def make_row_maps(chart, max_grid_results, args):
     result = []
     projection = 0
     for gr in range(max_grid_results):
         if gr < chart["grid_results"]:
-            result.append(f"gr-{gr}")
+            result.append(make_map(chart["path"], projection, f"grid-{gr+1}-{chart['dates'][0]}-{chart['dates'][1]}", args))
             projection += 1
         else:
             result.append(None)
+    result.append("space")
     for pr in range(5):
-        result.append(f"p-{projection}")
+        result.append(make_map(chart["path"], projection, f"p-{projection}-{chart['dates'][0]}-{chart['dates'][1]}", args))
         projection += 1
     return result
+
+# ----------------------------------------------------------------------
+
+def make_map(path, projection, stem, args):
+    pdf = WORKING_DIR.joinpath(stem + ".pdf")
+    if not pdf.exists():
+        check_call(["map-draw", "--projection", projection, "--clade", "--point-scale", args.point_scale, path, pdf], log_file=WORKING_DIR.joinpath("map-draw.log"))
+    return pdf_to_png(pdf, WORKING_DIR.joinpath(stem + ".png"), args.png_size)
+
+# ----------------------------------------------------------------------
+
+def pdf_to_png(pdf, png, png_size):
+    if not png.exists():
+        if Path("/usr/bin/sips").exists():
+            check_call(["/usr/bin/sips", "-s", "format", "png", "-Z", png_size, pdf, "--out", png])
+        elif Path("/usr/bin/pdftoppm").exists():
+            check_call(["/usr/bin/pdftoppm", pdf, png.parent.joinpath(png.stem), "-png", "-f", "1", "-singlefile", "-scale-to", png_size])
+        else:
+            raise RuntimeError("don't know to to make png from pdf (neither /usr/bin/sips nor /usr/bin/pdftoppm found")
+    return png
 
 # ----------------------------------------------------------------------
 
@@ -121,7 +143,51 @@ def chart_info(merge):
             info["projections"] = int(m_p.group(1))
         elif info.get("projections") and "<grid-test" in line:
             info["grid_results"] += 1
+    info["title"] = subprocess.check_output(["chart-info", "--lab", "--virus-type", "--assay", str(merge)]).decode("utf-8").strip()
     return info
+
+# ----------------------------------------------------------------------
+
+sIndexHtml = """<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      p {{ width: 60em; }}
+      .col-title {{ text-align: center; }}
+      .space {{ min-width: 50px; }}
+    </style>
+    <script>
+    </script>
+    <title>{title}</title>
+  </head>
+  <body>
+    <h3>{title}</h3>
+    <p>
+      Tables in several ranges (N most recent tables, N*2 most recent tables, etc.) 
+      were merges and relaxed from scratch (right part of the table), then 
+      grid test was run for the best maps (left part of the table).
+    </p>
+{grid}
+  </body>
+</html>
+"""
+
+def make_index_html(state, args):
+    def make_cell(cell):
+        if cell is None:
+            return ""
+        if cell == "space":
+            return "<div class='space'></div>"
+        return f"<img src='{cell.name}'>"
+    def make_cells(row):
+        return "\n".join(f"<td>{make_cell(cell)}</td>" for cell in row)
+
+    col_titles = "".join(f"<td>{ct}</td>" for ct in state["column_titles"])
+    rows = "\n".join(f"<tr><td class='row-title'>{state['row_titles'][row_no]}</td>{make_cells(state['grid'][row_no])}</tr>" for row_no in range(len(state["row_titles"])))
+    grid = f"<table>\n<tr class='col-title'><td></td>{col_titles}</tr>\n{rows}\n</table>"
+    html = sIndexHtml.format(title=f"{state['charts'][0]['title']} [{datetime.date.today().strftime('%Y-%m-%d')}]", grid=grid)
+    WORKING_DIR.joinpath("index.html").open("w").write(html)
 
 # ----------------------------------------------------------------------
 
@@ -161,6 +227,8 @@ try:
     parser.add_argument("-k", "--projections-to-keep", type=int, dest="projections_to_keep", default=10)
     parser.add_argument("-r", "--reorient", dest="reorient_to", default=None)
     parser.add_argument("--working-dir", dest="working_dir", default=".")
+    parser.add_argument("--png-size", dest="png_size", default=500)
+    parser.add_argument("--point-scale", dest="point_scale", default=3.0)
 
     parser.add_argument("pattern", nargs="*")
 
