@@ -8,7 +8,7 @@ https://notebooks.antigenic-cartography.org/eu/results/cdc/2018-1114-h1pdm-spb-6
 (/scp:i19:/syn/eu/ac/results/cdc/2018-1114-h1pdm-spb-61-2105-for-david-wentworth/README)
 """
 
-import sys, re, pprint, time, traceback
+import sys, re, pprint, time, traceback, subprocess, datetime
 if sys.version_info.major != 3: raise RuntimeError("Run script with python3")
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
@@ -22,9 +22,11 @@ def main(args):
     WORKING_DIR = Path(args.working_dir).resolve()
     sets = get_sets(args)
     merges = [make_merge(source_set) for source_set in sets]
-    merge_optimized = relax_merges(merges, args)
-    merge_after_grid = grid_merges(merge_optimized, args)
-    pprint.pprint(merge_after_grid)
+    merges_optimized = relax_merges(merges, args)
+    merges_after_grid = grid_merges(merges_optimized, args)
+    state = make_state(merges_after_grid, args)
+    make_maps(state, args)
+    pprint.pprint(state)
 
 # ----------------------------------------------------------------------
 
@@ -73,6 +75,56 @@ def grid_merges(merges, args):
 
 # ----------------------------------------------------------------------
 
+def make_state(merges, args):
+    state = {"charts": [chart_info(fn) for fn in merges]}
+    state["max_grid_results"] = max(ci["grid_results"] for ci in state["charts"])
+    return state
+
+# ----------------------------------------------------------------------
+
+def make_maps(state, args):
+    state["row_titles"] = ["-".join(chart["dates"]) for chart in state["charts"]]
+    state["column_titles"] = [f"grid-{gr+1}" for gr in range(state["max_grid_results"])] + [str(p+1) for p in range(5)]
+    state["grid"] = [make_row_maps(chart, state["max_grid_results"]) for chart in state["charts"]]
+
+# ----------------------------------------------------------------------
+
+def make_row_maps(chart, max_grid_results):
+    result = []
+    projection = 0
+    for gr in range(max_grid_results):
+        if gr < chart["grid_results"]:
+            result.append(f"gr-{gr}")
+            projection += 1
+        else:
+            result.append(None)
+    for pr in range(5):
+        result.append(f"p-{projection}")
+        projection += 1
+    return result
+
+# ----------------------------------------------------------------------
+
+sReDates = re.compile(r"((?:19|20)\d\d[01]\d[0-3]\d)(?:\.\d+)?-((?:19|20)\d\d[01]\d[0-3]\d)")
+sRePrejections = re.compile(r"^Projections:\s*(\d+)")
+
+def chart_info(merge):
+    info = {"path": merge, "grid_results": 0}
+    data = subprocess.check_output(["chart-info", str(merge)]).decode("utf-8").split("\n")
+    for line in data:
+        if not info.get("dates"):
+            m_d = sReDates.search(line)
+            if m_d:
+                info["dates"] = [m_d.group(1), m_d.group(2)]
+        m_p = sRePrejections.match(line)
+        if m_p:
+            info["projections"] = int(m_p.group(1))
+        elif info.get("projections") and "<grid-test" in line:
+            info["grid_results"] += 1
+    return info
+
+# ----------------------------------------------------------------------
+
 def get_sets(args):
     all_tables = sorted(args.pattern)
     set_sizes = [set_size for set_size in range(args.step, len(all_tables), args.step)]
@@ -89,7 +141,6 @@ def check_call(cmd, log_file=None):
         module_logger.info(" ".join(repr(str(field)) for field in cmd))
     else:
         module_logger.info(" ".join(str(field) for field in cmd) + " ...")
-    import subprocess, datetime
     stdout = log_file.open("a") if log_file else None
     start = datetime.datetime.utcnow()
     subprocess.check_call([str(field) for field in cmd], stdout=stdout, stderr=subprocess.STDOUT)
