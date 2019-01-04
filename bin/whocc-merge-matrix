@@ -82,10 +82,15 @@ def get_sets(args):
 # ----------------------------------------------------------------------
 
 def check_call(cmd, log_file=None):
-    import subprocess
-    module_logger.info(str(cmd[:16]))
+    if len(cmd) < 16:
+        module_logger.info(" ".join(repr(str(field)) for field in cmd))
+    else:
+        module_logger.info(" ".join(str(field) for field in cmd) + " ...")
+    import subprocess, datetime
     stdout = log_file.open("a") if log_file else None
+    start = datetime.datetime.utcnow()
     subprocess.check_call([str(field) for field in cmd], stdout=stdout, stderr=subprocess.STDOUT)
+    module_logger.info(f"{cmd[0]}: <{datetime.datetime.utcnow() - start}>")
 
 # ----------------------------------------------------------------------
 
