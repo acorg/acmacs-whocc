@@ -31,24 +31,28 @@ sAssayConvert = {
 
 # ----------------------------------------------------------------------
 
-def get_recent_merges(target_dir :Path, subtype):
-    response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=subtype)
-    if "data" not in response:
-        module_logger.error("No \"data\" in response of ad_whocc_recent_merges api command:\n{}".format(pprint.pformat(response)))
-        raise RuntimeError("Unexpected result of ad_whocc_recent_merges c2 api command")
-    response = response['data']
-    response.sort(key=lambda e: "{lab:4s} {virus_type:10s} {assay}".format(**e))
-    module_logger.info('WHO CC recent merges\n{}'.format("\n".join("{lab:4s} {virus_type:14s} {assay:31s} {chart_id}".format(**e) for e in response)))
-    for entry in response:
-        if entry["lab"] != "CNIC" and not (entry["lab"] == "NIID" and entry["virus_type"] == "A(H3N2)" and entry["assay"] == "HI"):
-            basename = f"{entry['lab'].lower()}-{subtype}-{sAssayConvert[entry['assay']].lower()}"
-            filename = target_dir.joinpath(f"{basename}.ace")
-            chart = api().command(C="chart_export", log=False, id=entry["chart_id"], format="ace", part="chart")["chart"]
-            if isinstance(chart, dict) and "##bin" in chart:
-                files.backup_file(filename)
-                module_logger.info(f"writing {filename}")
-                import base64
-                filename.open('wb').write(base64.b64decode(chart["##bin"].encode('ascii')))
+def get_recent_merges(target_dir :Path, subtype=None):
+    if subtype is not None:
+        response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=subtype)
+        if "data" not in response:
+            module_logger.error("No \"data\" in response of ad_whocc_recent_merges api command:\n{}".format(pprint.pformat(response)))
+            raise RuntimeError("Unexpected result of ad_whocc_recent_merges c2 api command")
+        response = response['data']
+        response.sort(key=lambda e: "{lab:4s} {virus_type:10s} {assay}".format(**e))
+        module_logger.info('WHO CC recent merges\n{}'.format("\n".join("{lab:4s} {virus_type:14s} {assay:31s} {chart_id}".format(**e) for e in response)))
+        for entry in response:
+            if entry["lab"] != "CNIC" and not (entry["lab"] == "NIID" and entry["virus_type"] == "A(H3N2)" and entry["assay"] == "HI"):
+                basename = f"{entry['lab'].lower()}-{subtype}-{sAssayConvert[entry['assay']].lower()}"
+                filename = target_dir.joinpath(f"{basename}.ace")
+                chart = api().command(C="chart_export", log=False, id=entry["chart_id"], format="ace", part="chart")["chart"]
+                if isinstance(chart, dict) and "##bin" in chart:
+                    files.backup_file(filename)
+                    module_logger.info(f"writing {filename}")
+                    import base64
+                    filename.open('wb').write(base64.b64decode(chart["##bin"].encode('ascii')))
+    else:
+        for subtype in ["h1", "h3", "bv", "by"]:
+            get_recent_merges(target_dir=target_dir, subtype=subtype)
 
 # ----------------------------------------------------------------------
 
