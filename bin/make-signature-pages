@@ -265,13 +265,16 @@ def show_state():
 def email_error(err):
     from acmacs_base.email import send
     subject = f"FAILED: {socket.gethostname()} {sys.argv}"
-    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{EMACS_PREFIX}{ROOT_DIR}\n\n{err}")
+    url = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR).replace("/syn/eu/ac/", "")
+    url_commont = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR.parent).replace("/syn/eu/ac/", "")
+    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{url}\n{url_commont}\n{EMACS_PREFIX}{ROOT_DIR}\n\n{err}")
 
 def email_success():
     from acmacs_base.email import send
     subject = f"completed: {socket.gethostname()} {sys.argv}"
     url = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR).replace("/syn/eu/ac/", "")
-    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{url}\n{EMACS_PREFIX}{ROOT_DIR}")
+    url_commont = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR.parent).replace("/syn/eu/ac/", "")
+    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{url}\n{url_commont}\n{EMACS_PREFIX}{ROOT_DIR}")
 
 # ----------------------------------------------------------------------
 
