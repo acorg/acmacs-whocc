@@ -168,14 +168,14 @@ def state_get_merges():
 # ----------------------------------------------------------------------
 
 def state_h1_overlay():
-    log_file = ROOT_DIR.joinpath("h1-merge.log")
-    check_call([CHART_MERGE, "-o", ROOT_DIR.joinpath("all-h1-hi.overlay.ace"), "-m", "overlay", "--duplicates-distinct",
-                ROOT_DIR.joinpath("cdc-h1-hi.ace"), ROOT_DIR.joinpath("melb-h1-hi.ace"), ROOT_DIR.joinpath("niid-h1-hi.ace"), ROOT_DIR.joinpath("nimr-h1-hi.ace")], log_file)
+    from acmacs_whocc.h1_overlay import h1_overlay
+    h1_overlay([ROOT_DIR.joinpath("cdc-h1-hi.ace"), ROOT_DIR.joinpath("melb-h1-hi.ace"), ROOT_DIR.joinpath("niid-h1-hi.ace"), ROOT_DIR.joinpath("nimr-h1-hi.ace")],
+               ROOT_DIR.joinpath("all-h1-hi.overlay.ace"), log_file=ROOT_DIR.joinpath("h1-merge.log"))
     STATE["state"] = "h1_overlay_relax"
 
 def state_h1_overlay_relax():
-    log_file = ROOT_DIR.joinpath("h1-merge.log")
-    check_call([CHART_RELAX_EXISTING, ROOT_DIR.joinpath("all-h1-hi.overlay.ace"), ROOT_DIR.joinpath("all-h1-hi.ace"), "--rough"], log_file)
+    from acmacs_whocc.h1_overlay import h1_relax
+    h1_relax(ROOT_DIR.joinpath("all-h1-hi.overlay.ace"), ROOT_DIR.joinpath("all-h1-hi.ace"), log_file=ROOT_DIR.joinpath("h1-merge.log"))
     STATE["state"] = "draw_signature_pages"
 
 # ----------------------------------------------------------------------
