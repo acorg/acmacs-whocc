@@ -132,7 +132,8 @@ def pdf_to_png(pdf, png, png_size):
 # ----------------------------------------------------------------------
 
 sReDates = re.compile(r"((?:19|20)\d\d[01]\d[0-3]\d)(?:\.\d+)?-((?:19|20)\d\d[01]\d[0-3]\d)")
-sRePrejections = re.compile(r"^Projections:\s*(\d+)")
+sReProjections = re.compile(r"^Projections:\s*(\d+)")
+sReMinColBasis = re.compile(r">=([^\s]+)")
 
 def chart_info(merge):
     info = {"path": merge, "grid_results": 0}
@@ -142,11 +143,15 @@ def chart_info(merge):
             m_d = sReDates.search(line)
             if m_d:
                 info["dates"] = [m_d.group(1), m_d.group(2)]
-        m_p = sRePrejections.match(line)
+        m_p = sReProjections.match(line)
         if m_p:
             info["projections"] = int(m_p.group(1))
         elif info.get("projections") and "<grid-test" in line:
             info["grid_results"] += 1
+        if info.get("projections") and not info.get("min_col_basis") and ">=" in line:
+            m = sReMinColBasis.search(line)
+            if m:
+                info["min_col_basis"] = m.group(1)
     info["title"] = subprocess.check_output(["chart-info", "--lab", "--virus-type", "--assay", str(merge)]).decode("utf-8").strip()
     return info
 
@@ -158,18 +163,39 @@ sIndexHtml = """<!DOCTYPE html>
     <meta charset="utf-8" />
     <style>
       p {{ width: 60em; }}
+      .red {{ color: red; }}
       .col-title {{ text-align: center; }}
       .space {{ min-width: 50px; }}
     </style>
-    <script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script type="module">
+      import * as mod from "/js/ad/map-draw/ace-view/201807/apache-mod-acmacs.js";
+      $(document).ready(() => {{
+          $("div.map").each(function() {{
+              try {{
+                  mod.show_antigenic_map_widget({{
+                      parent: $(this),
+                      canvas_size: 500,
+                      coloring: "default",
+                      uri: this.getAttribute("name"),
+                      on_data_load_failure: err => {{
+                          console.error("Cannot load map from " + this.getAttribute("name"), err);
+                      }}
+                  }});
+              }}
+              catch (err) {{
+                  console.error("Cannot load map from " + this.getAttribute("name"), err);
+              }}
+          }});
+      }});
     </script>
     <title>{title}</title>
   </head>
   <body>
     <h3>{title}</h3>
     <p>
-      Tables in several ranges (N most recent tables, N*2 most recent tables, etc.) 
-      were merges and relaxed from scratch (right part of the table), then 
+      Tables in several ranges (N most recent tables, N*2 most recent tables, etc.)
+      were merges and relaxed from scratch (right part of the table), then
       grid test was run for the best maps (left part of the table).
     </p>
 {grid}
@@ -186,11 +212,23 @@ def make_index_html(state, args):
         return f"<img src='{cell.name}'>"
     def make_cells(row):
         return "\n".join(f"<td>{make_cell(cell)}</td>" for cell in row)
+    def make_widget(cell):
+        m = re.search(r"-(\d+-\d+)\.png$", cell.name)
+        if m:
+            return f"<div class='map' name='{m.group(1)}.grid.ace'></div>"
+        else:
+            return ""
 
     col_titles = "".join(f"<td>{ct}</td>" for ct in state["column_titles"])
-    rows = "\n".join(f"<tr><td class='row-title'>{state['row_titles'][row_no]}</td>{make_cells(state['grid'][row_no])}</tr>" for row_no in range(len(state["row_titles"])))
-    grid = f"<table>\n<tr class='col-title'><td></td>{col_titles}</tr>\n{rows}\n</table>"
-    html = sIndexHtml.format(title=f"{state['charts'][0]['title']} [{datetime.date.today().strftime('%Y-%m-%d')}]", grid=grid)
+    rows = "\n".join(f"<tr><td class='row-title'>{state['row_titles'][row_no]}</td><td>{make_widget(state['grid'][row_no][0])}</td>{make_cells(state['grid'][row_no])}</tr>" for row_no in range(len(state["row_titles"])))
+    grid = f"<table>\n<tr class='col-title'><td></td><td></td>{col_titles}</tr>\n{rows}\n</table>"
+    title = state['charts'][0]['title']
+    if state['charts'][0].get("min_col_basis"):
+        if state['charts'][0]["min_col_basis"] == "none":
+            title += ", no minimum column basis"
+        else:
+            title += f", minimum column basis <span class='red'>{state['charts'][0]['min_col_basis']}</span>"
+    html = sIndexHtml.format(title=f"{title} [{datetime.date.today().strftime('%Y-%m-%d')}]", grid=grid)
     WORKING_DIR.joinpath("index.html").open("w").write(html)
 
 # ----------------------------------------------------------------------
