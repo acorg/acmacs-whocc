@@ -29,6 +29,7 @@ trap on_error ERR
 
 run()
 {
+    trap on_error ERR
     echo "$@"
     /usr/bin/time "$@" 2>&1
     echo '--------------------------------------------------'
