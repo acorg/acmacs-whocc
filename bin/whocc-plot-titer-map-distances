@@ -1,23 +1,24 @@
 #! /usr/bin/env Rscript
+# chart-export --names --logged-titers --map-distances nimr-h3-neut.ace | ~/AD/sources/acmacs-whocc/bin/whocc-plot-titer-map-distances
+
+pdf("/d/a.pdf")
 
 library(jsonlite)
 data <- fromJSON(file("stdin"))
-serum_no <- 1
-data_for_serum <- data.frame(x=data$map_distances[,serum_no], y=data$logged_titers[,serum_no])
-data_for_serum <- data_for_serum[data_for_serum$x >= 0,]
-data_for_serum <- data_for_serum[data_for_serum$y >= 0,]
-# print(data_for_serum)
-#print(data$titers[,2])
-#print(data$map_distances[,2])
+number_of_sera <- length(data$sera)
+par(mfrow=c(number_of_sera / 6 + 1,6)) 
+for (serum_no in 1:number_of_sera) {
+  data_for_serum <- data.frame(x=data$map_distances[,serum_no], y=data$logged_titers[,serum_no])
+  data_for_serum <- data_for_serum[data_for_serum$x >= 0,]
+  data_for_serum <- data_for_serum[data_for_serum$y >= 0,]
 
-pdf("/d/a.pdf")
-# plot(data$map_distances[,1], data$titers[,1], log="y", xlab="map distance", ylab="titer", axes=F)
-# plot(data_for_serum, log="y", xlab="map distance", ylab="titer", axes=F)
-plot(data_for_serum, xlab="map distance", ylab="logged titer", axes=F, xlim=c(0, max(data_for_serum$x) + 0.2))
-regr = lm(data_for_serum$y ~ data_for_serum$x)
-print(regr$coefficients[1])
-axis(1)
-axis(2, at=c(0,1,2,3,4,5,6,7,8,9,10), labels=c("10", "20", "40", "80", "160", "320", "640", "1280", "2560", "5120", "10240"))
-abline(regr)
-legend("topright", legend=c(paste("intercept: ", round(2^(regr$coefficients[1])*10)), paste("slope: ", round(regr$coefficients[2], 2))), bty="n")
+  plot(data_for_serum, xlab="map distance", ylab="logged titer", axes=F, xlim=c(0, max(data_for_serum$x) + 0.2))
+  title(data$sera[serum_no])
+  regr = lm(data_for_serum$y ~ data_for_serum$x)
+  print(regr$coefficients[1])
+  axis(1)
+  axis(2, at=c(0,1,2,3,4,5,6,7,8,9,10), labels=c("10", "20", "40", "80", "160", "320", "640", "1280", "2560", "5120", "10240"))
+  abline(regr)
+  legend("topright", legend=c(paste("intercept: ", round(2^(regr$coefficients[1])*10)), paste("slope: ", round(regr$coefficients[2], 2))), bty="n")
+}
 dev.off()
