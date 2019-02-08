@@ -23,8 +23,7 @@ def main(args):
     sets = get_sets(args)
     merges = [make_merge(source_set) for source_set in sets]
     merges_optimized = relax_merges(merges, args)
-    merges_after_grid = grid_merges(merges_optimized, args)
-    state = make_state(merges_after_grid, args)
+    state = make_state(merges_optimized, args)
     make_maps(state, args)
     # pprint.pprint(state)
     make_index_html(state, args)
@@ -53,25 +52,19 @@ def make_merge(source_set):
 def relax_merges(merges, args):
     result = []
     for merge in merges:
-        merge_optimized = WORKING_DIR.joinpath(Path(merge.stem).stem + ".opt.ace")
+        merge_optimized = WORKING_DIR.joinpath(Path(merge.stem).stem + ".grid.ace")
         if not merge_optimized.exists():
-            check_call(["chart-relax", "-n", args.number_of_optimizations, "-d", args.number_of_dimensions, "-m", args.minimum_column_basis, "--rough",
-                        "--keep-projections", args.projections_to_keep, merge, merge_optimized])
-            check_call(["chart-relax-existing", merge_optimized, merge_optimized])
-        result.append(merge_optimized)
-    return result
-
-# ----------------------------------------------------------------------
-
-def grid_merges(merges, args):
-    result = []
-    for merge in merges:
-        merge_grid = WORKING_DIR.joinpath(Path(merge.stem).stem + ".grid.ace")
-        if not merge_grid.exists():
-            check_call(["chart-grid-test", "--relax", merge, merge_grid])
+            cmd = ["chart-relax-grid",
+                   "-n", args.number_of_optimizations,
+                   "-d", args.number_of_dimensions,
+                   "-m", args.minimum_column_basis, 
+                   "--keep-projections", args.projections_to_keep,
+                   merge,
+                   merge_optimized]
             if args.reorient_to:
-                check_call(["chart-reorient", "-p", "-1", args.reorient_to, merge_grid, merge_grid])
-        result.append(merge_grid)
+                cmd += ["--reorient", args.reorient_to]
+            check_call(cmd)
+        result.append(merge_optimized)
     return result
 
 # ----------------------------------------------------------------------
