@@ -108,19 +108,20 @@ def make_map(path, projection, stem, args):
         else:
             settings = ["--clade", "--point-scale", 3]
         check_call(["map-draw", "--projection", projection, path, pdf] + settings, log_file=WORKING_DIR.joinpath("map-draw.log"))
-    return pdf_to_png(pdf, WORKING_DIR.joinpath(stem + ".png"), args.png_size)
+    return pdf
+    # return pdf_to_png(pdf, WORKING_DIR.joinpath(stem + ".png"), args.png_size)
 
 # ----------------------------------------------------------------------
 
-def pdf_to_png(pdf, png, png_size):
-    if not png.exists():
-        if Path("/usr/bin/sips").exists():
-            check_call(["/usr/bin/sips", "-s", "format", "png", "-Z", png_size, pdf, "--out", png])
-        elif Path("/usr/bin/pdftoppm").exists():
-            check_call(["/usr/bin/pdftoppm", pdf, png.parent.joinpath(png.stem), "-png", "-f", "1", "-singlefile", "-scale-to", png_size])
-        else:
-            raise RuntimeError("don't know to to make png from pdf (neither /usr/bin/sips nor /usr/bin/pdftoppm found")
-    return png
+# def pdf_to_png(pdf, png, png_size):
+#     if not png.exists():
+#         if Path("/usr/bin/sips").exists():
+#             check_call(["/usr/bin/sips", "-s", "format", "png", "-Z", png_size, pdf, "--out", png])
+#         elif Path("/usr/bin/pdftoppm").exists():
+#             check_call(["/usr/bin/pdftoppm", pdf, png.parent.joinpath(png.stem), "-png", "-f", "1", "-singlefile", "-scale-to", png_size])
+#         else:
+#             raise RuntimeError("don't know to to make png from pdf (neither /usr/bin/sips nor /usr/bin/pdftoppm found")
+#     return png
 
 # ----------------------------------------------------------------------
 
@@ -159,7 +160,20 @@ sIndexHtml = """<!DOCTYPE html>
       .red {{ color: red; }}
       .col-title {{ text-align: center; }}
       .space {{ min-width: 50px; }}
+      object { width: 500px; height: 500px; }
     </style>
+    <script>
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      function main() {
+          document.querySelectorAll(".pdf[src]").forEach(element => {
+              let src = element.getAttribute("src");
+              if (isSafari)
+                  element.innerHTML = `<img src="${src}">`
+              else
+                  element.innerHTML = `<object data="${src}#toolbar="></object>`
+          });
+      }
+    </script>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script type="module">
       import * as mod from "/js/ad/map-draw/ace-view/201807/apache-mod-acmacs.js";
@@ -192,6 +206,9 @@ sIndexHtml = """<!DOCTYPE html>
       grid test was run for the best maps (left part of the table).
     </p>
 {grid}
+
+    <!-- must be at the end of body -->
+    <script>(function() { main(); })();</script>
   </body>
 </html>
 """
@@ -202,11 +219,11 @@ def make_index_html(state, args):
             return ""
         if cell == "space":
             return "<div class='space'></div>"
-        return f"<img src='{cell.name}'>"
+        return f"<div class='pdf' src='{cell.name}'></div>"
     def make_cells(row):
         return "\n".join(f"<td>{make_cell(cell)}</td>" for cell in row)
     def make_widget(cell):
-        m = re.search(r"-(\d+-\d+)\.png$", cell.name)
+        m = re.search(r"-(\d+-\d+)\.pdf$", cell.name)
         if m:
             return f"<div class='map' name='{m.group(1)}.grid.ace'></div>"
         else:
@@ -262,7 +279,7 @@ try:
     parser.add_argument("-k", "--projections-to-keep", type=int, dest="projections_to_keep", default=10)
     parser.add_argument("-r", "--reorient", dest="reorient_to", default=None)
     parser.add_argument("--working-dir", dest="working_dir", default=".")
-    parser.add_argument("--png-size", dest="png_size", default=500)
+    # parser.add_argument("--png-size", dest="png_size", default=500)
     parser.add_argument("--draw-settings", dest="draw_settings", default=None)
 
     parser.add_argument("pattern", nargs="*")
