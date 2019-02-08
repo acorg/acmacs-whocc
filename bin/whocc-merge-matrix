@@ -160,19 +160,20 @@ sIndexHtml = """<!DOCTYPE html>
       .red {{ color: red; }}
       .col-title {{ text-align: center; }}
       .space {{ min-width: 50px; }}
-      object { width: 500px; height: 500px; }
+      object {{ width: 500px; height: 500px; }}
+      img {{ width: 500px; height: 500px; }}
     </style>
     <script>
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      function main() {
-          document.querySelectorAll(".pdf[src]").forEach(element => {
+      function main() {{
+          document.querySelectorAll(".pdf[src]").forEach(element => {{
               let src = element.getAttribute("src");
               if (isSafari)
-                  element.innerHTML = `<img src="${src}">`
+                  element.innerHTML = `<img src="${{src}}">`
               else
-                  element.innerHTML = `<object data="${src}#toolbar="></object>`
-          });
-      }
+                  element.innerHTML = `<object data="${{src}}#toolbar="></object>`
+          }});
+      }}
     </script>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script type="module">
@@ -208,7 +209,7 @@ sIndexHtml = """<!DOCTYPE html>
 {grid}
 
     <!-- must be at the end of body -->
-    <script>(function() { main(); })();</script>
+    <script>(function() {{ main(); }})();</script>
   </body>
 </html>
 """
