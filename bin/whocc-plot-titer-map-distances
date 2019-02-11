@@ -4,7 +4,7 @@
 
 args <- commandArgs(trailingOnly=TRUE)
 if (length(args) == 0 || args[1] == "-h")
-    stop("Usage: chart-export --names --logged-titers --map-distances nimr-h3-neut.ace | whocc-plot-titer-map-distances output.pdf")
+    stop("Usage: chart-export --names --logged-titers --map-distances --column-bases nimr-h3-neut.ace | whocc-plot-titer-map-distances output.pdf")
 
 columns <- 6
 pdf_width = 20 # inches
@@ -19,9 +19,6 @@ rows <- ceiling(number_of_sera / columns)
 max_x <- ceiling(max(data$map_distances))
 max_y <- ceiling(max(data$logged_titers))
 
-# cat("max_x", max_x, "\n", "max_y", max_y, "\n")
-# stop("jopa")
-
 pdf(args[1], width=pdf_width, height=pdf_width*rows/columns)
 par(mfrow=c(rows,columns), cex=cex)
 
@@ -31,10 +28,14 @@ for (serum_no in 1:number_of_sera) {
     data_for_serum <- data_for_serum[data_for_serum$x >= 0,]
     data_for_serum <- data_for_serum[data_for_serum$y >= 0,]
     if (nrow(data_for_serum) > 1) {
-        if (add_y_jitter)
-            plot_y = jitter(data_for_serum$y)
-        else
+        if (add_y_jitter) {
+            plot_y = data_for_serum$y + rnorm(n=data_for_serum$y, mean=0, sd=0.05)
+            #print(plot_y)
+        }
+        else {
             plot_y = data_for_serum$y
+            #print(plot_y)
+        }
         plot(plot_y ~ data_for_serum$x, xlab="", ylab="", axes=F, xlim=c(0, max_x), ylim=c(0, max_y)) # , xlab="map distance", ylab="logged titer"
         title(paste(serum_no, " ", data$sera[serum_no]))
         axis(1)
@@ -44,7 +45,7 @@ for (serum_no in 1:number_of_sera) {
         loess_data <- loess(data_for_serum$y ~ data_for_serum$x)
         ordered_x <- order(data_for_serum$x)
         lines(data_for_serum$x[ordered_x], loess_data$fitted[ordered_x], col="blue")
-        max_in_col <- max(data_for_serum$y)
+        max_in_col <- data$column_bases[[serum_no]]
         abline(a=max_in_col, b=-1, col="red")
         legend("topright", legend=c(paste("regr: ", round(2^(regr$coefficients[1])*10), ", ", round(regr$coefficients[2], 2)), "loess"), col=c("black", "blue"), lty=1, bty="n")
     }
