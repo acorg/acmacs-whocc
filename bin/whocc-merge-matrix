@@ -247,7 +247,7 @@ def make_index_html(state, args):
 def get_sets(args):
     all_tables = sorted(args.pattern)
     set_sizes = [set_size for set_size in range(args.step, len(all_tables), args.step)]
-    if set_sizes[-1] < len(all_tables):
+    if not set_sizes or set_sizes[-1] < len(all_tables):
         set_sizes.append(len(all_tables))
     sets = [all_tables[-set_size:] for set_size in set_sizes]
     # pprint.pprint(sets, width=200)
