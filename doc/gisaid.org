@@ -1,6 +1,6 @@
 #+STARTUP: showall
 #+STARTUP: indent
-Time-stamp: <2019-02-12 13:21:02 eu>
+Time-stamp: <2019-02-18 14:55:03 eu>
 * previous fasta files downloaded from gisaid
 gisaid-all-20180815-2006-20180715.fas.xz
 gisaid-all-20180821-2017-20180715.fas.xz
