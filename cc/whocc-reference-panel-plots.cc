@@ -143,7 +143,7 @@ class ChartData
             return sMedianTiterColors[aMedianIndex][titer_index];
         }
 
-    void text(acmacs::surface::Surface& aSurface, acmacs::Location2D aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
+    void text(acmacs::surface::Surface& aSurface, const acmacs::PointCoordinates& aOffset, std::string aText, Color aColor, Rotation aRotation, double aFontSize, double aMaxWidth) const
         {
             const auto size = aSurface.text_size(aText, Scaled{aFontSize});
             if (size.width > aMaxWidth)
