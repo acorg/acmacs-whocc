@@ -29,8 +29,11 @@ int main(int argc, const char* argv[])
         auto hidb_tables = hidb.tables();
         for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
             std::cout << std::setw(3) << std::right << sr_no << ' ' << serum->full_name_with_passage() << '\n';
-            if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum)
-                std::cout << "  tables:" << hidb_serum->number_of_tables() << '\n';
+            if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum) {
+                const auto stat = hidb_tables->stat(hidb_serum->tables());
+                for (const auto& entry : stat)
+                    std::cout << "  " << entry.title() << "  tables:" << std::setw(3) << std::right << entry.number << " newest: " << std::setw(30) << std::left << entry.most_recent->name() << " oldest: " << entry.oldest->name() << '\n';
+            }
             else
                 std::cerr << "WARNING: not in hidb\n";
         }
