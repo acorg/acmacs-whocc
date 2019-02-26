@@ -35,7 +35,7 @@ int main(int argc, const char* argv[])
                     std::cout << "  " << entry.title() << "  tables:" << std::setw(3) << std::right << entry.number << " newest: " << std::setw(30) << std::left << entry.most_recent->name() << " oldest: " << entry.oldest->name() << '\n';
             }
             else
-                std::cerr << "WARNING: not in hidb\n";
+                std::cerr << "WARNING: not in hidb: " << serum->full_name_with_fields() << '\n';
         }
     }
     catch (std::exception& err) {
