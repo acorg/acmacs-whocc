@@ -73,7 +73,7 @@ int main(int argc, char* const argv[])
             std::vector<AntigenData> antigens(antigens_chart->size());
             std::transform(acmacs::index_iterator(0UL), acmacs::index_iterator(antigens_chart->size()), antigens.begin(), [&](size_t index) -> AntigenData {
                 return {index, &hidb, antigens_chart->at(index), hidb_antigens[index], seqdb_antigens[index]};
-                                                                                                                          });
+            });
             if (!clade.empty()) {
                 antigens.erase(std::remove_if(antigens.begin(), antigens.end(), [&](const auto& ag) -> bool { return !ag.antigen_seqdb || !ag.antigen_seqdb.seq().has_clade(clade); }), antigens.end());
             }
@@ -81,17 +81,17 @@ int main(int argc, char* const argv[])
             if (sort_by_tables) {
                 auto hidb_tables = hidb.tables();
                 std::sort(antigens.begin(), antigens.end(), [&](const auto& e1, const auto& e2) -> bool {
-                                                                if (!e1.antigen_hidb)
-                                                                    return false;
-                                                                if (!e2.antigen_hidb)
-                                                                    return true;
-                                                                if (const auto nt1 = e1.antigen_hidb->number_of_tables(), nt2 = e2.antigen_hidb->number_of_tables(); nt1 == nt2) {
-                                                                    auto mrt1 = hidb_tables->most_recent(e1.antigen_hidb->tables()), mrt2 = hidb_tables->most_recent(e2.antigen_hidb->tables());
-                                                                    return mrt1->date() > mrt2->date();
-                                                                }
-                                                                else
-                                                                    return nt1 > nt2;
-                                                            });
+                    if (!e1.antigen_hidb)
+                        return false;
+                    if (!e2.antigen_hidb)
+                        return true;
+                    if (const auto nt1 = e1.antigen_hidb->number_of_tables(), nt2 = e2.antigen_hidb->number_of_tables(); nt1 == nt2) {
+                        auto mrt1 = hidb_tables->most_recent(e1.antigen_hidb->tables()), mrt2 = hidb_tables->most_recent(e2.antigen_hidb->tables());
+                        return mrt1->date() > mrt2->date();
+                    }
+                    else
+                        return nt1 > nt2;
+                });
             }
             for (const auto& ad : antigens) {
                 std::cout << ad << '\n';
