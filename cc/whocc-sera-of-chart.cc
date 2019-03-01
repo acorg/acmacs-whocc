@@ -103,11 +103,14 @@ void report_for_serum_circles(const std::vector<SerumData>& serum_data, std::str
 {
     if (assay == "FOCUS REDUCTION")
         assay = "FR";
+    else if (assay == "PLAQUE REDUCTION NEUTRALISATION")
+        assay = "PRN";
 
     auto report = [&](const auto& entry, std::string color) {
         std::cout << R"({"N": "serum_circle", "serum": {"full_name": ")" << entry.name << R"("}, "report": true,)" << '\n'
                   << "  \"?passage\": \"" << entry.passage << "\",\n";
         for (const auto& tables : entry.table_data) {
+            // std::cerr << "DEBUG: " << tables.assay << " --- " << assay << '\n';
             if (tables.assay == assay)
                 std::cout << "  \"?\": \"tables:" << tables.number << " newest:" << tables.most_recent->date() << " oldest:" << tables.oldest->date() << "\",\n";
         }
