@@ -2,7 +2,6 @@
 #include <regex>
 #include <optional>
 #include <map>
-#include <tuple>
 
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/enumerate.hh"
@@ -26,6 +25,15 @@ struct Options : public argv
 
 enum class passage_t { egg, reassortant, cell };
 
+struct RadiusData
+{
+    size_t ag_no;
+    std::string full_name;
+    acmacs::chart::Titer titer;
+    std::optional<double> empirical_radius;
+    std::optional<double> theoretical_radius;
+};
+
 struct SerumData
 {
     const size_t sr_no;
@@ -37,6 +45,7 @@ struct SerumData
     std::vector<hidb::TableStat> table_data;
     bool most_used = false;            // this name+passage-type+if-reassortant has max number of tables
     bool most_recent = false;          // this name+passage-type+if-reassortant is in more than one table and has most recent oldest table
+    std::vector<RadiusData> radii{};
 };
 
 static std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<std::regex> name_match, const hidb::HiDb& hidb);
@@ -65,6 +74,7 @@ int main(int argc, const char* argv[])
             assay = "PRN";
         const auto lab = chart->info()->lab(acmacs::chart::Info::Compute::Yes);
         const auto rbc = chart->info()->rbc_species(acmacs::chart::Info::Compute::Yes);
+        chart->set_homologous(acmacs::chart::find_homologous::all);
         auto serum_data = collect(*chart, name_match, hidb::get(chart->info()->virus_type(acmacs::chart::Info::Compute::Yes), report_time::no));
         find_most_used(serum_data, assay, lab, rbc);
         if (opt.serum_circles) {
@@ -91,8 +101,14 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
     std::vector<SerumData> serum_data;
     for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
         if (!name_match || std::regex_search(serum->full_name(), *name_match)) {
-            if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum)
+            if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum) {
                 serum_data.push_back({sr_no, serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), passage_type(serum->reassortant(), serum->passage()), hidb_tables->stat(hidb_serum->tables())});
+                for (auto ag_no : serum->homologous_antigens()) {
+                    const auto empirical = chart.serum_circle_radius_empirical(ag_no, sr_no, 0);
+                    const auto theoretical = chart.serum_circle_radius_theoretical(ag_no, sr_no, 0);
+                    serum_data.back().radii.push_back({ag_no, chart.antigen(ag_no)->full_name(), empirical.per_antigen()[0].titer, empirical.per_antigen()[0].radius, theoretical.per_antigen()[0].radius});
+                }
+            }
             else
                 std::cerr << "WARNING: not in hidb: " << serum->full_name_with_fields() << '\n';
         }
@@ -246,7 +262,13 @@ void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std
                           << "</span> <span class='oldest'>oldest:" << tables.oldest->date() << "</span></div>\n";
             }
         }
-        std::cout << "<table>\n<tr><td>titer</td><td>radius</td><td>antigen</td></tr>\n";
+        std::cout << "<table>\n<tr><td>titer</td><td>empirical</td><td>theoretical</td><td>antigen</td></tr>\n";
+        for (const auto& antigen_data : entry.radii) {
+            std::cout << "<table>\n<tr><td>" << antigen_data.titer
+                      << "</td><td>" << (antigen_data.empirical_radius.has_value() ? acmacs::to_string(*antigen_data.empirical_radius, 1) : std::string{})
+                      << "</td><td>" << (antigen_data.theoretical_radius.has_value() ? acmacs::to_string(*antigen_data.theoretical_radius, 1) : std::string{})
+                      << "</td><td>" << antigen_data.ag_no << ' ' << antigen_data.full_name << "</td></tr>\n";
+        }
         std::cout << "</table>\n";
     };
 
