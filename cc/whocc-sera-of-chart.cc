@@ -264,7 +264,7 @@ void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std
         }
         std::cout << "<table>\n<tr><td>titer</td><td>empirical</td><td>theoretical</td><td>antigen</td></tr>\n";
         for (const auto& antigen_data : entry.radii) {
-            std::cout << "<table>\n<tr><td>" << antigen_data.titer
+            std::cout << "<tr><td>" << antigen_data.titer
                       << "</td><td>" << (antigen_data.empirical_radius.has_value() ? acmacs::to_string(*antigen_data.empirical_radius, 1) : std::string{})
                       << "</td><td>" << (antigen_data.theoretical_radius.has_value() ? acmacs::to_string(*antigen_data.theoretical_radius, 1) : std::string{})
                       << "</td><td>" << antigen_data.ag_no << ' ' << antigen_data.full_name << "</td></tr>\n";
