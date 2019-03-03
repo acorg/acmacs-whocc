@@ -238,29 +238,16 @@ void report_for_serum_circles_json(const std::vector<SerumData>& serum_data, std
 void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std::string assay, std::string lab, std::string rbc)
 {
     auto report = [&](const auto& entry) {
-        std::cout << "<b>" << entry.sr_no << ' ' << entry.full_name << "</b>"
-                  << (entry.most_used ? " **most-used**" : "") << (entry.most_recent ? " **most-recent**" : "") << '\n'
-                  << "<table>\n<tr><td>titer</td><td>radius</td><td>antigen</td></tr>\n";
-
-        // for (const auto& tables : entry.table_data) {
-        //     // std::cerr << "DEBUG: " << tables.assay << " --- " << assay << '\n';
-        //     if (match_assay(tables, assay, lab, rbc)) {
-        //         std::cout << "  \"?\": \"";
-        //         if (entry.most_used)
-        //             std::cout << "**most-used** ";
-        //         if (entry.most_recent)
-        //             std::cout << "**most-recent** ";
-        //         std::cout << "tables:" << tables.number << " newest:" << tables.most_recent->date() << " oldest:" << tables.oldest->date() << "\",\n";
-        //     }
-        // }
-        // const double outline_width = (entry.most_used || entry.most_recent) ? 6.0 : 2.0;
-        // const char* outline_dash = entry.most_recent ? R"(, "outline_dash": "dash1")" : "";
-        // std::cout << R"(  "empirical":   {"show": true,  "fill": "transparent", "outline": ")" << color << R"(", "outline_width": )" << outline_width << outline_dash << R"(},)" << '\n'
-        //           << R"(  "theoretical": {"show": false, "fill": "transparent", "outline": ")" << color << R"(", "outline_width": )" << outline_width << outline_dash << R"(},)" << '\n'
-        //           << R"(  "fallback":    {               "fill": "transparent", "outline": ")" << color << R"(", "outline_width": )" << outline_width << R"(, "outline_dash": "dash2", "radius": 3},)" << '\n'
-        //           << R"(  "mark_serum":    {"fill": ")" << color << R"(", "outline": "black", "order": "raise", "?label": {"name_type": "full", "offset": [0, 1], "color": "black", "size": 12}},)" << '\n'
-        //           << R"(  "?mark_antigen": {"fill": ")" << color << R"(", "outline": "black", "order": "raise", "?label": {"name_type": "full", "offset": [0, 1], "color": "black", "size": 12}})" << '\n'
-        //           << "},\n\n";
+        std::cout << "<div class='serum-name'>" << entry.sr_no << ' ' << entry.full_name << "</div>\n";
+        for (const auto& tables : entry.table_data) {
+            if (match_assay(tables, assay, lab, rbc)) {
+                std::cout << "<div class='serum-tables" << (entry.most_used ? " most-used" : "") << (entry.most_recent ? " most-recent" : "") << "'><span class='number-of-tables'>tables:" << tables.number
+                          << "</span> <span class='newest'>newest:" << tables.most_recent->date()
+                          << "</span> <span class='oldest'>oldest:" << tables.oldest->date() << "</span></div>\n";
+            }
+        }
+        std::cout << "<table>\n<tr><td>titer</td><td>radius</td><td>antigen</td></tr>\n";
+        std::cout << "</table>\n";
     };
 
     std::cout << "<span class=\"passage-egg\">EGG</span><br>\n";
@@ -268,18 +255,21 @@ void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std
         if (entry.passage_type == passage_t::egg)
             report(entry);
     }
+    std::cout << "<br>\n";
 
     std::cout << "<span class=\"passage-reassortant\">Reassortant</span><br>\n";
     for (const auto& entry : serum_data) {
         if (entry.passage_type == passage_t::reassortant)
             report(entry);
     }
+    std::cout << "<br>\n";
 
     std::cout << "<span class=\"passage-cell\">CELL</span><br>\n";
     for (const auto& entry : serum_data) {
         if (entry.passage_type == passage_t::cell)
             report(entry);
     }
+    std::cout << "<br>\n";
 
 } // report_for_serum_circles_html
 
