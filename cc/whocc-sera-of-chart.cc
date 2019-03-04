@@ -41,6 +41,7 @@ struct SerumData
     const std::string full_name;
     const acmacs::chart::Reassortant reassortant;
     const acmacs::chart::Passage passage;
+    const acmacs::chart::SerumId serum_id;
     const passage_t passage_type;
     std::vector<hidb::TableStat> table_data;
     bool most_used = false;            // this name+passage-type+if-reassortant has max number of tables
@@ -49,7 +50,7 @@ struct SerumData
 };
 
 static std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<std::regex> name_match, const hidb::HiDb& hidb);
-static passage_t passage_type(const acmacs::chart::Reassortant& reassortant, const acmacs::chart::Passage& passage);
+static passage_t passage_type(const acmacs::chart::Reassortant& reassortant, const acmacs::chart::Passage& passage, const acmacs::chart::SerumId& serum_id);
 static void find_most_used(std::vector<SerumData>& serum_data, std::string assay, std::string lab, std::string rbc);
 static bool match_assay(const hidb::TableStat& tables, std::string assay, std::string lab, std::string rbc);
 static void report(const std::vector<SerumData>& serum_data);
@@ -102,7 +103,7 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
     for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
         if (!name_match || std::regex_search(serum->full_name(), *name_match)) {
             if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum) {
-                serum_data.push_back({sr_no, serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), passage_type(serum->reassortant(), serum->passage()), hidb_tables->stat(hidb_serum->tables())});
+                serum_data.push_back({sr_no, serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), hidb_tables->stat(hidb_serum->tables())});
                 const auto homologous_antigens = serum->homologous_antigens();
                 for (auto ag_no : homologous_antigens) {
                     const auto empirical = chart.serum_circle_radius_empirical(ag_no, sr_no, 0);
@@ -122,11 +123,11 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
 
 // ----------------------------------------------------------------------
 
-passage_t passage_type(const acmacs::chart::Reassortant& reassortant, const acmacs::chart::Passage& passage)
+passage_t passage_type(const acmacs::chart::Reassortant& reassortant, const acmacs::chart::Passage& passage, const acmacs::chart::SerumId& serum_id)
 {
     if (!reassortant.empty())
         return passage_t::reassortant;
-    if (passage.is_egg())
+    if (passage.is_egg() || (passage.empty() && serum_id.find("EGG") != std::string::npos))
         return passage_t::egg;
     return passage_t::cell;
 
