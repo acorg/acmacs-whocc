@@ -73,6 +73,10 @@ int main(int argc, const char* argv[])
             assay = "FR";
         else if (assay == "PLAQUE REDUCTION NEUTRALISATION")
             assay = "PRN";
+        else if (assay == "MN")
+            assay = "FR";       // bug in NIID H3 hidb?
+        else if (assay != "HI")
+            std::cerr << "WARNING: assay: " << assay << '\n';
         const auto lab = chart->info()->lab(acmacs::chart::Info::Compute::Yes);
         const auto rbc = chart->info()->rbc_species(acmacs::chart::Info::Compute::Yes);
         chart->set_homologous(acmacs::chart::find_homologous::all);
@@ -103,7 +107,14 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
     for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
         if (!name_match || std::regex_search(serum->full_name(), *name_match)) {
             if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum) {
-                serum_data.push_back({sr_no, serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), hidb_tables->stat(hidb_serum->tables())});
+                const auto serum_tables = hidb_tables->stat(hidb_serum->tables());
+                if (serum_tables.empty())
+                    std::cerr << "WARNING: no tables in hidb for " << sr_no << ' ' << serum->full_name() << '\n';
+                // std::cerr << "DEBUG: " <<  sr_no << ' ' << serum->full_name() << '\n';
+                // for (const auto& est : serum_tables) {
+                //     std::cerr << "DEBUG:    " << est.title() << " tables:" << est.number << " newest:" << est.most_recent->date() << " oldest:" << est.oldest->date() << '\n';
+                // }
+                serum_data.push_back({sr_no, serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), serum_tables});
                 const auto homologous_antigens = serum->homologous_antigens();
                 for (auto ag_no : homologous_antigens) {
                     const auto empirical = chart.serum_circle_radius_empirical(ag_no, sr_no, 0);
