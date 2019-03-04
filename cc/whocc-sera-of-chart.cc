@@ -257,7 +257,7 @@ void report_for_serum_circles_json(const std::vector<SerumData>& serum_data, std
 void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std::string assay, std::string lab, std::string rbc)
 {
     auto report = [&](const auto& entry) {
-        std::cout << "<div class='serum-name'>" << entry.sr_no << ' ' << entry.full_name << "</div>\n";
+        std::cout << "<div class='serum-name'>" << entry.sr_no << ' ' << entry.full_name << ' ' << entry.passage << "</div>\n";
         for (const auto& tables : entry.table_data) {
             if (match_assay(tables, assay, lab, rbc)) {
                 std::cout << "<div class='serum-tables" << (entry.most_used ? " most-used" : "") << (entry.most_recent ? " most-recent" : "")
@@ -298,19 +298,21 @@ void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std
         if (entry.passage_type == passage_t::egg)
             report(entry);
     }
+    std::cout << '\n';
 
     std::cout << "<p class=\"passage-title passage-reassortant\">Reassortant</p>\n";
     for (const auto& entry : serum_data) {
         if (entry.passage_type == passage_t::reassortant)
             report(entry);
     }
+    std::cout << '\n';
 
     std::cout << "<p class=\"passage-title passage-cell\">CELL</p>\n";
     for (const auto& entry : serum_data) {
         if (entry.passage_type == passage_t::cell)
             report(entry);
     }
-    std::cout << "</div>\n";
+    std::cout << "</div>\n\n";
 
 } // report_for_serum_circles_html
 
