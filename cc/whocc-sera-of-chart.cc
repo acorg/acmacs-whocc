@@ -103,11 +103,14 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
         if (!name_match || std::regex_search(serum->full_name(), *name_match)) {
             if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum) {
                 serum_data.push_back({sr_no, serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), passage_type(serum->reassortant(), serum->passage()), hidb_tables->stat(hidb_serum->tables())});
-                for (auto ag_no : serum->homologous_antigens()) {
+                const auto homologous_antigens = serum->homologous_antigens();
+                for (auto ag_no : homologous_antigens) {
                     const auto empirical = chart.serum_circle_radius_empirical(ag_no, sr_no, 0);
                     const auto theoretical = chart.serum_circle_radius_theoretical(ag_no, sr_no, 0);
                     serum_data.back().radii.push_back({ag_no, chart.antigen(ag_no)->full_name(), empirical.per_antigen()[0].titer, empirical.per_antigen()[0].radius, theoretical.per_antigen()[0].radius});
                 }
+                if (homologous_antigens.empty())
+                    std::cerr << "ERROR: no homologous antigens for " << sr_no << ' ' << serum->full_name() << '\n';
             }
             else
                 std::cerr << "WARNING: not in hidb: " << serum->full_name_with_fields() << '\n';
@@ -156,7 +159,7 @@ void find_most_used(std::vector<SerumData>& serum_data, std::string assay, std::
                         found->second.most_used_index = no;
                         found->second.most_used_number = tables.number;
                     }
-                    if (std::string{tables.oldest->date()} > found->second.most_recent_oldest_date) {
+                    if (tables.number > 1 && std::string{tables.oldest->date()} > found->second.most_recent_oldest_date) {
                         found->second.most_recent_index = no;
                         found->second.most_recent_oldest_date = std::string{tables.oldest->date()};
                     }
@@ -206,7 +209,7 @@ void report(const std::vector<SerumData>& serum_data)
 void report_for_serum_circles_json(const std::vector<SerumData>& serum_data, std::string assay, std::string lab, std::string rbc)
 {
     auto report = [&](const auto& entry, std::string color) {
-        std::cout << R"({"N": "serum_circle", "serum": {"full_name": ")" << entry.full_name << R"("}, "report": true,)" << '\n'
+        std::cout << R"({"N": "serum_circle", "serum": {"full_name": ")" << entry.full_name << R"(", "?index": )" << entry.sr_no << R"(}, "report": true,)" << '\n'
                   << "  \"?passage\": \"" << entry.passage << "\",\n";
         for (const auto& tables : entry.table_data) {
             // std::cerr << "DEBUG: " << tables.assay << " --- " << assay << '\n';
