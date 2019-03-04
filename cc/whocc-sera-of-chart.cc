@@ -257,41 +257,57 @@ void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std
         std::cout << "<div class='serum-name'>" << entry.sr_no << ' ' << entry.full_name << "</div>\n";
         for (const auto& tables : entry.table_data) {
             if (match_assay(tables, assay, lab, rbc)) {
-                std::cout << "<div class='serum-tables" << (entry.most_used ? " most-used" : "") << (entry.most_recent ? " most-recent" : "") << "'><span class='number-of-tables'>tables:" << tables.number
-                          << "</span> <span class='newest'>newest:" << tables.most_recent->date()
+                std::cout << "<div class='serum-tables" << (entry.most_used ? " most-used" : "") << (entry.most_recent ? " most-recent" : "")
+                          << "'><span class='number-of-tables'>tables:" << tables.number << "</span> <span class='newest'>newest:" << tables.most_recent->date()
                           << "</span> <span class='oldest'>oldest:" << tables.oldest->date() << "</span></div>\n";
             }
         }
-        std::cout << "<table>\n<tr><td>titer</td><td>empirical</td><td>theoretical</td><td>antigen</td></tr>\n";
+        std::cout << "<table class='radii'>\n<tr><td>titer</td><td>empirical</td><td>theoretical</td><td>antigen</td></tr>\n";
         for (const auto& antigen_data : entry.radii) {
-            std::cout << "<tr><td>" << antigen_data.titer
-                      << "</td><td>" << (antigen_data.empirical_radius.has_value() ? acmacs::to_string(*antigen_data.empirical_radius, 1) : std::string{})
-                      << "</td><td>" << (antigen_data.theoretical_radius.has_value() ? acmacs::to_string(*antigen_data.theoretical_radius, 1) : std::string{})
-                      << "</td><td>" << antigen_data.ag_no << ' ' << antigen_data.full_name << "</td></tr>\n";
+            std::cout << "<tr>"
+                      << "<td class='titer'>" << antigen_data.titer << "</td>"
+                      << "<td class='radius'>" << (antigen_data.empirical_radius.has_value() ? acmacs::to_string(*antigen_data.empirical_radius, 1) : std::string{}) << "</td>"
+                      << "<td class='radius'>" << (antigen_data.theoretical_radius.has_value() ? acmacs::to_string(*antigen_data.theoretical_radius, 1) : std::string{}) << "</td>"
+                      << "<td class='antigen-name'>" << antigen_data.ag_no << ' ' << antigen_data.full_name << "</td>"
+                      << "</tr>\n";
         }
         std::cout << "</table>\n";
     };
 
-    std::cout << "<span class=\"passage-egg\">EGG</span><br>\n";
+    std::cout << "<style>\n"
+              << "  div.serum-circle-data .passage-title { font-weight: bold; margin-bottom: 1em; }\n"
+              << "  div.serum-circle-data .passage-egg { color: #f4511e; }\n"
+              << "  div.serum-circle-data .passage-reassortant { color: #c0ca33; }\n"
+              << "  div.serum-circle-data .passage-cell { color: #00838f; }\n"
+              << "  div.serum-circle-data .serum-name { font-weight: bold; }\n"
+              << "  div.serum-circle-data .serum-tables { margin-left: 0.5em; }\n"
+              << "  div.serum-circle-data .serum-tables.most-used .number-of-tables { color: #4040FF; font-weight: bold; }\n"
+              << "  div.serum-circle-data .serum-tables.most-recent .oldest { color: #4040FF; font-weight: bold; }\n"
+              << "  div.serum-circle-data table.radii { margin: 0.2em 0 0.4em 0; border-collapse: collapse; }\n"
+              << "  div.serum-circle-data table.radii td { padding: 0 0.5em; }\n"
+              << "  div.serum-circle-data table.radii .titer { text-align: right; }\n"
+              << "  div.serum-circle-data table.radii .radius { text-align: right; padding-right: 1.5em; }\n"
+              << "</style>\n\n";
+
+    std::cout << "<div class='serum-circle-data'>\n";
+    std::cout << "<p class=\"passage-title passage-egg\">EGG</p>\n";
     for (const auto& entry : serum_data) {
         if (entry.passage_type == passage_t::egg)
             report(entry);
     }
-    std::cout << "<br>\n";
 
-    std::cout << "<span class=\"passage-reassortant\">Reassortant</span><br>\n";
+    std::cout << "<p class=\"passage-title passage-reassortant\">Reassortant</p>\n";
     for (const auto& entry : serum_data) {
         if (entry.passage_type == passage_t::reassortant)
             report(entry);
     }
-    std::cout << "<br>\n";
 
-    std::cout << "<span class=\"passage-cell\">CELL</span><br>\n";
+    std::cout << "<p class=\"passage-title passage-cell\">CELL</p>\n";
     for (const auto& entry : serum_data) {
         if (entry.passage_type == passage_t::cell)
             report(entry);
     }
-    std::cout << "<br>\n";
+    std::cout << "</div>\n";
 
 } // report_for_serum_circles_html
 
