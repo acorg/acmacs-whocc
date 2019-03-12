@@ -1,6 +1,6 @@
 #+STARTUP: showall
 #+STARTUP: indent
-Time-stamp: <2019-03-04 13:51:54 eu>
+Time-stamp: <2019-03-12 12:34:04 eu>
 * previous fasta files downloaded from gisaid
 gisaid-all-20180815-2006-20180715.fas.xz
 gisaid-all-20180821-2017-20180715.fas.xz
@@ -21,6 +21,7 @@ gisaid-all-20190218-20090901-20190123.fas.xz
 gisaid-all-20190219-201811-20190208.fas.xz
 gisaid-all-20190225-20140206-20190123.fas.xz
 gisaid-all-20190304-20140206-20190211.fas.xz
+gisaid-all-20190312-20171201-20190304.fas.xz
 --end--
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 * Hold Cmd and click A and B in the Type.
