@@ -30,11 +30,15 @@ def main(args):
             serum_groups.setdefault(clade, []).append(index)
     # pprint.pprint(antigen_groups)
     # pprint.pprint(serum_groups)
-    print(sorted(antigen_groups, key=lambda name: len(antigen_groups[name])))
+    # print(sorted(antigen_groups, key=lambda name: len(antigen_groups[name])))
     cmd = ["chart-html", args.chart[0], args.output[0]]
     for group in sorted(antigen_groups, key=lambda name: len(antigen_groups[name])):
         if group:
             cmd += ["--group-name", group, "--group", ",".join(str(e) for e in antigen_groups[group])]
+    # print(sorted(serum_groups, key=lambda name: len(serum_groups[name])))
+    for group in sorted(serum_groups, key=lambda name: len(serum_groups[name])):
+        if group:
+            cmd += ["--serum-group-name", group, "--serum-group", ",".join(str(e) for e in serum_groups[group])]
     print(" ".join(repr(e) for e in cmd))
     subprocess.check_call(cmd)
 
