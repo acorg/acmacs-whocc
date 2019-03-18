@@ -1,6 +1,6 @@
 #+STARTUP: showall
 #+STARTUP: indent
-Time-stamp: <2019-03-12 12:34:04 eu>
+Time-stamp: <2019-03-18 08:08:11 eu>
 * previous fasta files downloaded from gisaid
 gisaid-all-20180815-2006-20180715.fas.xz
 gisaid-all-20180821-2017-20180715.fas.xz
@@ -58,6 +58,7 @@ seqdb-create --no-save --db /d/seqdb.json.xz --match-hidb --clades --report-not-
 *** check and fix wrong names
 #+BEGIN_SRC emacs-lisp
 (progn
+  (query-replace-regexp "\\(/201[78]\\)([^)]+)-" "\\1 " nil (point-min)(point-max))
   (query-replace-regexp "\\(/201[78]\\)([^)]+)" "\\1" nil (point-min)(point-max))
   (replace-string "bvr-1b (b/phuket/3073/2013)" "B/PHUKET/3073/2013 BVR-1B" nil (point-min)(point-max))
   (replace-string "a/manitoba/rv27522017" "A/MANITOBA/RV2752/2017" nil (point-min)(point-max))
