@@ -31,9 +31,9 @@ sAssayConvert = {
 
 # ----------------------------------------------------------------------
 
-def get_recent_merges(target_dir :Path, subtype=None):
+def get_recent_merges(target_dir :Path, subtype=None, lab=None):
     if subtype is not None:
-        response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=subtype)
+        response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=subtype, labs = [lab.upper()] if lab else None)
         if "data" not in response:
             module_logger.error("No \"data\" in response of ad_whocc_recent_merges api command:\n{}".format(pprint.pformat(response)))
             raise RuntimeError("Unexpected result of ad_whocc_recent_merges c2 api command")
