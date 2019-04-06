@@ -1,4 +1,4 @@
-Time-stamp: <2019-04-06 08:30:45 eu>
+Time-stamp: <2019-04-06 22:12:19 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
 * Check config
 ~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
@@ -13,16 +13,43 @@ Program sends email on completion or failure.
 See ../acmacs-whocc/conf/make-signature-pages.config.json
 ** Generate pdf with all sig pages
 * Runtime
+T1 - 1 thread
+S0 - full time, S1 - --stop-after-seconds 1
+
+|       | 4k           | 5k                 | 6k             | 7k                | 8k | 9k | 10k | 11k |
+|-------+--------------+--------------------+----------------+-------------------+----+----+-----+-----|
+| T1 S0 | 11652s 3.24h | 15106s 4.20h 48704 |                |                   |    |    |     |     |
+|-------+--------------+--------------------+----------------+-------------------+----+----+-----+-----|
+| T1 S1 |  4227s 1.17h |  5222s 1.45h 48774 | 7176s 2h 55717 | 9116s 2.53h 61643 |    |    |     |     |
+|-------+--------------+--------------------+----------------+-------------------+----+----+-----+-----|
+| T  S0 |              |                    |                |                   |    |    |     |     |
+|-------+--------------+--------------------+----------------+-------------------+----+----+-----+-----|
+| T  S1 |              |                    |                |                   |    |    |     |     |
+|-------+--------------+--------------------+----------------+-------------------+----+----+-----+-----|
+
 ** Custom version raxml with --stop-after-seconds [2019-04-05 Fri]
 *** H3 3997 sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, A%28H3N2%29/ONTARIO/RV2886/2018__P1 ... A%28H3N2%29/ANCONA/3/2019__
 **** full time --stop-after-seconds 0 no threads
 i22: 11652s (03:14:12)
 /syn/eu/raxml-acorg/raxmlHPC-oriane -p 13579 -N 1 -s ../source-4k.fas -n 4k-0s-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D
-
 **** --stop-after-seconds 1 no threads
 i22: 4227s (01:10:27)
-/syn/eu/raxml-acorg/raxmlHPC-oriane --stop-after-seconds 1 -p 13579 -N 1 -s ../source-4k.fas -n 4k-1s-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D
-
+s=8k; /syn/eu/raxml-acorg/raxml-i22-avx --stop-after-seconds 1 -p 13579 -N 1 -s ../source-$s.fas -n $s-1s-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D
+*** H3 5k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
+**** full time --stop-after-seconds 0 no threads
+i22: 15106s 4.2h 48704
+**** --stop-after-seconds 1 no threads
+i22: 5222s 1.45h 48774
+*** H3 6k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
+**** full time --stop-after-seconds 0 no threads
+i22: 
+**** --stop-after-seconds 1 no threads
+i22: 7176s 2h 55717
+*** H3 7k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
+**** full time --stop-after-seconds 0 no threads
+i22: 
+**** --stop-after-seconds 1 no threads
+i22: 9116s 2.53h 61643
 * OLD (before <2018-12-28 Fri>)
 Run on albertine ~/AD/sources/acmacs-whocc/bin/make-signature-pages.before-20181228 -t $(date '+%Y-%m%d')
 * OLD (before <2018-07-16 Mon>)
