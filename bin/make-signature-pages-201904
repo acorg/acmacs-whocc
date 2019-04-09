@@ -2,7 +2,7 @@
 # -*- Python -*-
 # ======================================================================
 
-import sys, os, re, datetime, random, pprint, time as time_m
+import sys, os, socket, re, datetime, random, pprint, time as time_m
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
@@ -66,6 +66,7 @@ def main(args):
         else:
             raxml_get_results()
         STATE.save()
+    email_success()
 
 # ======================================================================
 
@@ -139,13 +140,11 @@ def raxml_wait():
 
 def raxml_get_results():
     module_logger.info(f"raxml_get_results")
-    module_logger.debug(f"raxml_get_results")
-    exit(1)
+    raise Error(f"raxml_get_results not implementated")
 
 # ======================================================================
 
 def setup(args):
-    import socket
     if socket.gethostname() != "i19":
         raise Error("The script must be run on i19")
     if not os.getenv("ACMACSD_ROOT") or not Path(os.getenv("ACMACSD_ROOT"), "data", "hidb5.h1.json.xz"):
@@ -271,6 +270,26 @@ def htcondor_submit(desc_filename):
         raise RuntimeError("cluster id not found in the submission results {}".format(cluster))
     return dict(cluster)
 
+# ----------------------------------------------------------------------
+
+EMACS_PREFIX = f"/scp:{socket.gethostname()}:"
+
+def email_error(err):
+    from acmacs_base.email import send
+    ROOT_DIR = Path(".").resolve()
+    subject = f"FAILED: {socket.gethostname()} {sys.argv}"
+    url = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR).replace("/syn/eu/ac/", "")
+    url_commont = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR.parent).replace("/syn/eu/ac/", "")
+    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{url}\n{url_commont}\n{EMACS_PREFIX}{ROOT_DIR}\n\n{err}")
+
+def email_success():
+    from acmacs_base.email import send
+    ROOT_DIR = Path(".").resolve()
+    subject = f"completed: {socket.gethostname()} {sys.argv}"
+    url = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR).replace("/syn/eu/ac/", "")
+    url_commont = "https://notebooks.antigenic-cartography.org/eu/" + str(ROOT_DIR.parent).replace("/syn/eu/ac/", "")
+    send(to=ADMIN_EMAIL, subject=subject, body=f"{subject}\n{url}\n{url_commont}\n{EMACS_PREFIX}{ROOT_DIR}")
+
 # ======================================================================
 
 import argparse, traceback
@@ -289,14 +308,14 @@ try:
 except Error as err:
     logging.error(str(err))
     email_error(f"{err}\n{traceback.format_exc()}")
-    STATE["error"] = str(err)
-    save_state(STATE)
+    STATE.error = str(err)
+    STATE.save()
     exit_code = 2
 except Exception as err:
     logging.error('{}\n{}'.format(err, traceback.format_exc()))
     email_error(f"{err}\n{traceback.format_exc()}")
-    STATE["error"] = str(err)
-    save_state(STATE)
+    STATE.error = str(err)
+    STATE.save()
     exit_code = 1
 exit(exit_code)
 
