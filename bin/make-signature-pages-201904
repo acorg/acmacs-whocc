@@ -1,0 +1,163 @@
+#! /usr/bin/env python3
+# -*- Python -*-
+# ======================================================================
+
+import sys, os, re, datetime, shutil, subprocess, pprint
+from pathlib import Path
+import logging; module_logger = logging.getLogger(__name__)
+
+# ======================================================================
+
+ADMIN_EMAIL = "eu@antigenic-cartography.org"
+
+BASE_SEQUENCES = {
+    "h1": "SWITZERLAND/9772556/2013 SIAT2",
+    "h3": "HAWAII/22/2012 MDCK",
+    "bv": "VICTORIA/830/2013 MDCK2",
+    "by": "CHRISTCHURCH/503/2013 MDCK1",
+    }
+
+# ======================================================================
+
+class State:
+
+    def __init__(self):
+        self.filename = Path("state.json")
+
+    def __repr__(self):
+        return pprint.pformat(vars(self))
+
+    def load(self):
+        from acmacs_base import json
+        if self.filename.exists():
+            for k, v in json.read(STATE_FILE).items():
+                setattr(self, k, v)
+        else:
+            self.init()
+        print(self)
+
+    def init(self):
+        self.start = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def save(self):
+        from acmacs_base import json
+        json.write(path=self.filename, data=vars(state), indent=2, compact=True)
+
+STATE = State()
+
+STATE_FILE : Path = None
+
+class Error (Exception): pass
+
+# ======================================================================
+
+def main(args):
+    setup(args)
+    load_state()
+    while True:
+        if not Path("source.fas").exists():
+            export_sequences()
+        elif not STATE.raxml_job:
+            submit_raxml()
+        else:
+            wait_raxml()
+        save_state()
+
+# ======================================================================
+
+def state_export_sequences():
+    global STATE
+    log_file = "log/seqdb-export.log"
+    cmd = [
+        os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"),
+        "--flu", STATE.subtype,
+        "--recent", STATE.number_of_sequences,
+        "--hamming-distance-threshold", STATE.hamming_distance_threshold,
+        "--tree-maker",
+        "--base-seq", STATE.base_sequence,
+        STATE.source_fasta
+    ]
+    module_logger.info(f"exporting fasta: {STATE.source_fasta}\n  {cmd}\n  log: {log_file}")
+    check_call(cmd, log_file)
+
+# ----------------------------------------------------------------------
+
+def submit_raxml():
+    module_logger.warning(f"submit_raxml")
+    exit(1)
+
+# ======================================================================
+
+def setup(args):
+    import socket
+    if socket.gethostname() != "i19":
+        raise Error("The script must be run on i19")
+    if not os.getenv("ACMACSD_ROOT") or not Path(os.getenv("ACMACSD_ROOT"), "data", "hidb5.h1.json.xz"):
+        raise Error("ACMACSD_ROOT not set or no hidb in $ACMACSD_ROOT/data")
+    else:
+        ACMACSD_ROOT = Path(os.getenv("ACMACSD_ROOT")).resolve()
+    if not STATE.filename.exists():
+        root_dir = Path("/syn/eu/ac/results/signature-pages", datetime.date.today().strftime("%Y-%m%d"), STATE.subtype)
+        root_dir.mkdir(parents=True, exist_ok=True)
+        os.chdir(str(root_dir))
+    print(os.getcwd())
+
+    STATE.subtype = args.subtype.lower()
+    if STATE.subtype not in ["h1", "h3", "bv", "by"]:
+        raise Error(f"Invalid subtype: {STATE.subtype}")
+
+    m1 = re.match(r"^(\d+)([hms]?)$", args.time)
+    if not m1:
+        raise Error(f"Invalid time: {args.time}")
+    if m1.group(2) == 'h':
+        STATE.target_runtime = int(m1.group(1)) * 60 * 60
+    elif m1.group(2) == 'm':
+        STATE.target_runtime = int(m1.group(1)) * 60
+    else:
+        STATE.target_runtime = int(m1.group(1))
+
+    STATE.source_fasta = "source.fas"
+    STATE.number_of_sequences = args.number_of_sequences
+    STATE.hamming_distance_threshold = args.hamming_distance_threshold
+    STATE.base_sequence = args.base_sequence
+    if STATE.base_sequence is None:
+        global BASE_SEQUENCES
+        STATE.base_sequence = BASE_SEQUENCES[STATE.subtype]
+
+    Path("log").mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(filename="log/main.log", level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    logging.getLogger().addHandler(logging.StreamHandler())
+
+# ======================================================================
+
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('subtype', required=True, help="h1 h3 bv by")
+    parser.add_argument('time', required=True, help="1s, 30m, 10h")
+    parser.add_argument('--number-of-sequences', dest="number_of_sequences", default=4000, type=int)
+    parser.add_argument('--hamming-distance-threshold', dest="hamming_distance_threshold", default=160, type=int)
+    parser.add_argument('--base-seq', dest="base_sequence", default=None, help="regex, use seqdb-list --re <name> to check possible names. It must select just one sequence.")
+    parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+
+    args = parser.parse_args()
+    exit_code = main(args)
+except Error as err:
+    logging.error(str(err))
+    email_error(f"{err}\n{traceback.format_exc()}")
+    STATE["error"] = str(err)
+    save_state(STATE)
+    exit_code = 2
+except Exception as err:
+    logging.error('{}\n{}'.format(err, traceback.format_exc()))
+    email_error(f"{err}\n{traceback.format_exc()}")
+    STATE["error"] = str(err)
+    save_state(STATE)
+    exit_code = 1
+exit(exit_code)
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
