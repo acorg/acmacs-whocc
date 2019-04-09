@@ -2,13 +2,14 @@
 # -*- Python -*-
 # ======================================================================
 
-import sys, os, re, datetime, pprint
+import sys, os, re, datetime, random, pprint, time as time_m
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
 # ======================================================================
 
 ADMIN_EMAIL = "eu@antigenic-cartography.org"
+NUM_RUNS = 16
 
 BASE_SEQUENCES = {
     "h1": "SWITZERLAND/9772556/2013 SIAT2",
@@ -23,9 +24,6 @@ class State:
 
     filename = Path("state.json")
 
-    def __init__(self):
-        self.raxml_job = None
-
     def __repr__(self):
         return pprint.pformat(vars(self))
 
@@ -34,6 +32,7 @@ class State:
         if self.filename.exists():
             for k, v in json.read(self.filename).items():
                 setattr(self, k, v)
+            self.source_fasta = Path(self.source_fasta)
         else:
             self.init()
         module_logger.info(f"{self}")
@@ -46,8 +45,7 @@ class State:
         json.write(path=self.filename, data=vars(self), indent=2, compact=True)
 
 STATE = State()
-
-STATE_FILE : Path = None
+RANDOM_GEN = random.SystemRandom()
 
 class Error (Exception): pass
 
@@ -58,18 +56,22 @@ def main(args):
     setup(args)
     STATE.load()
     while True:
-        if not Path("source.fas").exists():
+        if not STATE.source_fasta.exists():
             export_sequences()
-        elif not STATE.raxml_job:
-            submit_raxml()
+        elif not getattr(STATE, "raxml_time", None):
+            if not getattr(STATE, "raxml_job", None):
+                raxml_submit()
+            else:
+                raxml_wait()
         else:
-            wait_raxml()
+            raxml_get_results()
         STATE.save()
 
 # ======================================================================
 
 def export_sequences():
     global STATE
+    module_logger.info(f"export_sequences")
     log_file = "log/seqdb-export.log"
     cmd = [
         os.path.expandvars("${ACMACSD_ROOT}/bin/seqdb-export"),
@@ -78,15 +80,66 @@ def export_sequences():
         "--hamming-distance-threshold", STATE.hamming_distance_threshold,
         "--tree-maker",
         "--base-seq", STATE.base_sequence,
-        STATE.source_fasta
+        str(STATE.source_fasta)
     ]
     module_logger.info(f"exporting fasta: {STATE.source_fasta}\n  {cmd}\n  log: {log_file}")
     check_call(cmd, log_file)
 
 # ----------------------------------------------------------------------
 
-def submit_raxml():
-    module_logger.warning(f"submit_raxml")
+def raxml_submit():
+    global STATE, ADMIN_EMAIL
+    module_logger.info(f"raxml_submit")
+    log_file = "log/raxml.log"
+    working_dir = Path(".").resolve()
+    run_id = f"{working_dir.parent.name}-{working_dir.name}".replace(" ", "-")
+    run_ids = [f"{run_id}.{run_no:04d}" for run_no in range(NUM_RUNS)]
+    general_args = ["--stop-after-seconds", STATE.target_runtime,
+                    "-N", "1000",
+                    "-s", str(STATE.source_fasta.resolve()),
+                    "-m", "GTRGAMMAI",
+                    "-e", "0.001",
+                    "-o", STATE.source_fasta.open().readline().strip()[1:], # outgroup
+                    "-c", "4",
+                    "-f", "d",
+                    "--silent",
+                    "--no-seq-check",
+                    "-D"]
+    raxml_dir = Path("raxml")
+    desc_filename, STATE.raxml_condor_log = htcondor_prepare(
+        program="/syn/bin/raxml",
+        program_args = [(general_args + ["-n", ri, "-p", str(random_seed())]) for ri in run_ids],
+        description=f"raxml {run_id} {NUM_RUNS}",
+        current_dir=Path("raxml"),
+        priority=0,
+        capture_stdout=True,
+        email=ADMIN_EMAIL,
+        notification="Error",
+        machines=STATE.machines
+        )
+    STATE.raxml_job = htcondor_submit(desc_filename)
+    STATE.raxml_started = time_m.time()
+
+# ----------------------------------------------------------------------
+
+def raxml_wait():
+    import subprocess
+    module_logger.info(f"raxml_wait")
+    output = subprocess.run(["condor_wait", STATE.raxml_condor_log], env={"LD_LIBRARY_PATH": ""}, check=False, stdout=subprocess.PIPE).stdout.decode("utf-8") # ignore exit code, condor_wait exits with 1 on timeout
+    if "All jobs done." in output:
+        STATE.raxml_time = time_m.time() - state["raxml"]["started"]
+        module_logger.info("raxml jobs completed in " + RaxmlResult.time_str(state["raxml"]["overall_time"]))
+    elif "Time expired." in output:
+        status = "timeout"
+    else:
+        status = "unknown"
+        module_logger.warning('Unrecognized condor_wait output:\n' + output)
+
+# ----------------------------------------------------------------------
+
+def raxml_get_results():
+    module_logger.info(f"raxml_get_results")
+    module_logger.debug(f"raxml_get_results")
     exit(1)
 
 # ======================================================================
@@ -116,7 +169,7 @@ def setup(args):
         STATE.target_runtime = int(m1.group(1))
 
     STATE.machines = ["i22"]
-    STATE.source_fasta = "source.fas"
+    STATE.source_fasta = Path("source.fas")
     STATE.number_of_sequences = args.number_of_sequences
     STATE.hamming_distance_threshold = args.hamming_distance_threshold
     STATE.base_sequence = args.base_sequence
@@ -144,6 +197,79 @@ def check_call(cmd, log_file):
     import subprocess
     module_logger.info(str(cmd))
     subprocess.check_call([str(field) for field in cmd], stdout=Path(log_file).open("a"), stderr=subprocess.STDOUT)
+
+# ----------------------------------------------------------------------
+
+def random_seed():
+    global RANDOM_GEN
+    return RANDOM_GEN.randint(1, 0xFFFFFFF)   # note max for garli is 0x7ffffffe
+
+# ----------------------------------------------------------------------
+
+def htcondor_prepare(program, program_args :list, description :str, current_dir :Path, request_memory=None, capture_stdout=False, email=None, notification="Error", machines :list = None, priority :int = 0):
+    current_dir.mkdir(parents=True, exist_ok=True)
+    current_dir = current_dir.resolve()
+    current_dir.chmod(0o777)        # to allow remote processes runinnig under user nobody to write files
+    condor_log = current_dir.joinpath("condor.log")
+    desc = [
+        ["universe", "vanilla"],
+        ["executable", str(Path(program).resolve())],
+        ["priority", str(priority)],
+        ["should_transfer_files", "NO"],
+        ["notify_user", email or ""],
+        ["notification", notification if email else "Never"],
+        ["Requirements", "({})".format(" || ".join(f'machine == "{machine}"' for machine in machines)) if machines else None],
+        ["request_memory", str(request_memory) if request_memory is not None else "2000"],
+        ["request_cpus", "1"],
+        ["initialdir", str(current_dir)],
+        ["log", str(condor_log)],
+        ["description", "{} {}".format(description, current_dir)],
+        [""],
+        ]
+    stderr_files = [current_dir.joinpath("output", f"{no:04d}.stderr") for no, args in enumerate(program_args)]
+    for f in stderr_files:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.touch()
+        f.chmod(0o777)
+    if capture_stdout:
+        stdout_files = [current_dir.joinpath("output", f"{no:04d}.stdout") for no, args in enumerate(program_args)]
+        for f in stdout_files:
+            f.touch()
+            f.chmod(0o777)
+    else:
+        stdout_files = [None] * len(program_args)
+    for no, args in enumerate(program_args):
+        desc.extend([
+            ["arguments", " ".join(str(a) for a in args)],
+            ["error", stderr_files[no] and str(stderr_files[no])],
+            ["output", stdout_files[no] and str(stdout_files[no])],
+            ["queue"],
+            [""],
+            ])
+    desc_s = "\n".join((" = ".join(e) if len(e) == 2 else e[0]) for e in desc if len(e) != 2 or e[1])
+    desc_filename = Path(current_dir, "condor.desc")
+    with desc_filename.open("w") as f:
+        f.write(desc_s)
+    desc_filename = desc_filename.resolve()
+    module_logger.info('HTCondor desc {}'.format(desc_filename))
+    return desc_filename, condor_log
+
+# ----------------------------------------------------------------------
+
+sReCondorProc = re.compile(r'\*\*\s+Proc\s+(\d+)\.(\d+):')
+
+def htcondor_submit(desc_filename):
+    import subprocess, collections
+    output = subprocess.check_output(["condor_submit", "-verbose", str(desc_filename)], env={"LD_LIBRARY_PATH": ""}).decode("utf-8")
+    cluster = collections.defaultdict(int)
+    for line in output.splitlines():
+        m1 = sReCondorProc.match(line)
+        if m1:
+            cluster[m1.group(1)] += 1
+    if not cluster:
+        logging.error(output)
+        raise RuntimeError("cluster id not found in the submission results {}".format(cluster))
+    return dict(cluster)
 
 # ======================================================================
 
