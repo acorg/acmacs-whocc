@@ -9,7 +9,6 @@ import logging; module_logger = logging.getLogger(__name__)
 # ======================================================================
 
 ADMIN_EMAIL = "eu@antigenic-cartography.org"
-NUM_RUNS = 16
 
 BASE_SEQUENCES = {
     "h1": "SWITZERLAND/9772556/2013 SIAT2",
@@ -101,7 +100,7 @@ def raxml_submit():
     log_file = "log/raxml.log"
     working_dir = Path(".").resolve()
     run_id = f"{working_dir.parent.name}-{working_dir.name}".replace(" ", "-")
-    run_ids = [f"{run_id}.{run_no:04d}" for run_no in range(NUM_RUNS)]
+    run_ids = [f"{run_id}.{run_no:04d}" for run_no in range(STATE.number_of_jobs)]
     general_args = ["--stop-after-seconds", STATE.target_runtime,
                     "-N", "1000",
                     "-s", str(STATE.source_fasta.resolve()),
@@ -117,7 +116,7 @@ def raxml_submit():
     desc_filename, STATE.raxml_condor_log = htcondor_prepare(
         program="/syn/bin/raxml",
         program_args = [(general_args + ["-n", ri, "-p", str(random_seed())]) for ri in run_ids],
-        description=f"raxml {run_id} {NUM_RUNS}",
+        description=f"raxml {run_id} {STATE.number_of_jobs}",
         current_dir=Path("raxml"),
         priority=0,
         capture_stdout=True,
@@ -216,6 +215,7 @@ def setup(args):
         STATE.target_runtime = int(m1.group(1))
 
     STATE.machines = ["i22"]
+    STATE.number_of_jobs = args.number_of_jobs
     STATE.source_fasta = Path("source.fas")
     STATE.number_of_sequences = args.number_of_sequences
     STATE.hamming_distance_threshold = args.hamming_distance_threshold
@@ -349,6 +349,7 @@ try:
     parser.add_argument('--number-of-sequences', dest="number_of_sequences", default=4000, type=int)
     parser.add_argument('--hamming-distance-threshold', dest="hamming_distance_threshold", default=160, type=int)
     parser.add_argument('--base-seq', dest="base_sequence", default=None, help="regex, use seqdb-list --re <name> to check possible names. It must select just one sequence.")
+    parser.add_argument('--parallel', dest="number_of_jobs", default=16, type=int)
     parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
 
     args = parser.parse_args()
