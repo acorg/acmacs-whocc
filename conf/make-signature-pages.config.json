@@ -16,7 +16,8 @@
             "week64": {"garli_num_runs": 64, "garli_stoptime": 86400, "raxml_num_runs": 64, "raxml_model_optimization_precision": 0.001, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
             "davidb": {"garli_num_runs": 32, "garli_stoptime": 86400, "raxml_num_runs": 50, "raxml_model_optimization_precision": 0.01, "raxml_kill_rate": 0.5, "machines": ["i20", "i21"]},
             "day-27h": {"?": "just H3 completed in 27h, raxml: 26h, garli: 1h, score 39281 (/syn/eu/ac/results/whocc-tree/2018-0718-H3-1)", "garli_num_runs": 8, "garli_stoptime": 3600, "raxml_num_runs": 8, "raxml_model_optimization_precision": 10, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
-            "day": {"?": "11.5h, raxml: 10h22m, 6garli: 1h10m", "garli_num_runs": 8, "garli_stoptime": 3600, "raxml_num_runs": 8, "raxml_model_optimization_precision": 1000, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]}
+            "day": {"?": "11.5h, raxml: 10h22m, 6garli: 1h10m", "garli_num_runs": 8, "garli_stoptime": 3600, "raxml_num_runs": 8, "raxml_model_optimization_precision": 1000, "raxml_kill_rate": 0.5, "machines": ["o16", "o17"]},
+            "day-all-machines": {"?": "", "garli_num_runs": 100, "garli_stoptime": 1800, "raxml_num_runs": 200, "raxml_model_optimization_precision": 1000, "raxml_kill_rate": 0.5, "machines": ["i18", "i19", "i20", "i21", "o16", "o17"]}
         }
     },
     "bv": {
