@@ -63,8 +63,15 @@ def main(args):
                 raxml_submit()
             else:
                 raxml_wait()
-        else:
+        elif not getattr(STATE, "raxml_best_tree", None):
             raxml_get_results()
+        # ?garli
+        elif not getattr(STATE, "best_tree", None):
+            find_best_tree()
+        else:
+            generate_results()
+            module_logger.info(f"{STATE}")
+            break
         STATE.save()
     email_success()
 
@@ -128,8 +135,8 @@ def raxml_wait():
     module_logger.info(f"raxml_wait")
     output = subprocess.run(["condor_wait", STATE.raxml_condor_log], env={"LD_LIBRARY_PATH": ""}, check=False, stdout=subprocess.PIPE).stdout.decode("utf-8") # ignore exit code, condor_wait exits with 1 on timeout
     if "All jobs done." in output:
-        STATE.raxml_time = time_m.time() - state["raxml"]["started"]
-        module_logger.info("raxml jobs completed in " + RaxmlResult.time_str(state["raxml"]["overall_time"]))
+        STATE.raxml_time = time_m.time() - STATE.raxml_started
+        module_logger.info("raxml jobs completed in " + str(datetime.timedelta(seconds=STATE.raxml_time)))
     elif "Time expired." in output:
         status = "timeout"
     else:
@@ -138,9 +145,50 @@ def raxml_wait():
 
 # ----------------------------------------------------------------------
 
+sInfoBestScore = re.compile(r"Final GAMMA-based Score of best tree -([\d\.]+)", re.I)
+sInfoExecutionTime = re.compile(r"Overall execution time: ([\d\.]+) secs ", re.I)
+
 def raxml_get_results():
     module_logger.info(f"raxml_get_results")
-    raise Error(f"raxml_get_results not implementated")
+    longest_time = None
+    best_score = None
+    best_tree = None
+    for info_file in Path("raxml").glob("RAxML_info.*"):
+        info_data = info_file.open().read()
+        m_score = sInfoBestScore.search(info_data)
+        if m_score:
+            score = float(m_score.group(1))
+            if best_score is None or score < best_score:
+                best_score = score
+                best_tree = Path("raxml", info_file.name.replace("_info", "_bestTree")).resolve()
+        else:
+            module_logger.warning(f"raxml: cannot extract best score from {info_file}")
+        m_time = sInfoExecutionTime.search(info_data)
+        if m_time:
+            runtime = float(m_time.group(1))
+            if longest_time is None or runtime > longest_time:
+                longest_time = runtime
+    if longest_time is None:
+        raise Error(f"raxml_get_results: no longest_time")
+    STATE.raxml_longest_time = longest_time
+    if best_score is None or best_tree is None:
+        raise Error(f"raxml_get_results: no best_tree")
+    STATE.raxml_best_score = best_score
+    STATE.raxml_best_tree = str(best_tree)
+    module_logger.info(f"Best tree: {STATE.raxml_best_score} {STATE.raxml_best_tree}")
+    module_logger.info(f"Raxml longest run time: {datetime.timedelta(seconds=STATE.raxml_longest_time)}")
+
+# ----------------------------------------------------------------------
+
+def find_best_tree():
+    STATE.best_tree = STATE.raxml_best_tree
+
+# ----------------------------------------------------------------------
+
+def generate_results():
+    import subprocess
+    subprocess.check_call(f"tree-newick-to-json <'{STATE.best_tree}' | xz -9e >tree.json.xz", shell=True)
+    check_call(["sigp", "tree.json.xz", "tree.pdf", "--init-settings", "tree.settings.json"], "log/sigp.tree.log")
 
 # ======================================================================
 
