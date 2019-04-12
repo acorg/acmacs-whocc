@@ -306,8 +306,8 @@ def garli_wait():
 
 # ----------------------------------------------------------------------
 
-sInfoBestScore = re.compile(r"Final GAMMA-based Score of best tree -([\d\.]+)", re.I)
-sInfoExecutionTime = re.compile(r"Overall execution time: ([\d\.]+) secs ", re.I)
+sRaxmlInfoBestScore = re.compile(r"Final GAMMA-based Score of best tree -([\d\.]+)", re.I)
+sRaxmlInfoExecutionTime = re.compile(r"Overall execution time: ([\d\.]+) secs ", re.I)
 
 def raxml_get_results(var_infix):
     module_logger.info(f"raxml_get_results {var_infix}")
@@ -316,15 +316,15 @@ def raxml_get_results(var_infix):
     best_tree = None
     for info_file in Path(f"raxml-{var_infix}").glob("RAxML_info.*"):
         info_data = info_file.open().read()
-        m_score = sInfoBestScore.search(info_data)
+        m_score = sRaxmlInfoBestScore.search(info_data)
         if m_score:
             score = float(m_score.group(1))
             if best_score is None or score < best_score:
                 best_score = score
                 best_tree = Path(f"raxml-{var_infix}", info_file.name.replace("_info", "_bestTree")).resolve()
         else:
-            module_logger.warning(f"raxml-{var_infix}: cannot extract best score from {info_file}")
-        m_time = sInfoExecutionTime.search(info_data)
+            module_logger.warning(f"raxml-{var_infix}: cannot extract final score from {info_file}")
+        m_time = sRaxmlInfoExecutionTime.search(info_data)
         if m_time:
             runtime = float(m_time.group(1))
             if longest_time is None or runtime > longest_time:
@@ -343,7 +343,36 @@ def raxml_get_results(var_infix):
 
 # ----------------------------------------------------------------------
 
+sGarliScoreTime = re.compile(r"Final\s+-([\d\.]+)\s+(\d+)")
+
+def garli_get_results():
+    module_logger.info(f"garli_get_results")
+    longest_time = None
+    best_score = None
+    best_tree = None
+    for log_file in Path("garli").glob("*log00.log"):
+        log_data = log_file.open().read()
+        m_score_time = sGarliScoreTime.search(log_data)
+        if m_score_time:
+            score = float(m_score_time.group(1))
+            runtime = float(m_score_time.group(2))
+            if best_score is None or score < best_score:
+                best_score = score
+                best_tree = Path("garli", log_file.name.replace("log00.log", "best.phy")).resolve()
+            if longest_time is None or runtime > longest_time:
+                longest_time = runtime
+        else:
+            module_logger.warning(f"garli: cannot extract final score and time from {log_file}")
+    STATE.garli_longest_time = longest_time
+    STATE.garli_best_score = best_score
+    STATE.garli_best_tree = best_tree
+    module_logger.info(f"garli best tree: {best_score} {best_tree}")
+    module_logger.info(f"garli longest run time: {datetime.timedelta(seconds=longest_time)}")
+
+# ----------------------------------------------------------------------
+
 def find_best_tree():
+    module_logger.info(f"find_best_tree")
     if getattr(STATE, "garli_best_tree", None):
         STATE.best_tree = STATE.garli_best_tree
     else:
@@ -352,6 +381,7 @@ def find_best_tree():
 # ----------------------------------------------------------------------
 
 def generate_results():
+    module_logger.info(f"generate_results")
     import subprocess
     subprocess.check_call(f"tree-newick-to-json <'{STATE.best_tree}' | xz -9e >tree.json.xz", shell=True)
     check_call(["sigp", "tree.json.xz", "tree.pdf", "--init-settings", "tree.settings.json"], "log/sigp.tree.log")
