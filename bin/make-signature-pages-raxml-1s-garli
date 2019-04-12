@@ -177,6 +177,13 @@ def raxml_final_submit():
 
 # ----------------------------------------------------------------------
 
+def garli_submit():
+    # env OMP_NUM_THREADS=16 /syn/bin/garli garli.conf
+    # /syn/eu/ac/results/signature-pages/2019-0411-h3-4k-s1-condor/garli.conf
+    pass
+
+# ----------------------------------------------------------------------
+
 def raxml_wait(time_attr):
     import subprocess
     module_logger.info(f"raxml_wait")
