@@ -58,14 +58,14 @@ def main(args):
         if not STATE.source_fasta.exists():
             export_sequences()
         elif not getattr(STATE, "raxml_rough_time", None):
-            if not getattr(STATE, "raxml_job", None):
+            if not getattr(STATE, "raxml_rough_job", None):
                 raxml_rough_submit()
             else:
                 raxml_wait(var_infix="rough")
         elif not getattr(STATE, "raxml_rough_best_tree", None):
             raxml_get_results(var_infix="rough")
         elif not getattr(STATE, "raxml_final_time", None):
-            if not getattr(STATE, "raxml_job", None):
+            if not getattr(STATE, "raxml_final_job", None):
                 raxml_final_submit()
             else:
                 raxml_wait(var_infix="final")
@@ -141,8 +141,8 @@ def raxml_rough_submit():
         notification="Error",
         machines=STATE.machines
         )
-    STATE.raxml_job = htcondor_submit(desc_filename)
-    STATE.raxml_started = time_m.time()
+    STATE.raxml_rough_job = htcondor_submit(desc_filename)
+    STATE.raxml_rough_started = time_m.time()
 
 # ----------------------------------------------------------------------
 
@@ -179,8 +179,8 @@ def raxml_final_submit():
         notification="Error",
         machines=STATE.machines
         )
-    STATE.raxml_job = htcondor_submit(desc_filename)
-    STATE.raxml_started = time_m.time()
+    STATE.raxml_final_job = htcondor_submit(desc_filename)
+    STATE.raxml_final_started = time_m.time()
 
 # ----------------------------------------------------------------------
 
@@ -321,7 +321,7 @@ def raxml_get_results(var_infix):
             score = float(m_score.group(1))
             if best_score is None or score < best_score:
                 best_score = score
-                best_tree = Path("raxml-{var_infix}", info_file.name.replace("_info", "_bestTree")).resolve()
+                best_tree = Path(f"raxml-{var_infix}", info_file.name.replace("_info", "_bestTree")).resolve()
         else:
             module_logger.warning(f"raxml-{var_infix}: cannot extract best score from {info_file}")
         m_time = sInfoExecutionTime.search(info_data)
@@ -334,8 +334,8 @@ def raxml_get_results(var_infix):
     setattr(STATE, f"raxml_{var_infix}_longest_time", longest_time)
     if best_score is None or best_tree is None:
         raise Error(f"raxml_get_results {var_infix}: no best_tree")
-    setattr(STATE, f".raxml_{var_infix}_best_score", best_score)
-    setattr(STATE, f".raxml_{var_infix}_best_tree", str(best_tree))
+    setattr(STATE, f"raxml_{var_infix}_best_score", best_score)
+    setattr(STATE, f"raxml_{var_infix}_best_tree", str(best_tree))
     STATE.raxml_best_score = str(best_score)
     STATE.raxml_best_tree = str(best_tree)
     module_logger.info(f"raxml-{var_infix} best tree: {best_score} {best_tree}")
@@ -474,7 +474,7 @@ def htcondor_submit(desc_filename):
             cluster[m1.group(1)] += 1
     if not cluster:
         logging.error(output)
-        raise RuntimeError("cluster id not found in the submission results {}".format(cluster))
+        raise RuntimeError(f"cluster id not found in the submission results {cluster}")
     return dict(cluster)
 
 # ----------------------------------------------------------------------
