@@ -258,7 +258,7 @@ distanceswapbias = 1.0
 """)
     desc_filename, STATE.garli_condor_log = htcondor_prepare(
         program="/syn/bin/garli",
-        program_args = ["garli.conf"],
+        program_args = [["garli.conf"]],
         description=f"garli {run_id} {STATE.garli_runs}",
         queue=STATE.garli_runs,
         cpus=2,                 # try to avoid hyper-threading
@@ -290,7 +290,7 @@ def raxml_wait(var_infix):
 
 # ----------------------------------------------------------------------
 
-def garli_wait(var_infix):
+def garli_wait():
     import subprocess
     module_logger.info(f"garli_wait")
     output = subprocess.run(["condor_wait", getattr(STATE, f"garli_condor_log")], env={"LD_LIBRARY_PATH": ""}, check=False, stdout=subprocess.PIPE).stdout.decode("utf-8") # ignore exit code, condor_wait exits with 1 on timeout
@@ -432,13 +432,13 @@ def htcondor_prepare(program, program_args :list, description :str, current_dir 
         ["description", "{} {}".format(description, current_dir)],
         [""],
         ]
-    stderr_files = [current_dir.joinpath("output", f"{no:04d}.stderr") for no, args in enumerate(program_args)]
+    stderr_files = [current_dir.joinpath(f"{no:04d}.stderr") for no, args in enumerate(program_args)]
     for f in stderr_files:
         f.parent.mkdir(parents=True, exist_ok=True)
         f.touch()
         f.chmod(0o777)
     if capture_stdout:
-        stdout_files = [current_dir.joinpath("output", f"{no:04d}.stdout") for no, args in enumerate(program_args)]
+        stdout_files = [current_dir.joinpath(f"{no:04d}.stdout") for no, args in enumerate(program_args)]
         for f in stdout_files:
             f.touch()
             f.chmod(0o777)
