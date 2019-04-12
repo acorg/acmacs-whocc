@@ -104,7 +104,7 @@ def export_sequences():
     ]
     module_logger.info(f"exporting fasta: {STATE.source_fasta}\n  {cmd}\n  log: {log_file}")
     check_call(cmd, log_file)
-    self.source_fasta = self.source_fasta.resolve()
+    STATE.source_fasta = STATE.source_fasta.resolve()
 
 # ----------------------------------------------------------------------
 
