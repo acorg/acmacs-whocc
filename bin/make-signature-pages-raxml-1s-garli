@@ -116,7 +116,7 @@ def raxml_rough_submit():
     run_id = f"{working_dir.parent.name}-{working_dir.name}".replace(" ", "-")
     general_args = ["--stop-after-seconds", "1",
                     "-p", "$RANDOM_INTEGER(1, 2147483647)",
-                    "-n", "s1.$(Process)"
+                    "-n", "s1.$(Process)",
                     "-N", "1000",
                     "-s", str(STATE.source_fasta),
                     "-m", "GTRGAMMAI",
@@ -154,7 +154,7 @@ def raxml_final_submit():
     run_id = f"{working_dir.parent.name}-{working_dir.name}".replace(" ", "-")
     general_args = ["-t", STATE.raxml_rough_best_tree,
                     "-T", "16",
-                    "-n", "final.$(Process)"
+                    "-n", "final.$(Process)",
                     "-N", "1",
                     "-s", str(STATE.source_fasta),
                     "-m", "GTRGAMMAI",
@@ -279,7 +279,7 @@ def raxml_wait(var_infix):
     module_logger.info(f"raxml_wait {var_infix}")
     output = subprocess.run(["condor_wait", getattr(STATE, f"raxml_{var_infix}_condor_log")], env={"LD_LIBRARY_PATH": ""}, check=False, stdout=subprocess.PIPE).stdout.decode("utf-8") # ignore exit code, condor_wait exits with 1 on timeout
     if "All jobs done." in output:
-        runtime = time_m.time() - STATE.raxml_started
+        runtime = time_m.time() - getattr(STATE, f"raxml_{var_infix}_started")
         setattr(STATE, f"raxml_{var_infix}_time", runtime)
         module_logger.info(f"raxml {var_infix} jobs completed in {datetime.timedelta(seconds=runtime)}")
     elif "Time expired." in output:
