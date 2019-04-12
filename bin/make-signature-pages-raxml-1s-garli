@@ -386,6 +386,77 @@ def generate_results():
     subprocess.check_call(f"tree-newick-to-json <'{STATE.best_tree}' | xz -9e >tree.json.xz", shell=True)
     check_call(["sigp", "tree.json.xz", "tree.pdf", "--init-settings", "tree.settings.json"], "log/sigp.tree.log")
 
+    Path("index.html").open("w").write("""
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <style>
+         p { width: 40em; }
+         h3 { margin-top: 3em; }
+
+         object { width: 565px; height: 800px; }
+         div.pdf img { width: 565px; height: 800px; }
+
+         .map-grid { no-outline: 1px solid pink; display: grid; grid-auto-flow: column; grid-template-rows: auto auto; grid-column-gap: 2em; grid-row-gap: 1em; }
+         .map-grid div { no-outline: 1px solid pink; }
+         .map-grid .title { align-self: start; width: 565px; }
+         .map-grid .pdf { align-self: start; }
+        </style>
+        <script>
+         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+         function main() {
+             document.querySelectorAll(".pdf[src]").forEach(element => {
+                 let src = element.getAttribute("src");
+                 if (isSafari)
+                     element.innerHTML = `<img src="${src}">`
+                 else
+                     element.innerHTML = `<object data="${src}#toolbar="></object>`
+             });
+         }
+        </script>
+        <title>%(subtype)s tree made by %(prog)s</title>
+    </head>
+    <body>
+        <h3>%(subtype)s tree made by %(prog)s</h3>
+
+        <ul>
+          <li><a href="%(best_tree)s">Resulting tree</a></li>
+          <li>Raxml rough score: %(raxml_rough_best_score)f</li>
+          <li>Raxml rough time: %(raxml_rough_time)s</li>
+          <li>Raxml runs: %(raxml_runs)d</li>
+          <br>
+          <li>Raxml final score: %(raxml_final_best_score)f</li>
+          <li>Raxml final time: %(raxml_final_time)s</li>
+          <br>
+          <li>garli score: %(garli_best_score)f</li>
+          <li>garli time: %(garli_time)s</li>
+          <li>garli stop time: %(garli_stop_time)f</li>
+          <li>garli runs: %(garli_runs)d</li>
+          <br>
+          <li>machines: %(machines)s</li>
+        </ul>
+        <div class="pdf" src="tree.pdf"></div>
+
+        <!-- must be at the end of body -->
+        <script>(function() { main(); })();</script>
+    </body>
+</html>
+""" % {"subtype": STATE.subtype.upper(),
+       "prog": sys.argv[0],
+       "best_tree": f"{Path(STATE.best_tree).parent}/{Path(STATE.best_tree).name}",
+       "raxml_rough_best_score": STATE.raxml_rough_best_score,
+       "raxml_rough_time": datetime.timedelta(seconds=STATE.raxml_rough_time),
+       "raxml_runs": STATE.raxml_runs,
+       "raxml_final_best_score": STATE.raxml_final_best_score,
+       "raxml_final_time": datetime.timedelta(seconds=STATE.raxml_final_time),
+       "garli_best_score": STATE.garli_best_score,
+       "garli_time": datetime.timedelta(seconds=STATE.garli_time),
+       "garli_stop_time": STATE.garli_stop_time,
+       "garli_runs": STATE.garli_runs,
+       "machines": " ".join(getattr(STATE, "machines", None) or ["all"]),
+})
+
 # ======================================================================
 
 def setup(args):
