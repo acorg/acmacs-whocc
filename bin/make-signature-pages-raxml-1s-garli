@@ -71,7 +71,13 @@ def main(args):
                 raxml_wait(var_infix="final")
         elif not getattr(STATE, "raxml_final_best_tree", None):
             raxml_get_results(var_infix="final")
-        # garli
+        elif not getattr(STATE, "garli_time", None):
+            if not getattr(STATE, "garli_job", None):
+                garli_submit()
+            else:
+                garli_wait()
+        elif not getattr(STATE, "garli_best_tree", None):
+            garli_get_results()
         elif not getattr(STATE, "best_tree", None):
             find_best_tree()
         else:
@@ -98,6 +104,7 @@ def export_sequences():
     ]
     module_logger.info(f"exporting fasta: {STATE.source_fasta}\n  {cmd}\n  log: {log_file}")
     check_call(cmd, log_file)
+    self.source_fasta = self.source_fasta.resolve()
 
 # ----------------------------------------------------------------------
 
@@ -111,7 +118,7 @@ def raxml_rough_submit():
                     "-p", "$RANDOM_INTEGER(1, 2147483647)",
                     "-n", "s1.$(Process)"
                     "-N", "1000",
-                    "-s", str(STATE.source_fasta.resolve()),
+                    "-s", str(STATE.source_fasta),
                     "-m", "GTRGAMMAI",
                     "-e", "0.001",
                     "-o", STATE.source_fasta.open().readline().strip()[1:], # outgroup
@@ -149,7 +156,7 @@ def raxml_final_submit():
                     "-T", "16",
                     "-n", "final.$(Process)"
                     "-N", "1",
-                    "-s", str(STATE.source_fasta.resolve()),
+                    "-s", str(STATE.source_fasta),
                     "-m", "GTRGAMMAI",
                     "-e", "0.001",
                     "-o", STATE.source_fasta.open().readline().strip()[1:], # outgroup
@@ -166,7 +173,7 @@ def raxml_final_submit():
         queue=1,
         cpus=32,                 # try to avoid hyper-threading
         current_dir=Path("raxml-final"),
-        priority=0,
+        priority=1,
         capture_stdout=True,
         email=ADMIN_EMAIL,
         notification="Error",
@@ -180,7 +187,90 @@ def raxml_final_submit():
 def garli_submit():
     # env OMP_NUM_THREADS=16 /syn/bin/garli garli.conf
     # /syn/eu/ac/results/signature-pages/2019-0411-h3-4k-s1-condor/garli.conf
-    pass
+    global STATE, ADMIN_EMAIL
+    module_logger.info(f"garli_submit")
+    log_file = "log/garli.log"
+    working_dir = Path(".").resolve()
+    run_id = f"{working_dir.parent.name}-{working_dir.name}".replace(" ", "-")
+    garli_dir = Path("garli")
+    garli_dir.mkdir(parents=True, exist_ok=True)
+    garli_dir.joinpath("garli.conf").open("w").write("""
+[general]
+randseed = -1
+datafname = {STATE.source_fasta}
+streefname = {STATE.raxml_best_tree}
+ofprefix = s1
+constraintfile = none
+attachmentspertaxon = 1000000
+availablememory = 8000
+logevery = 1000
+writecheckpoints = 0
+restart = 0
+saveevery = 1000
+refinestart = 1
+outputcurrentbesttopology = 0
+outputeachbettertopology = 0
+enforcetermconditions = 1
+genthreshfortopoterm = 20000
+scorethreshforterm = 0.05
+significanttopochange = 0.01
+outputphyliptree = 1
+outputmostlyuselessfiles = 0
+outgroup = 1
+resampleproportion = 1.0
+inferinternalstateprobs = 0
+outputsitelikelihoods = 0
+optimizeinputonly = 0
+collapsebranches = 1
+searchreps = 1
+bootstrapreps = 0
+datatype=nucleotide
+ratematrix = 6rate
+statefrequencies = estimate
+ratehetmodel = gamma
+numratecats = 4
+invariantsites = estimate
+[master]
+stoptime = {STATE.garli_stop_time}
+nindivs = 4
+holdover = 1
+selectionintensity = .5
+holdoverpenalty = 0
+stopgen = 1000000
+startoptprec = 0.5
+minoptprec = 0.01
+numberofprecreductions = 20
+treerejectionthreshold = 50.0
+topoweight = 1.0
+modweight = 0.05
+brlenweight = 0.2
+randnniweight = 0.1
+randsprweight = 0.3
+limsprweight =  0.6
+intervallength = 100
+intervalstostore = 5
+limsprrange = 6
+meanbrlenmuts = 5
+gammashapebrlen = 1000
+gammashapemodel = 1000
+uniqueswapbias = 0.1
+distanceswapbias = 1.0
+""")
+    desc_filename, STATE.garli_condor_log = htcondor_prepare(
+        program="/syn/bin/garli",
+        program_args = ["garli.conf"],
+        description=f"garli {run_id} {STATE.garli_runs}",
+        queue=STATE.garli_runs,
+        cpus=2,                 # try to avoid hyper-threading
+        current_dir=Path("garli"),
+        priority=2,
+        capture_stdout=True,
+        email=ADMIN_EMAIL,
+        notification="Error",
+        machines=STATE.machines
+        )
+    STATE.garli_job = htcondor_submit(desc_filename)
+    STATE.garli_started = time_m.time()
 
 # ----------------------------------------------------------------------
 
@@ -192,6 +282,22 @@ def raxml_wait(var_infix):
         runtime = time_m.time() - STATE.raxml_started
         setattr(STATE, f"raxml_{var_infix}_time", runtime)
         module_logger.info(f"raxml {var_infix} jobs completed in {datetime.timedelta(seconds=runtime)}")
+    elif "Time expired." in output:
+        status = "timeout"
+    else:
+        status = "unknown"
+        module_logger.warning('Unrecognized condor_wait output:\n' + output)
+
+# ----------------------------------------------------------------------
+
+def garli_wait(var_infix):
+    import subprocess
+    module_logger.info(f"garli_wait")
+    output = subprocess.run(["condor_wait", getattr(STATE, f"garli_condor_log")], env={"LD_LIBRARY_PATH": ""}, check=False, stdout=subprocess.PIPE).stdout.decode("utf-8") # ignore exit code, condor_wait exits with 1 on timeout
+    if "All jobs done." in output:
+        runtime = time_m.time() - STATE.garli_started
+        setattr(STATE, f"garli_time", runtime)
+        module_logger.info(f"garli jobs completed in {datetime.timedelta(seconds=runtime)}")
     elif "Time expired." in output:
         status = "timeout"
     else:
@@ -275,6 +381,7 @@ def setup(args):
     if STATE.base_sequence is None:
         global BASE_SEQUENCES
         STATE.base_sequence = BASE_SEQUENCES[STATE.subtype]
+    STATE.garli_stop_time = 3600
 
     if not STATE.filename.exists():
         root_dir = Path("/syn/eu/ac/results/signature-pages", datetime.date.today().strftime("%Y-%m%d"), STATE.subtype)
