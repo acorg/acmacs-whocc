@@ -194,7 +194,7 @@ def garli_submit():
     run_id = f"{working_dir.parent.name}-{working_dir.name}".replace(" ", "-")
     garli_dir = Path("garli")
     garli_dir.mkdir(parents=True, exist_ok=True)
-    garli_dir.joinpath("garli.conf").open("w").write("""
+    garli_dir.joinpath("garli.conf").open("w").write(f"""
 [general]
 randseed = -1
 datafname = {STATE.source_fasta}
