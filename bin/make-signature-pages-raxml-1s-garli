@@ -107,6 +107,7 @@ def export_sequences():
         "--hamming-distance-threshold", STATE.hamming_distance_threshold,
         "--tree-maker",
         "--base-seq", STATE.base_sequence,
+        "--include", STATE.vaccine_sequence,
         str(STATE.source_fasta)
     ]
     module_logger.info(f"exporting fasta: {STATE.source_fasta}\n  {cmd}\n  log: {log_file}")
@@ -489,6 +490,8 @@ def setup(args):
     if STATE.base_sequence is None:
         global BASE_SEQUENCES
         STATE.base_sequence = BASE_SEQUENCES[STATE.subtype]
+    global VACCINES
+    STATE.vaccine_sequence = VACCINES[STATE.subtype]
     STATE.garli_stop_time = 3600
 
     if not STATE.filename.exists():
