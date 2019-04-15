@@ -17,6 +17,13 @@ BASE_SEQUENCES = {
     "by": "CHRISTCHURCH/503/2013 MDCK1",
     }
 
+VACCINES = {
+    "h1": "MICHIGAN/45/2015",
+    "h3": "KANSAS/14/2017",
+    "bv": "COLORADO/6/2017",
+    "by": "PHUKET/3073/2013",
+    }
+
 # ======================================================================
 
 class State:
