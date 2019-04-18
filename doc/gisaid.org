@@ -1,6 +1,6 @@
 #+STARTUP: showall
 #+STARTUP: indent
-Time-stamp: <2019-04-12 09:08:28 eu>
+Time-stamp: <2019-04-17 13:34:25 eu>
 * previous fasta files downloaded from gisaid
 gisaid-all-20180815-2006-20180715.fas.xz
 gisaid-all-20180821-2017-20180715.fas.xz
@@ -39,7 +39,7 @@ gisaid-all-20190412-20090729-20190326.fas.xz
         [United Kingdom, London] National Institute for Medical Research
         [United Kingdom, London] Crick
         [United states, Atlanta] CDC
-        ? [China, Bejing] WHO Chinese National Influenza Center
+        [China, Bejing] WHO Chinese National Influenza Center
 
 ** Required segments: HA (checkbox to the left from HA)
 ** Click Search. Total must not exceed 20k isolates (gisaid does not allow downloading more)
@@ -71,6 +71,14 @@ seqdb-create --no-save --db /d/seqdb.json.xz --match-hidb --clades --report-not-
   (replace-string "a/south africa/r07338/018" "A/SOUTH AFRICA/R07338/2018" nil (point-min)(point-max))
 )
 #+END_SRC
+** CHIC sequences have passage after name (and in the passage field too)
+#+BEGIN_SRC emacs-lisp
+(progn
+  (query-replace-regexp "\\(/201[0-9]\\) *([HNv0-9,]+)" "\\1" nil (point-min)(point-max))
+  (query-replace-regexp "\\(/201[0-9]\\)_[CE0-9\\+]+" "\\1" nil (point-min)(point-max))
+)
+#+END_SRC
+
 ** Install file
 just run it without arguments:
 #+BEGIN_SRC sh
