@@ -32,7 +32,7 @@ class SerumIds
   public:
     using Name = acmacs::chart::Name;
     using Passage = acmacs::chart::Passage;
-    using Reassortant = acmacs::chart::Reassortant;
+    using Reassortant = acmacs::virus::Reassortant;
     using Annotations = acmacs::chart::Annotations;
     using SerumId = acmacs::chart::SerumId;
     using SerumIdRoot = acmacs::named_t<std::string, struct SerumIdRootTag>;
