@@ -31,7 +31,7 @@ class SerumIds
 {
   public:
     using Name = acmacs::chart::Name;
-    using Passage = acmacs::chart::Passage;
+    using Passage = acmacs::virus::Passage;
     using Reassortant = acmacs::virus::Reassortant;
     using Annotations = acmacs::chart::Annotations;
     using SerumId = acmacs::chart::SerumId;

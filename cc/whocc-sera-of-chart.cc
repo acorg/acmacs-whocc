@@ -40,7 +40,7 @@ struct SerumData
     const std::string name;
     const std::string full_name;
     const acmacs::virus::Reassortant reassortant;
-    const acmacs::chart::Passage passage;
+    const acmacs::virus::Passage passage;
     const acmacs::chart::SerumId serum_id;
     const passage_t passage_type;
     std::vector<hidb::TableStat> table_data;
@@ -50,7 +50,7 @@ struct SerumData
 };
 
 static std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<std::regex> name_match, const hidb::HiDb& hidb);
-static passage_t passage_type(const acmacs::virus::Reassortant& reassortant, const acmacs::chart::Passage& passage, const acmacs::chart::SerumId& serum_id);
+static passage_t passage_type(const acmacs::virus::Reassortant& reassortant, const acmacs::virus::Passage& passage, const acmacs::chart::SerumId& serum_id);
 static void find_most_used(std::vector<SerumData>& serum_data, std::string assay, std::string lab, std::string rbc);
 static bool match_assay(const hidb::TableStat& tables, std::string assay, std::string lab, std::string rbc);
 static void report(const std::vector<SerumData>& serum_data);
@@ -134,7 +134,7 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
 
 // ----------------------------------------------------------------------
 
-passage_t passage_type(const acmacs::virus::Reassortant& reassortant, const acmacs::chart::Passage& passage, const acmacs::chart::SerumId& serum_id)
+passage_t passage_type(const acmacs::virus::Reassortant& reassortant, const acmacs::virus::Passage& passage, const acmacs::chart::SerumId& serum_id)
 {
     if (!reassortant.empty())
         return passage_t::reassortant;

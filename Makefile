@@ -20,8 +20,9 @@ include $(ACMACSD_ROOT)/share/Makefile.config
 
 LDLIBS = \
   $(AD_LIB)/$(call shared_lib_name,libacmacsbase,1,0) \
-  $(AD_LIB)/$(call shared_lib_name,libacmacschart,2,0) \
   $(AD_LIB)/$(call shared_lib_name,liblocationdb,1,0) \
+  $(AD_LIB)/$(call shared_lib_name,libacmacsvirus,1,0) \
+  $(AD_LIB)/$(call shared_lib_name,libacmacschart,2,0) \
   $(AD_LIB)/$(call shared_lib_name,libhidb,5,0) \
   $(AD_LIB)/$(call shared_lib_name,libseqdb,2,0) \
   $(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
