@@ -35,7 +35,7 @@ class SerumIds
     using Reassortant = acmacs::virus::Reassortant;
     using Annotations = acmacs::chart::Annotations;
     using SerumId = acmacs::chart::SerumId;
-    using SerumIdRoot = acmacs::named_t<std::string, struct SerumIdRootTag>;
+    using SerumIdRoot = acmacs::named_string_t<struct SerumIdRootTag>;
     using SerumEntry = std::tuple<Name, Reassortant, Annotations, SerumId, Passage>;
     using TableEntry = std::tuple<acmacs::chart::VirusType, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate>;
     using Entry = std::tuple<SerumIdRoot, SerumId, Name, Reassortant, Annotations, acmacs::chart::VirusType, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies,
