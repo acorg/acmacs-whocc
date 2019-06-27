@@ -76,10 +76,10 @@ class SerumIds
         for (const auto& per_root_entry : per_root_) {
             const auto name = make_name(std::get<0>(per_root_entry)), name_last = make_name(std::get<1>(per_root_entry) - 1);
             if (const bool good = std::get<2>(per_root_entry).size() == 1; !good || print_good) {
-                std::cout << std::get<SerumIdRoot>(*std::get<0>(per_root_entry)) << ' ' << (std::get<1>(per_root_entry) - std::get<0>(per_root_entry)) << '\n';
+                std::cout << fmt::format("{} {}\n", std::get<SerumIdRoot>(*std::get<0>(per_root_entry)), std::get<1>(per_root_entry) - std::get<0>(per_root_entry));
                 for (const auto& per_serum_id_entry : std::get<2>(per_root_entry)) {
                     const auto tabs = tables(std::get<0>(per_serum_id_entry), std::get<1>(per_serum_id_entry), show_assay, show_rbc);
-                    std::cout << "    " << std::get<SerumId>(*std::get<0>(per_serum_id_entry)) << ' ' << tabs.size() << " [" << make_name(std::get<0>(per_serum_id_entry)) << ']';
+                    std::cout << fmt::format("    {} {} [{}]", std::get<SerumId>(*std::get<0>(per_serum_id_entry)), tabs.size(), make_name(std::get<0>(per_serum_id_entry)));
                     for (const auto& table : tabs)
                         std::cout << ' ' << table;
                     std::cout << '\n';
