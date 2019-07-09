@@ -1,5 +1,4 @@
-#+STARTUP: showall indent
-Time-stamp: <2019-07-09 15:28:17 eu>
+Time-stamp: <2019-07-09 16:31:46 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** (There is no C in gisaid at all: Hold Cmd and click A and B in the Type.)
@@ -33,6 +32,9 @@ ssa
 #+END_SRC
 
 * OLD before 2019-06-19
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
 ** previous fasta files downloaded from gisaid
 ** visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** Hold Cmd and click A and B in the Type.
@@ -99,7 +101,11 @@ seqdb-create --db ~/AD/data/seqdb.json.xz --match-hidb --clades --report-not-ali
 rsync -av ~/AD/data/seqdb*.xz albertine:AD/data
 #+END_SRC
 
-* ---- local vars
+* COMMENT ========== local vars
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+#+STARTUP: showall indent
 #+NAME: insert-previous-fasta-files
 #+BEGIN_SRC emacs-lisp :results none
   (goto-char (point-min))
