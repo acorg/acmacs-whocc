@@ -1,6 +1,5 @@
-#+STARTUP: showall
-#+STARTUP: indent
-Time-stamp: <2019-07-09 14:23:53 eu>
+#+STARTUP: showall indent
+Time-stamp: <2019-07-09 15:28:17 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** (There is no C in gisaid at all: Hold Cmd and click A and B in the Type.)
