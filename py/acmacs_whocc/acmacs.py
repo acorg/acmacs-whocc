@@ -1,4 +1,4 @@
-import sys, subprocess, pprint
+import sys, subprocess, pprint, datetime
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 # from . import error, utility
@@ -29,27 +29,47 @@ sAssayConvert = {
     "MN": "neut",
     }
 
+sFixSubtype = {
+    "H1": "A(H1N1)",
+    "H3": "A(H3N2)",
+    "BV": "BVic",
+    "BY": "BYam",
+    }
+
+sMinColBasisConvert = {
+    "1280": "1280",
+    "none": "none",
+    None: "none",
+    }
+
 # ----------------------------------------------------------------------
 
 def get_recent_merges(target_dir :Path, subtype=None, lab=None):
     if subtype is not None:
-        response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=subtype, labs = [lab.upper()] if lab else None)
+        response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=sFixSubtype.get(subtype.upper(), subtype.upper()), labs = [lab.upper()] if lab else None)
         if "data" not in response:
             module_logger.error("No \"data\" in response of ad_whocc_recent_merges api command:\n{}".format(pprint.pformat(response)))
             raise RuntimeError("Unexpected result of ad_whocc_recent_merges c2 api command")
         response = response['data']
         response.sort(key=lambda e: "{lab:4s} {virus_type:10s} {assay}".format(**e))
-        module_logger.info('WHO CC recent merges\n{}'.format("\n".join("{lab:4s} {virus_type:14s} {assay:31s} {chart_id}".format(**e) for e in response)))
+        # module_logger.info(f"\n{pprint.pformat(response)}")
+        module_logger.info('WHO CC recent merges\n{}'.format("\n".join("{lab:4s} {virus_type:14s} {assay:31s} {minimum_column_basis}  {chart_id}  {mtime}".format(**e, mtime=datetime.datetime.fromisoformat(e["m"])) for e in response)))
         for entry in response:
             if entry["lab"] != "CNIC" and not (entry["lab"] == "NIID" and entry["virus_type"] == "A(H3N2)" and entry["assay"] == "HI"):
-                basename = f"{entry['lab'].lower()}-{subtype}-{sAssayConvert[entry['assay']].lower()}"
+                basename = f"{entry['lab'].lower()}-{subtype.lower()}-{sAssayConvert[entry['assay']].lower()}.chain-{sMinColBasisConvert[entry['minimum_column_basis']]}"
                 filename = target_dir.joinpath(f"{basename}.ace")
-                chart = api().command(C="chart_export", log=False, id=entry["chart_id"], format="ace", part="chart")["chart"]
-                if isinstance(chart, dict) and "##bin" in chart:
-                    files.backup_file(filename)
-                    module_logger.info(f"writing {filename}")
-                    import base64
-                    filename.open('wb').write(base64.b64decode(chart["##bin"].encode('ascii')))
+                mtime = datetime.datetime.fromisoformat(entry["m"]) + datetime.timedelta(hours=1)
+                if not filename.exists() or datetime.datetime.fromtimestamp(filename.stat().st_mtime) < mtime:
+                    module_logger.info(f"downloading {entry['chart_id']} to {filename}")
+                    chart = api().command(C="chart_export", log=False, id=entry["chart_id"], format="ace", part="chart")["chart"]
+                    if isinstance(chart, dict) and "##bin" in chart:
+                        files.backup_file(filename)
+                        module_logger.info(f"writing {filename}")
+                        import base64
+                        filename.open('wb').write(base64.b64decode(chart["##bin"].encode('ascii')))
+                filename_link = target_dir.joinpath(f"{entry['lab'].lower()}-{subtype.lower()}-{sAssayConvert[entry['assay']].lower()}.ace")
+                if not filename_link.exists():
+                    filename_link.symlink_to(filename.name)
     else:
         for subtype in ["h1", "h3", "bv", "by"]:
             get_recent_merges(target_dir=target_dir, subtype=subtype)
