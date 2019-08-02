@@ -1,4 +1,4 @@
-Time-stamp: <2019-07-19 16:30:31 eu>
+Time-stamp: <2019-08-02 13:23:21 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** (There is no C in gisaid at all: Hold Cmd and click A and B in the Type.)
@@ -24,6 +24,8 @@ seqdb3-scan /d/gisaid_epiflu_sequence.fasta
 xz -9ec </d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid-all- .fas.xz
 
 * generate seqdb
+~/bin/make-seqdb
+
 #+BEGIN_SRC sh
 ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
 if [[ -f ~/AD/data/seqdb.json.xz ]]; then DD=$(gstat -c %y ~/AD/data/seqdb.json.xz | cut -d ' ' -f 1); mv ~/AD/data/seqdb.json.xz ~/AD/data/seqdb-old/seqdb.${DD}.json.xz; mv ~/AD/data/seqdb-all.json.xz ~/AD/data/seqdb-old/seqdb-all.${DD}.json.xz; fi
