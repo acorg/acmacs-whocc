@@ -1,28 +1,60 @@
-Time-stamp: <2019-07-09 16:31:46 eu>
-* already downloaded from gisaid: ~/ac/sequences-2019
-* visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
-** (There is no C in gisaid at all: Hold Cmd and click A and B in the Type.)
-** SUBMISSION date (see last date in ~/ac/sequences-2019/)
-** Required Segments: HA (checkbox at the left of HA)
-** Click Search
-** Click leftmost checkbox in header to select all, number of slected must not exceed 20k (gisaid does not allow downloading more)
-** Click Download
-** Format: Sequences (DNA) as FASTA (second radio button)
-** DNA: HA (checkbox to the left from HA)
-** FASTA Header: Isolate name |  Collection date | Passage details/history |  Sample ID by submitting lab | Submitting lab | Type |  Lineage
-** Date format: YYYY-MM-DD
-** Click download
-** dos2unix /d/gisaid_epiflu_sequence.fasta
-** Update hidb:
+Time-stamp: <2019-08-26 16:44:52 eu>
+** already downloaded from gisaid: ~/ac/sequences-2019
+** visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
+*** SUBMISSION date (see last date in ~/ac/sequences-2019/)
+*** Required Segments: HA (checkbox at the left of HA)
+*** Click Search
+*** Click leftmost checkbox in header to select all, number of slected must not exceed 20k (gisaid does not allow downloading more)
+*** Click Download
+*** Format: Sequences (DNA) as FASTA (second radio button)
+*** DNA: HA (checkbox to the left from HA)
+*** FASTA Header: 
+Isolate name|a=Isolate ID|b=Type|c=Passage details/history|d=Lineage|e=Collection date|f=Submitter|g=Sample ID by sample provider|h=Sample ID by submitting lab|i=Last modified|j=Originating lab|k=Submitting lab|l=Segment|m=Segment number|n=Identifier|o=DNA Accession no.|p=DNA INSDC|
+-- FASTA header field is max 350 chars, has to use abbreviated field names
+*** FASTA Header: Isolate name | Isolate ID | Type | Passage details/history | Lineage | Collection date | Submitter | Sample ID by sample provider | Sample ID by submitting lab | Last modified | Originating lab | Submitting lab | Segment | Segment number | Identifier | DNA Accession no. | DNA INSDC
+*** Date format: YYYY-MM-DD
+*** Click download
+*** dos2unix /d/gisaid_epiflu_sequence.fasta
+*** Update hidb:
 ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
 
-* Check downloaded fasta
+** Check downloaded fasta
 seqdb3-scan /d/gisaid_epiflu_sequence.fasta
 
-* Install into ~/ac/sequences-2019/
+** Install into ~/ac/sequences-2019/
 xz -9ec </d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid-all- .fas.xz
 
-* generate seqdb
+** generate seqdb
+make-seqdb -H
+
+* OLD before 2019-08-26
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+** already downloaded from gisaid: ~/ac/sequences-2019
+** visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
+*** (There is no C in gisaid at all: Hold Cmd and click A and B in the Type.)
+*** SUBMISSION date (see last date in ~/ac/sequences-2019/)
+*** Required Segments: HA (checkbox at the left of HA)
+*** Click Search
+*** Click leftmost checkbox in header to select all, number of slected must not exceed 20k (gisaid does not allow downloading more)
+*** Click Download
+*** Format: Sequences (DNA) as FASTA (second radio button)
+*** DNA: HA (checkbox to the left from HA)
+*** FASTA Header: Isolate name |  Collection date | Passage details/history |  Sample ID by submitting lab | Submitting lab | Type |  Lineage
+*** Date format: YYYY-MM-DD
+*** Click download
+*** dos2unix /d/gisaid_epiflu_sequence.fasta
+*** Update hidb:
+ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
+
+** Check downloaded fasta
+seqdb3-scan /d/gisaid_epiflu_sequence.fasta
+
+** Install into ~/ac/sequences-2019/
+xz -9ec </d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid-all- .fas.xz
+
+** generate seqdb
 #+BEGIN_SRC sh
 ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
 if [[ -f ~/AD/data/seqdb.json.xz ]]; then DD=$(gstat -c %y ~/AD/data/seqdb.json.xz | cut -d ' ' -f 1); mv ~/AD/data/seqdb.json.xz ~/AD/data/seqdb-old/seqdb.${DD}.json.xz; mv ~/AD/data/seqdb-h1-h3-b.json.xz ~/AD/data/seqdb-old/seqdb-h1-h3-b.${DD}.json.xz; mv ~/AD/data/seqdb-all.json.xz ~/AD/data/seqdb-old/seqdb-all.${DD}.json.xz; fi
