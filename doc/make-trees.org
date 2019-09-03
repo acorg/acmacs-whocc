@@ -1,18 +1,13 @@
-# Time-stamp: <2019-09-03 09:21:30 eu>
+# Time-stamp: <2019-09-03 09:55:17 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
 * Albertine
 ** mkdir
-D=$(date +%Y-%m%d)
-mkdir /syn/eu/ac/results/signature-pages/${D}
-cd /syn/eu/ac/results/signature-pages/${D}
-cp ~/AD/data/seqdb.json.xz .
-mkdir h1 h3 bv by
+D=$(date +%Y-%m%d); mkdir /syn/eu/ac/results/signature-pages/${D} && cd /syn/eu/ac/results/signature-pages/${D} && cp ~/AD/data/seqdb.json.xz . && mkdir h1 h3 bv by
 
 ** In separate tmux windows
 *** H1
 seqdb3 --db seqdb.json.xz --flu h1 --recent-matched 3000,4000 --nuc-hamming-distance-threshold 160 --base-seq "SWITZERLAND/9772556/2013" --nucs --wrap --most-common-length --name-format "{seq_id}" --fasta h1/source.fas
-cd h1;
-tree-maker init; mg tree-maker.config
+cd h1; tree-maker init; mg tree-maker.config
 title h1-tree
 tree-maker wait
 
