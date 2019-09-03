@@ -1,0 +1,37 @@
+# Time-stamp: <2019-09-03 09:21:30 eu>
+* Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
+* Albertine
+** mkdir
+D=$(date +%Y-%m%d)
+mkdir /syn/eu/ac/results/signature-pages/${D}
+cd /syn/eu/ac/results/signature-pages/${D}
+cp ~/AD/data/seqdb.json.xz .
+mkdir h1 h3 bv by
+
+** In separate tmux windows
+*** H1
+seqdb3 --db seqdb.json.xz --flu h1 --recent-matched 3000,4000 --nuc-hamming-distance-threshold 160 --base-seq "SWITZERLAND/9772556/2013" --nucs --wrap --most-common-length --name-format "{seq_id}" --fasta h1/source.fas
+cd h1;
+tree-maker init; mg tree-maker.config
+title h1-tree
+tree-maker wait
+
+*** H3
+seqdb3 --db seqdb.json.xz --flu h3 --recent-matched 3000,4000 --nuc-hamming-distance-threshold 160 --base-seq "HAWAII/22/2012 MDCK" --nucs --wrap --most-common-length --name-format "{seq_id}" --fasta h3/source.fas
+
+*** B/Vic
+seqdb3 --db seqdb.json.xz --whocc-lab --flu b --lineage vic --recent 4000 --nuc-hamming-distance-threshold 160 --base-seq "VICTORIA/830/2013" --nucs --wrap --most-common-length --name-format "{seq_id}" --fasta bv/source.fas
+
+*** B/Yam
+seqdb3 --db seqdb.json.xz --flu b --lineage yam --recent-matched 4000,3000 --nuc-hamming-distance-threshold 160 --base-seq "B/NEW HAMPSHIRE/1/2016 E5" --nucs --wrap --most-common-length --name-format "{seq_id}" --fasta by/source.fas
+
+
+* COMMENT local vars ======================================================================
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+#+STARTUP: showall indent
+Local Variables:
+eval: (auto-fill-mode 0)
+eval: (add-hook 'before-save-hook 'time-stamp)
+End:

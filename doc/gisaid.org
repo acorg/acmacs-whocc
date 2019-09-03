@@ -1,4 +1,4 @@
-Time-stamp: <2019-08-26 18:56:13 eu>
+Time-stamp: <2019-09-03 09:06:59 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** SUBMISSION date (see last date in ~/ac/sequences-2019/)
@@ -22,10 +22,11 @@ ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-al
 [[elisp:(eu-process "seqdb3-scan /d/gisaid_epiflu_sequence.fasta" "seqdb3-scan --all-subtypes-messages --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta")][seqdb3-scan /d/gisaid_epiflu_sequence.fasta]]
 
 * Install into ~/ac/sequences-2019/
-xz -9ec </d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid-all- .fas.xz
+xz -9ecv /d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid- .fas.xz
 
 * generate seqdb
-make-seqdb -H
+[[elisp:(eu-process "make-seqdb" "make-seqdb -H")][make-seqdb -H]]
+[[elisp:(eu-process "make-seqdb" "make-seqdb")][make-seqdb]]
 
 * OLD before 2019-08-26
 :PROPERTIES:
@@ -68,6 +69,9 @@ ssa
 #+END_SRC
 
 * OLD before 2019-06-19
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
 :PROPERTIES:
 :VISIBILITY: folded
 :END:

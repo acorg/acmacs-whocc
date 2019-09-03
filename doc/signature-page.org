@@ -1,26 +1,5 @@
-Time-stamp: <2019-04-12 17:48:40 eu>
+Time-stamp: <2019-09-03 08:51:48 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
-* Check config
-~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
-* On albertine
-** (2019-04-11)
-~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli <h1 h3 bv by> [-m <i22, o16>] [--raxml 128] [--garli 1] [--number-of-sequences 4000] [--hamming-distance-threshold 160]
-
-~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h1 --raxml 128 --garli 32
-~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h3 --raxml 128 --garli 32
-~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli bv --raxml 128 --garli 32
-~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli by --raxml 128 --garli 32
-
-If processing directory exists, program starts again from the last saved state.
-Program sends email on completion or failure.
-
-** (2019-04-09)
-~/AD/sources/acmacs-whocc/bin/make-signature-pages-201904 <h1 h3 bv by> <1s 30m 10h>
-
-If processing directory exists, program starts again from the last saved state.
-Program sends email on completion or failure.
-
-** Generate pdf with all sig pages
 * RAxML Runtime
 T - threads
 S: 0 - full time, 1 - --stop-after-seconds 1
@@ -70,6 +49,29 @@ i22: 7176s 2h 55717
 i22: 
 **** --stop-after-seconds 1 no threads
 i22: 9116s 2.53h 61643
+* OLD (before <2019-09-01 Sun>)
+** On albertine
+*** (2019-04-11)
+ ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli <h1 h3 bv by> [-m <i22, o16>] [--raxml 128] [--garli 1] [--number-of-sequences 4000] [--hamming-distance-threshold 160]
+
+ ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h1 --raxml 128 --garli 32
+ ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h3 --raxml 128 --garli 32
+ ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli bv --raxml 128 --garli 32
+ ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli by --raxml 128 --garli 32
+
+ If processing directory exists, program starts again from the last saved state.
+ Program sends email on completion or failure.
+
+*** (2019-04-09)
+ ~/AD/sources/acmacs-whocc/bin/make-signature-pages-201904 <h1 h3 bv by> <1s 30m 10h>
+
+ If processing directory exists, program starts again from the last saved state.
+ Program sends email on completion or failure.
+
+*** Generate pdf with all sig pages
+** Check config
+ ~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
+
 * OLD (before <2018-12-28 Fri>)
 Run on albertine ~/AD/sources/acmacs-whocc/bin/make-signature-pages.before-20181228 -t $(date '+%Y-%m%d')
 * OLD (before <2018-07-16 Mon>)
