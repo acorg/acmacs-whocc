@@ -1,4 +1,4 @@
-Time-stamp: <2019-09-03 09:06:59 eu>
+Time-stamp: <2019-09-06 15:23:31 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** SUBMISSION date (see last date in ~/ac/sequences-2019/)
@@ -27,6 +27,7 @@ xz -9ecv /d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid- .fas.xz
 * generate seqdb
 [[elisp:(eu-process "make-seqdb" "make-seqdb -H")][make-seqdb -H]]
 [[elisp:(eu-process "make-seqdb" "make-seqdb")][make-seqdb]]
+[[elisp:(eu-process "locations-distribute" "~/ac/acmacs/scripts/locations-distribute")][locations-distribute]]
 
 * OLD before 2019-08-26
 :PROPERTIES:
@@ -159,9 +160,9 @@ rsync -av ~/AD/data/seqdb*.xz albertine:AD/data
 
 #+RESULTS: insert-previous-fasta-files
 
-# ======================================================================
-# Local Variables:
-# eval: (add-hook 'before-save-hook 'time-stamp)
-# eval: (setq org-confirm-elisp-link-function nil)
-# not-eval: (save-excursion (let ((org-confirm-babel-evaluate nil)) (org-babel-goto-named-src-block "insert-previous-fasta-files") (org-babel-execute-src-block t)))
-# End:
+======================================================================
+Local Variables:
+eval: (add-hook 'before-save-hook 'time-stamp)
+eval: (progn (make-local-variable org-confirm-elisp-link-function) (setq org-confirm-elisp-link-function nil))
+not-eval: (save-excursion (let ((org-confirm-babel-evaluate nil)) (org-babel-goto-named-src-block "insert-previous-fasta-files") (org-babel-execute-src-block t)))
+End:
