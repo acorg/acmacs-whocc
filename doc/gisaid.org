@@ -1,4 +1,4 @@
-Time-stamp: <2019-09-06 15:23:31 eu>
+Time-stamp: <2019-09-12 18:47:49 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** SUBMISSION date (see last date in ~/ac/sequences-2019/)
@@ -19,6 +19,7 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
 
 * Check downloaded fasta
+dos2unix /d/gisaid_epiflu_sequence.fasta
 [[elisp:(eu-process "seqdb3-scan /d/gisaid_epiflu_sequence.fasta" "seqdb3-scan --all-subtypes-messages --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta")][seqdb3-scan /d/gisaid_epiflu_sequence.fasta]]
 
 * Install into ~/ac/sequences-2019/
