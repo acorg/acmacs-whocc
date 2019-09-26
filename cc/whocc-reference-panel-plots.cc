@@ -289,9 +289,9 @@ size_t ChartData::add_table(acmacs::chart::ChartP aChart)
     if (mVirusType == "B")
         mVirusType += "/" + aChart->lineage().substr(0, 3);
     mAssay = info->assay();
-    if (mFirstDate.empty() || info->date() < mFirstDate)
+    if (mFirstDate.empty() || *info->date() < mFirstDate)
         mFirstDate = info->date();
-    if (mLastDate.empty() || info->date() > mLastDate)
+    if (mLastDate.empty() || *info->date() > mLastDate)
         mLastDate = info->date();
     mTables.push_back(info->make_name());
     return mTables.size() - 1;

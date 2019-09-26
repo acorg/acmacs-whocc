@@ -161,10 +161,10 @@ class SerumIds
         std::transform(first, last, tables.begin(), [assay, rbc](const auto& entry) {
             std::vector<std::string> fields;
             if (assay)
-                fields.push_back(std::get<acmacs::chart::Assay>(entry));
+                fields.push_back(*std::get<acmacs::chart::Assay>(entry));
             if (rbc)
-                fields.push_back(std::get<acmacs::chart::RbcSpecies>(entry));
-            fields.push_back(std::get<acmacs::chart::TableDate>(entry));
+                fields.push_back(*std::get<acmacs::chart::RbcSpecies>(entry));
+            fields.push_back(*std::get<acmacs::chart::TableDate>(entry));
             return string::join(":", fields);
         });
         std::reverse(tables.begin(), tables.end());
@@ -215,7 +215,7 @@ class FixSerumIds
             const auto sid = serum.serum_id();
             for (const auto& fix : data_) {
                 if (sid == fix.first) {
-                    std::cout << chart.info()->make_name() << " FIX " << serum.name() << ' ' << serum.reassortant() << ' ' << string::join(" ", serum.annotations()) << ' ' << serum.serum_id()
+                    std::cout << chart.info()->make_name() << " FIX " << *serum.name() << ' ' << serum.reassortant() << ' ' << string::join(" ", serum.annotations()) << ' ' << serum.serum_id()
                               << " --> " << fix.second << '\n';
                     serum.serum_id(fix.second);
                     modified = true;

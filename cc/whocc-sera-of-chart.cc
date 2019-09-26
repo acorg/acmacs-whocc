@@ -68,7 +68,7 @@ int main(int argc, const char* argv[])
         if (opt.name.has_value())
             name_match = std::regex(opt.name->begin(), opt.name->end());
         auto chart = acmacs::chart::import_from_file(opt.chart, acmacs::chart::Verify::None, report_time::no);
-        std::string assay = chart->info()->assay(acmacs::chart::Info::Compute::Yes);
+        std::string assay{chart->info()->assay(acmacs::chart::Info::Compute::Yes)};
         if (assay == "FOCUS REDUCTION")
             assay = "FR";
         else if (assay == "PLAQUE REDUCTION NEUTRALISATION")
@@ -81,10 +81,10 @@ int main(int argc, const char* argv[])
         const auto rbc = chart->info()->rbc_species(acmacs::chart::Info::Compute::Yes);
         chart->set_homologous(acmacs::chart::find_homologous::all);
         auto serum_data = collect(*chart, name_match, hidb::get(chart->info()->virus_type(acmacs::chart::Info::Compute::Yes), report_time::no));
-        find_most_used(serum_data, assay, lab, rbc);
+        find_most_used(serum_data, assay, *lab, *rbc);
         if (opt.serum_circles) {
-            report_for_serum_circles_json(serum_data, assay, lab, rbc);
-            report_for_serum_circles_html(serum_data, assay, lab, rbc);
+            report_for_serum_circles_json(serum_data, assay, *lab, *rbc);
+            report_for_serum_circles_html(serum_data, assay, *lab, *rbc);
         }
         else
             report(serum_data);
@@ -114,7 +114,7 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
                 // for (const auto& est : serum_tables) {
                 //     std::cerr << "DEBUG:    " << est.title() << " tables:" << est.number << " newest:" << est.most_recent->date() << " oldest:" << est.oldest->date() << '\n';
                 // }
-                serum_data.push_back({sr_no, serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), serum_tables});
+                serum_data.push_back({sr_no, *serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), serum_tables});
                 const auto homologous_antigens = serum->homologous_antigens();
                 for (auto ag_no : homologous_antigens) {
                     const auto empirical = chart.serum_circle_radius_empirical(ag_no, sr_no, 0);
@@ -203,7 +203,7 @@ bool match_assay(const hidb::TableStat& tables, std::string assay, std::string l
 void report(const std::vector<SerumData>& serum_data)
 {
     for (const auto& entry : serum_data) {
-        std::cout << std::setw(3) << std::right << entry.sr_no << ' ' << entry.full_name << " P: " << entry.passage << '\n';
+        std::cout << std::setw(3) << std::right << entry.sr_no << ' ' << entry.full_name << " P: " << *entry.passage << '\n';
         for (const auto& tables : entry.table_data) {
             std::cout << "  " << tables.title() << "  tables:" << std::setw(2) << std::right << tables.number
                       << " newest:" << tables.most_recent->date()
@@ -220,9 +220,9 @@ void report(const std::vector<SerumData>& serum_data)
 
 void report_for_serum_circles_json(const std::vector<SerumData>& serum_data, std::string assay, std::string lab, std::string rbc)
 {
-    auto report = [&](const auto& entry, std::string color) {
+    auto report = [&](const auto& entry, std::string_view color) {
         std::cout << R"({"N": "serum_circle", "serum": {"full_name": ")" << entry.full_name << R"(", "?index": )" << entry.sr_no << R"(}, "report": true,)" << '\n'
-                  << "  \"?passage\": \"" << entry.passage << "\",\n";
+                  << "  \"?passage\": \"" << *entry.passage << "\",\n";
         for (const auto& tables : entry.table_data) {
             // std::cerr << "DEBUG: " << tables.assay << " --- " << assay << '\n';
             if (match_assay(tables, assay, lab, rbc)) {
@@ -269,7 +269,7 @@ void report_for_serum_circles_json(const std::vector<SerumData>& serum_data, std
 void report_for_serum_circles_html(const std::vector<SerumData>& serum_data, std::string assay, std::string lab, std::string rbc)
 {
     auto report = [&](const auto& entry) {
-        std::cout << "<div class='serum-name'>" << entry.sr_no << ' ' << entry.full_name << ' ' << entry.passage << "</div>\n";
+        std::cout << "<div class='serum-name'>" << entry.sr_no << ' ' << entry.full_name << ' ' << *entry.passage << "</div>\n";
         for (const auto& tables : entry.table_data) {
             if (match_assay(tables, assay, lab, rbc)) {
                 std::cout << "<div class='serum-tables" << (entry.most_used ? " most-used" : "") << (entry.most_recent ? " most-recent" : "")
