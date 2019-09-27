@@ -215,7 +215,7 @@ class FixSerumIds
             const auto sid = serum.serum_id();
             for (const auto& fix : data_) {
                 if (sid == fix.first) {
-                    std::cout << chart.info()->make_name() << " FIX " << *serum.name() << ' ' << serum.reassortant() << ' ' << string::join(" ", serum.annotations()) << ' ' << serum.serum_id()
+                    std::cout << chart.info()->make_name() << " FIX " << *serum.name() << ' ' << *serum.reassortant() << ' ' << string::join(" ", serum.annotations()) << ' ' << serum.serum_id()
                               << " --> " << fix.second << '\n';
                     serum.serum_id(fix.second);
                     modified = true;
