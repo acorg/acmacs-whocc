@@ -94,9 +94,9 @@ class SerumIds
                                 std::cout << "  --fix ";
                                 const auto sid1 = std::get<SerumId>(*std::get<0>(*ep)), sid2 = std::get<SerumId>(*std::get<0>(*sid));
                                 if ((std::get<1>(*ep) - std::get<0>(*ep)) == (std::get<1>(*sid) - std::get<0>(*sid)) && sid2.size() < sid1.size())
-                                    std::cout << sid2 << '^' << sid1;
+                                    std::cout << *sid2 << '^' << *sid1;
                                 else
-                                    std::cout << sid1 << '^' << sid2;
+                                    std::cout << *sid1 << '^' << *sid2;
                                 std::cout << '\n';
                             }
                         }
@@ -144,8 +144,8 @@ class SerumIds
     {
         const auto& serum_id = std::get<SerumId>(serum);
         if (std::get<acmacs::chart::Lab>(table) == "MELB") {
-            if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R' || serum_id[0] == 'A') && serum_id[5] == '-' && serum_id.back() == 'D')
-                return SerumIdRoot(serum_id.substr(0, 5));
+            if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R' || serum_id[0] == 'A') && serum_id[5] == '-' && serum_id->back() == 'D')
+                return SerumIdRoot(serum_id->substr(0, 5));
             else
                 return SerumIdRoot(serum_id);
         }
@@ -215,9 +215,8 @@ class FixSerumIds
             const auto sid = serum.serum_id();
             for (const auto& fix : data_) {
                 if (sid == fix.first) {
-                    std::cout << chart.info()->make_name() << " FIX " << *serum.name() << ' ' << *serum.reassortant() << ' ' << string::join(" ", serum.annotations()) << ' ' << serum.serum_id()
-                              << " --> " << fix.second << '\n';
-                    serum.serum_id(fix.second);
+                    std::cout << fmt::format("{} FIX {} {} {} {} --> {}\n", chart.info()->make_name(), serum.name(), serum.reassortant(), string::join(" ", serum.annotations()), serum.serum_id(), fix.second);
+                    serum.serum_id(acmacs::chart::SerumId{fix.second});
                     modified = true;
                     break;
                 }
