@@ -37,10 +37,16 @@ class TiterData
  private:
     std::map<acmacs::chart::Titer, size_t> mTiters;
 
-    friend inline std::ostream& operator << (std::ostream& out, const TiterData& aData)
-        {
-            return out << aData.mTiters;
-        }
+    friend inline std::ostream& operator<<(std::ostream& out, const TiterData& aData)
+    {
+        out << '{';
+        std::transform(std::begin(aData.mTiters), std::end(aData.mTiters), polyfill::make_ostream_joiner(out, ", "), [](const auto& elt) {
+            std::ostringstream os;
+            os << '<' << *elt.first << ">: <" << elt.second << '>';
+            return os.str();
+        });
+        return out << '}';
+    }
 };
 
 // ----------------------------------------------------------------------

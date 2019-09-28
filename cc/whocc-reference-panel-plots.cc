@@ -412,8 +412,7 @@ std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData)
 
 std::ostream& operator << (std::ostream& out, const ChartData& aData)
 {
-    out << "Tables:" << aData.mTables.size() << " Sera:" << aData.mSera.size() << " Antigens:" << aData.mAntigens.size() << " Titers:" << aData.mTiters.size() << std::endl;
-    out << "Titers: " << aData.mAllTiters; // << std::endl;
+    out << fmt::format("Tables:{} Sera:{} Antigens:{} Titers:{}\nTiters: {}", aData.mTables.size(), aData.mSera.size(), aData.mAntigens.size(), aData.mTiters.size(), aData.mAllTiters); // << std::endl;
     // out << "Titers: " << aData.mTiterLevel << std::endl;
 
     // const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name());
