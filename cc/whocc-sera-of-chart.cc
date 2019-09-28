@@ -121,7 +121,7 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
                     const auto theoretical = chart.serum_circle_radius_theoretical(ag_no, sr_no, 0);
                     serum_data.back().radii.push_back({ag_no, chart.antigen(ag_no)->full_name(), empirical.per_antigen()[0].titer, empirical.per_antigen()[0].radius, theoretical.per_antigen()[0].radius});
                 }
-                if (homologous_antigens.empty())
+                if (homologous_antigens->empty())
                     std::cerr << "ERROR: no homologous antigens for " << sr_no << ' ' << serum->full_name() << '\n';
             }
             else
