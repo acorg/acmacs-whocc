@@ -82,7 +82,7 @@ void process_source(TiterData& aData, std::string_view filename)
     const auto number_of_antigens = chart_titers->number_of_antigens(), number_of_sera = chart_titers->number_of_sera();
     for (size_t antigen_no = 0; antigen_no < number_of_antigens; ++antigen_no) {
         for (size_t serum_no = 0; serum_no < number_of_sera; ++serum_no) {
-            aData.add(chart_titers->titer(antigen_no, serum_no));
+            aData.add(*chart_titers->titer(antigen_no, serum_no));
         }
     }
 
@@ -121,15 +121,15 @@ void TiterData::histogram(std::string_view filename)
     surface.line({left, bottom}, {right, bottom}, BLACK, Pixels{1});
     size_t x_check_mark = 0;
     double label_font_size = font_size;
-    const double longest_label_width = surface.text_size(longest_label(), Pixels{label_font_size}).width;
+    const double longest_label_width = surface.text_size(*longest_label(), Pixels{label_font_size}).width;
     if (longest_label_width > x_mark_step) {
         label_font_size *= x_mark_step / longest_label_width; // * 0.9;
     }
     for (const auto& entry: mTiters) {
         const double bar_left = left + x_check_mark * x_mark_step; //, bar_right = bar_left + x_mark_step;
         const double bar_height = double(entry.second) / double(max_y) * (bottom - top);
-        double label_width = surface.text_size(entry.first, Pixels{label_font_size}).width;
-        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + label_font_size * 1.5}, entry.first, BLACK, Pixels{label_font_size});
+        double label_width = surface.text_size(*entry.first, Pixels{label_font_size}).width;
+        surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + label_font_size * 1.5}, *entry.first, BLACK, Pixels{label_font_size});
         surface.rectangle_filled({bar_left, bottom - bar_height}, {x_mark_step, bar_height}, BLACK, Pixels{0.5}, "orange");
         ++x_check_mark;
     }

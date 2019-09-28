@@ -401,9 +401,9 @@ acmacs::chart::Titer ChartData::median(const ChartData::range& aRange) const
 std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData)
 {
     constexpr const int titer_width = 7;
-    out << '[' << std::setw(titer_width) << std::right << aData.median.first << '(' << aData.median.second << ")]";
+    out << '[' << std::setw(titer_width) << std::right << *aData.median.first << '(' << aData.median.second << ")]";
     for (const auto& element: aData.titer_per_table)
-        out << std::setw(titer_width) << std::right << element.first << '(' << element.second << ')';
+        out << std::setw(titer_width) << std::right << *element.first << '(' << element.second << ')';
     return out;
 
 } // operator <<
@@ -482,7 +482,7 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acma
     text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], BLACK, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
       // titer value marks
     for (const auto& element: mTiterLevel) {
-        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, element.first, BLACK, Scaled{aParameters.cell_top_title_height / 2});
+        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, *element.first, BLACK, Scaled{aParameters.cell_top_title_height / 2});
     }
 
     double table_no = 2 - static_cast<int>(first_tab_no);
