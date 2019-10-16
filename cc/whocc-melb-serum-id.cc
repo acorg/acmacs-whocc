@@ -71,7 +71,7 @@ class SerumIds
 
     void print(bool print_good) const
     {
-        const bool show_assay = std::get<acmacs::chart::VirusType>(*std::get<0>(per_root_.front())) == "A(H3N2)";
+        const bool show_assay = std::get<acmacs::chart::VirusType>(*std::get<0>(per_root_.front())) == acmacs::chart::VirusType{"A(H3N2)"};
         const bool show_rbc = show_assay;
         for (const auto& per_root_entry : per_root_) {
             const auto name = make_name(std::get<0>(per_root_entry)), name_last = make_name(std::get<1>(per_root_entry) - 1);
@@ -143,7 +143,7 @@ class SerumIds
     SerumIdRoot serum_id_root(const SerumEntry& serum, const TableEntry& table) const
     {
         const auto& serum_id = std::get<SerumId>(serum);
-        if (std::get<acmacs::chart::Lab>(table) == "MELB") {
+        if (std::get<acmacs::chart::Lab>(table) == acmacs::chart::Lab{"MELB"}) {
             if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R' || serum_id[0] == 'A') && serum_id[5] == '-' && serum_id->back() == 'D')
                 return SerumIdRoot(serum_id->substr(0, 5));
             else
@@ -214,7 +214,7 @@ class FixSerumIds
             auto& serum = sera->at(serum_no);
             const auto sid = serum.serum_id();
             for (const auto& fix : data_) {
-                if (sid == fix.first) {
+                if (sid == acmacs::chart::SerumId{fix.first}) {
                     std::cout << fmt::format("{} FIX {} {} {} {} --> {}\n", chart.info()->make_name(), serum.name(), serum.reassortant(), string::join(" ", serum.annotations()), serum.serum_id(), fix.second);
                     serum.serum_id(acmacs::chart::SerumId{fix.second});
                     modified = true;
