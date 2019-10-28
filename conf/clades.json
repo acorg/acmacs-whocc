@@ -1,0 +1,15 @@
+{"_": "-*- js-indent-level: 1 -*-",
+
+ "clades-A(H1N1)PDM09": [
+ ],
+
+ "clades-A(H3N2)": [
+  {"N": "clade", "name": "3C.2A1B", "display_name": "2A1B", "substitutions": ["92R", "121K", "158N", "159Y", "171K", "311Q", "406V", "484E"], "report": true}
+ ],
+
+ "clades-BVICTORIA": [
+ ],
+
+ "clades-BYAMAGATA": [
+ ]
+}
