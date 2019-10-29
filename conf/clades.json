@@ -56,5 +56,6 @@
  "clades-BYAMAGATA": [
   {"N": "clade", "name": "Y2", "substitutions": ["166N"], "report": true},
   {"N": "clade", "name": "Y3", "substitutions": ["166Y"], "report": true},
+  {"N": "clade", "name": "TAIWAN2010", "substitutions": ["169-", "170-"], "report": true, "?": "12 sequences from TAIWAN 2010 have deletions 169:2, perhaps they are not YAMAGATA"}
  ]
 }
