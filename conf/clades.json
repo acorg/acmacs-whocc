@@ -45,8 +45,16 @@
  ],
 
  "clades-BVICTORIA": [
+  {"N": "clade", "name": "V1A", "substitutions": ["58P", "75K", "172P"], "report": true},
+  {"?N": "clade", "name": "V1B", "substitutions": ["58P"], "report": true},
+
+  {"N": "clade", "name": "2DEL2017", "display_name": "2del", "substitutions": ["162-", "163-", "!164-"], "report": true},
+  {"N": "clade", "name": "3DEL2017", "display_name": "3del", "substitutions": ["162-", "163-",  "164-", "!165-"], "report": true},
+  {"N": "clade", "name": "6DEL2019", "display_name": "6del", "substitutions": ["162-", "163-",  "164-",  "165-", "166-", "167-"], "report": true}
  ],
 
  "clades-BYAMAGATA": [
+  {"N": "clade", "name": "Y2", "substitutions": ["166N"], "report": true},
+  {"N": "clade", "name": "Y3", "substitutions": ["166Y"], "report": true},
  ]
 }
