@@ -35,7 +35,7 @@ install: $(TARGETS)
 	ln -sf $(abspath bin)/* $(AD_BIN)
 	$(call symbolic_link,$(abspath py)/acmacs_whocc,$(AD_PY)/acmacs_whocc)
 	mkdir -p $(AD_SHARE)/js/who; ln -sf $(SRC_DIR)/acmacs-whocc/js/* $(AD_SHARE)/js/who
-	if [ ! -f $(AD_SHARE)/conf/clades.json ]; then mkdir -p $(AD_SHARE)/conf; ln -sf $(abspath conf/clades.json) $(AD_SHARE)/conf; fi
+	for jd in clades vaccines; do if [ ! -f $(AD_SHARE)/conf/${jd}.json ]; then mkdir -p $(AD_SHARE)/conf; ln -sf $(abspath conf/${jd}.json) $(AD_SHARE)/conf; fi; done
 
 test: install
 	@#test/test

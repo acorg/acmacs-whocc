@@ -1,0 +1,96 @@
+{"_": "-*- js-indent-level: 1 -*-",
+
+ "init": [
+ ],
+
+ "vaccines-A(H1N1)PDM09": [
+  {"N": "vaccine", "name": "CALIFORNIA/7/2009",        "vaccine_type": "previous"},
+  {"N": "vaccine", "name": "MICHIGAN/45/2015",         "vaccine_type": "previous"},
+  {"N": "vaccine", "name": "BRISBANE/2/2018",          "vaccine_type": "current", "vaccine_year": "2019-02"}
+ ],
+
+ "vaccines-A(H3N2)": [
+  {"N": "vaccine", "name": "PORT CHALMERS/1/1973",     "vaccine_type": "previous", "vaccine_year": "1974?"},
+  {"N": "vaccine", "name": "VICTORIA/3/1975",          "vaccine_type": "previous", "vaccine_year": "1976"},
+  {"N": "vaccine", "name": "TEXAS/1/1977",             "vaccine_type": "previous", "vaccine_year": "1978"},
+  {"N": "vaccine", "name": "BANGKOK/1/1979",           "vaccine_type": "previous", "vaccine_year": "1980"},
+  {"N": "vaccine", "name": "PHILIPPINES/2/1982",       "vaccine_type": "previous", "vaccine_year": "1983"},
+  {"N": "vaccine", "name": "MISSISSIPPI/1/1985",       "vaccine_type": "previous", "vaccine_year": "1986"},
+  {"N": "vaccine", "name": "CHRISTCHURCH/4/1985",      "vaccine_type": "previous", "vaccine_year": "1986"},
+  {"N": "vaccine", "name": "LENINGRAD/360/1986",       "vaccine_type": "previous", "vaccine_year": "1987"},
+  {"N": "vaccine", "name": "SICHUAN/2/1987",           "vaccine_type": "previous", "vaccine_year": "1988"},
+  {"N": "vaccine", "name": "SHANGHAI/11/1987",         "vaccine_type": "previous", "vaccine_year": "1989"},
+  {"N": "vaccine", "name": "GUIZHOU/54/1989",          "vaccine_type": "previous", "vaccine_year": "1990"},
+  {"N": "vaccine", "name": "BEIJING/353/1989",         "vaccine_type": "previous", "vaccine_year": "1991"},
+  {"N": "vaccine", "name": "BEIJING/32/1992",          "vaccine_type": "previous", "vaccine_year": "1993"},
+  {"N": "vaccine", "name": "SHANGDONG/9/1993",         "vaccine_type": "previous", "vaccine_year": "1994"},
+  {"N": "vaccine", "name": "JOHANNESBURG/33/1994",     "vaccine_type": "previous", "vaccine_year": "1995"},
+  {"N": "vaccine", "name": "WUHAN/359/1995",           "vaccine_type": "previous", "vaccine_year": "1996"},
+  {"N": "vaccine", "name": "SYDNEY/5/1997",            "vaccine_type": "previous", "vaccine_year": "1998-2000"},
+  {"N": "vaccine", "name": "MOSCOW/10/1999",           "vaccine_type": "previous", "vaccine_year": "2000-2004"},
+  {"N": "vaccine", "name": "FUJIAN/411/2002",          "vaccine_type": "previous", "vaccine_year": "2004-2005"},
+  {"N": "vaccine", "name": "WELLINGTON/1/2004",        "vaccine_type": "previous", "vaccine_year": "2005"},
+  {"N": "vaccine", "name": "CALIFORNIA/7/2004",        "vaccine_type": "previous", "vaccine_year": "2005-2006"},
+  {"N": "vaccine", "name": "WISCONSIN/67/2005",        "vaccine_type": "previous", "vaccine_year": "2006-2008"},
+  {"N": "vaccine", "name": "BRISBANE/10/2007",         "vaccine_type": "previous", "vaccine_year": "2008-2010"},
+  {"N": "vaccine", "name": "PERTH/16/2009",            "vaccine_type": "previous", "vaccine_year": "2010"},
+  {"N": "vaccine", "name": "VICTORIA/361/2011",        "vaccine_type": "previous", "vaccine_year": "2012"},
+  {"N": "vaccine", "name": "TEXAS/50/2012",            "vaccine_type": "previous", "vaccine_year": "2014"},
+  {"N": "vaccine", "name": "SWITZERLAND/9715293/2013", "vaccine_type": "previous", "vaccine_year": "2015"},
+  {"N": "vaccine", "name": "HONG KONG/4801/2014",      "vaccine_type": "previous", "vaccine_year": "2016"},
+  {"N": "vaccine", "name": "SINGAPORE/INFIMH-16-0019/2016", "vaccine_type": "previous"},
+  {"N": "vaccine", "name": "SWITZERLAND/8060/2017",    "vaccine_type": "previous", "vaccine_year": "2018-09"},
+  {"N": "vaccine", "name": "KANSAS/14/2017",           "vaccine_type": "previous", "vaccine_year": "2019-02"},
+  {"?N": "vaccine", "name": "SAITAMA/103/2014",         "vaccine_type": "surrogate"},
+  {"?N": "vaccine", "name": "HONG KONG/7295/2014",      "vaccine_type": "surrogate"},
+  {"N": "vaccine", "name": "SOUTH AUSTRALIA/34/2019",  "vaccine_type": "current", "vaccine_year": "2019-09"},
+  {"?N": "vaccine", "name": "IOWA/60/2018",  "vaccine_type": "current", "vaccine_year": "2019-09"}
+ ],
+
+ "vaccines-BVICTORIA": [
+  {"N": "vaccine", "name": "MALAYSIA/2506/2004",       "vaccine_type": "previous", "vaccine_year": "2006"},
+  {"N": "vaccine", "name": "BRISBANE/60/2008",         "vaccine_type": "previous", "vaccine_year": "2009"},
+  {"?N": "vaccine", "name": "MARYLAND/15/2016",       "vaccine_type": "current"},
+  {"N": "vaccine", "name": "COLORADO/6/2017",        "vaccine_type": "previous", "vaccine_year": "2018-03-01", "?": "http://www.who.int/influenza/vaccines/virus/recommendations/2018_19_north/en/"},
+  {"?N": "vaccine", "name": "PARIS/1762/2009",          "vaccine_type": "current", "?": "not used by Crick anymore, B/Ireland/3154/2016 is used instead (2017-08-21)"},
+  {"?N": "vaccine", "name": "IOWA/6/2017",              "vaccine_type": "surrogate", "?": "QMC2 2018-11-14 requested to mark by David Wentworth (CDC, NIH)"},
+  {"?N": "vaccine", "name": "SOUTH AUSTRALIA/81/2012",  "vaccine_type": "surrogate"},
+  {"?N": "vaccine", "name": "IRELAND/3154/2016",        "vaccine_type": "surrogate"},
+  {"N": "vaccine", "name": "WASHINGTON/2/2019",        "vaccine_type": "current", "vaccine_year": "2019-09"},
+  {"N": "vaccine", "name": "SICHUAN GAOXIN/531/2018",  "vaccine_type": "current", "vaccine_year": "2019-09"}
+ ],
+
+ "vaccines-BYAMAGATA": [
+  {"N": "vaccine", "name": "FLORIDA/4/2006",           "vaccine_type": "previous", "vaccine_year": "2008"},
+  {"N": "vaccine", "name": "WISCONSIN/1/2010",         "vaccine_type": "previous", "vaccine_year": "2012"},
+  {"N": "vaccine", "name": "MASSACHUSETTS/2/2012",     "vaccine_type": "previous", "vaccine_year": "2013"},
+  {"N": "vaccine", "name": "PHUKET/3073/2013",         "vaccine_type": "current",  "vaccine_year": "2015"}
+ ],
+
+ "?": "-------------------- H1 seasonal --------------------",
+ "vaccines-A(H1N1)": [
+  {"N": "vaccine", "name": "USSR/90/1977",             "vaccine_type": "previous", "vaccine_year": "1978"},
+  {"N": "vaccine", "name": "BRAZIL/11/1978",           "vaccine_type": "previous", "vaccine_year": "1980"},
+  {"N": "vaccine", "name": "CHILE/1/1983",             "vaccine_type": "previous", "vaccine_year": "1984"},
+  {"N": "vaccine", "name": "SINGAPORE/6/1986",         "vaccine_type": "previous", "vaccine_year": "1987"},
+  {"N": "vaccine", "name": "BAYERN/7/1995",            "vaccine_type": "previous", "vaccine_year": "1997"},
+  {"N": "vaccine", "name": "BEIJING/262/1995",         "vaccine_type": "previous", "vaccine_year": "1998"},
+  {"N": "vaccine", "name": "NEW CALEDONIA/20/1999",    "vaccine_type": "previous", "vaccine_year": "2000"},
+  {"N": "vaccine", "name": "SOLOMON ISLANDS/3/2006",   "vaccine_type": "previous", "vaccine_year": "2008"},
+  {"N": "vaccine", "name": "BRISBANE/59/2007",         "vaccine_type": "previous", "vaccine_year": "2008", "?": "appears on H1pdm CDC maps as an outlier"}
+ ],
+
+ "vaccines-B": [
+  {"N": "vaccine", "name": "HONG KONG/5/1972",         "vaccine_type": "previous", "vaccine_year": "1974?"},
+  {"N": "vaccine", "name": "SINGAPORE/222/1979",       "vaccine_type": "previous", "vaccine_year": "1980"},
+  {"N": "vaccine", "name": "USSR/100/83",              "vaccine_type": "previous", "vaccine_year": "1984"},
+  {"N": "vaccine", "name": "ANN ARBOR/1/1986",         "vaccine_type": "previous", "vaccine_year": "1986"},
+  {"N": "vaccine", "name": "BEIJING/1/1987",           "vaccine_type": "previous", "vaccine_year": "1988"},
+  {"N": "vaccine", "name": "YAMAGATA/16/1988",         "vaccine_type": "previous", "vaccine_year": "1989"},
+  {"N": "vaccine", "name": "PANAMA/45/1990",           "vaccine_type": "previous", "vaccine_year": "1993"},
+  {"N": "vaccine", "name": "BEIJING/184/1993",         "vaccine_type": "previous", "vaccine_year": "1995"},
+  {"N": "vaccine", "name": "SICHUAN/379/1999",         "vaccine_type": "previous", "vaccine_year": "2001"},
+  {"N": "vaccine", "name": "HONG KONG/330/2001",       "vaccine_type": "previous", "vaccine_year": "2002"},
+  {"N": "vaccine", "name": "SHANGHAI/361/2002",        "vaccine_type": "previous", "vaccine_year": "2004"}
+ ]
+}
