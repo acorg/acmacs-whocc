@@ -30,15 +30,15 @@ inline bool is_acmacs_file(const fs::path& path)
 class SerumIds
 {
   public:
-    using Name = acmacs::chart::Name;
+    using Name = acmacs::virus::name_t;
     using Passage = acmacs::virus::Passage;
     using Reassortant = acmacs::virus::Reassortant;
     using Annotations = acmacs::chart::Annotations;
     using SerumId = acmacs::chart::SerumId;
     using SerumIdRoot = acmacs::named_string_t<struct SerumIdRootTag>;
     using SerumEntry = std::tuple<Name, Reassortant, Annotations, SerumId, Passage>;
-    using TableEntry = std::tuple<acmacs::chart::VirusType, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate>;
-    using Entry = std::tuple<SerumIdRoot, SerumId, Name, Reassortant, Annotations, acmacs::chart::VirusType, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies,
+    using TableEntry = std::tuple<acmacs::virus::type_subtype_t, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate>;
+    using Entry = std::tuple<SerumIdRoot, SerumId, Name, Reassortant, Annotations, acmacs::virus::type_subtype_t, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies,
                              acmacs::chart::TableDate, Passage>;
     using Entries = std::vector<Entry>;
     using EntryPtr = typename Entries::const_iterator;
@@ -71,7 +71,7 @@ class SerumIds
 
     void print(bool print_good) const
     {
-        const bool show_assay = std::get<acmacs::chart::VirusType>(*std::get<0>(per_root_.front())) == acmacs::chart::VirusType{"A(H3N2)"};
+        const bool show_assay = std::get<acmacs::virus::type_subtype_t>(*std::get<0>(per_root_.front())) == acmacs::virus::type_subtype_t{"A(H3N2)"};
         const bool show_rbc = show_assay;
         for (const auto& per_root_entry : per_root_) {
             const auto name = make_name(std::get<0>(per_root_entry)), name_last = make_name(std::get<1>(per_root_entry) - 1);
@@ -115,7 +115,7 @@ class SerumIds
     void add(const SerumEntry& serum, const TableEntry& table)
     {
         data_.emplace_back(serum_id_root(serum, table), std::get<SerumId>(serum), std::get<Name>(serum), std::get<Reassortant>(serum), std::get<Annotations>(serum),
-                           std::get<acmacs::chart::VirusType>(table), std::get<acmacs::chart::Lab>(table), std::get<acmacs::chart::Assay>(table), std::get<acmacs::chart::RbcSpecies>(table),
+                           std::get<acmacs::virus::type_subtype_t>(table), std::get<acmacs::chart::Lab>(table), std::get<acmacs::chart::Assay>(table), std::get<acmacs::chart::RbcSpecies>(table),
                            std::get<acmacs::chart::TableDate>(table), std::get<Passage>(serum));
     }
 
