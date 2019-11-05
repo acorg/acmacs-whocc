@@ -4,7 +4,6 @@
 #include <tuple>
 
 #include "acmacs-base/argv.hh"
-#include "acmacs-base/filesystem.hh"
 #include "acmacs-base/named-type.hh"
 #include "acmacs-base/string.hh"
 #include "acmacs-base/string-split.hh"
@@ -194,7 +193,7 @@ class FixSerumIds
                 acmacs::chart::ChartModify chart(acmacs::chart::import_from_file(pathname));
                 if (fix_in_chart(chart)) {
                     acmacs::file::backup(pathname, acmacs::file::backup_move::yes);
-                    acmacs::chart::export_factory(chart, make_export_filename(pathname), fs::path(program_name_).filename(), report_time::no);
+                    acmacs::chart::export_factory(chart, make_export_filename(pathname), program_name_, report_time::no);
                     ++fixed_charts;
                 }
             }
@@ -225,7 +224,7 @@ class FixSerumIds
         return modified;
     }
 
-    fs::path make_export_filename(const fs::path& pathname) const
+    std::string make_export_filename(const fs::path& pathname) const
     {
         if (pathname.extension() == ".ace")
             return pathname;
