@@ -1,5 +1,6 @@
-Time-stamp: <2019-09-12 18:47:49 eu>
+Time-stamp: <2019-11-22 15:00:04 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
+ls -l ~/ac/sequences-2019/gis*.fas.xz
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
 ** SUBMISSION date (see last date in ~/ac/sequences-2019/)
 ** Required Segments: HA (checkbox at the left of HA)
