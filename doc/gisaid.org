@@ -1,4 +1,4 @@
-Time-stamp: <2019-11-22 15:00:04 eu>
+Time-stamp: <2019-11-28 16:55:40 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 ls -l ~/ac/sequences-2019/gis*.fas.xz
 * visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
@@ -15,13 +15,15 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 ** FASTA Header: Isolate name | Isolate ID | Type | Passage details/history | Lineage | Collection date | Submitter | Sample ID by sample provider | Sample ID by submitting lab | Last modified | Originating lab | Submitting lab | Segment | Segment number | Identifier | DNA Accession no. | DNA INSDC
 ** Date format: YYYY-MM-DD
 ** Click download
-** dos2unix /d/gisaid_epiflu_sequence.fasta
-** Update hidb:
-ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
+
 
 * Check downloaded fasta
+
+#+BEGIN_SRC bash
 dos2unix /d/gisaid_epiflu_sequence.fasta
-[[elisp:(eu-process "seqdb3-scan /d/gisaid_epiflu_sequence.fasta" "seqdb3-scan --all-subtypes-messages --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta")][seqdb3-scan /d/gisaid_epiflu_sequence.fasta]]
+ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
+seqdb3-scan --all-subtypes-messages --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
+#+END_SRC
 
 * Install into ~/ac/sequences-2019/
 xz -9ecv /d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid- .fas.xz
