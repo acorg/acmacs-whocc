@@ -1,122 +1,125 @@
-Time-stamp: <2019-09-03 08:51:48 eu>
-* Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
-* RAxML Runtime
-T - threads
-S: 0 - full time, 1 - --stop-after-seconds 1
-** H3 [2019-04-07 Sun]
+Time-stamp: <2020-01-03 17:47:40 eu>
+# OBSOLETE (?)
+* See [[~/AD/sources/acmacs-whocc/doc/make-trees.org][make-trees.org]]
+* Obsolete ([2020-01-03 Fri])
+** Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
+** RAxML Runtime
+ T - threads
+ S: 0 - full time, 1 - --stop-after-seconds 1
+*** H3 [2019-04-07 Sun]
 
-|  T | S | Hst |  4k s | 4k h | 4k sc |  5k s | 5k h | 5k sc |  6k s | 6k h | 6k sc |  7k s | 7k h | 7k sc |  8k s | 8k h | 8k sc |  9k s | 9k h | 9k sc | 10k s | 10k h | 10k sc | 11k s | 11k h | 11k sc | 12k s | 12k h | 12k sc | 15k s | 15k h | 15k sc | 20k s | 20k h | 20k sc | 30k s | 30k h | 30k sc |
-|----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
-|  1 | 0 | i22 | 11652 |  3.2 |       | 15106 |  4.2 | 48704 | 41986 | 11.6 | 55654 | 39638 | 11.0 | 61560 |       |      |       |       |      |       |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |
-|----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
-|  1 | 1 | i22 |  4227 |  1.2 |       |  5222 |  1.5 | 48774 |  7176 |  2.0 | 55717 |  9116 |  2.5 | 61643 | 11728 |  3.3 | 67044 | 13955 |  3.9 | 71993 | 15486 |   4.3 |  78198 | 17463 |   4.9 |  84923 |       |       |        |       |       |        |       |       |        |       |       |        |
-|----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
-| 16 | 0 | i22 |       |      |       |       |      |       |       |      |       |       |      |       |       |      |       |       |      |       |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |
-|----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
-| 16 | 1 | i22 |   540 |  0.2 | 40439 |   682 |  0.2 | 48804 |   911 |  0.3 | 55739 |  1146 |  0.3 | 61662 |  1420 |  0.4 | 67063 |  1652 |  0.5 | 72020 |  1948 |   0.5 |  78270 |  2222 |   0.6 |  85013 |  2569 |   0.7 |  91755 |  3996 |   1.1 | 116173 |  6387 |   1.8 | 149754 | 11849 |   3.3 | 240396 |
-|----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
-| 32 | 0 | o16 |  4856 |  1.3 | 40432 |  8556 |  2.4 | 48736 | 11245 |  3.1 | 55658 | 19871 |  5.5 | 61538 | 22814 |  6.3 | 66915 | 25783 |  7.2 | 71880 |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |
-|----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
-| 32 | 1 | o17 |  1379 |  0.4 | 40438 |  1672 |  0.5 | 48795 |  2203 |  0.6 | 55735 |  2899 |  0.8 | 61654 |  2860 |  0.8 | 67102 |  3925 |  1.1 | 72048 |  4170 |   1.2 |  78301 |  4567 |   1.3 |  84999 |       |       |        |       |       |        |       |       |        |       |       |        |
-|----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
+ |  T | S | Hst |  4k s | 4k h | 4k sc |  5k s | 5k h | 5k sc |  6k s | 6k h | 6k sc |  7k s | 7k h | 7k sc |  8k s | 8k h | 8k sc |  9k s | 9k h | 9k sc | 10k s | 10k h | 10k sc | 11k s | 11k h | 11k sc | 12k s | 12k h | 12k sc | 15k s | 15k h | 15k sc | 20k s | 20k h | 20k sc | 30k s | 30k h | 30k sc |
+ |----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
+ |  1 | 0 | i22 | 11652 |  3.2 |       | 15106 |  4.2 | 48704 | 41986 | 11.6 | 55654 | 39638 | 11.0 | 61560 |       |      |       |       |      |       |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |
+ |----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
+ |  1 | 1 | i22 |  4227 |  1.2 |       |  5222 |  1.5 | 48774 |  7176 |  2.0 | 55717 |  9116 |  2.5 | 61643 | 11728 |  3.3 | 67044 | 13955 |  3.9 | 71993 | 15486 |   4.3 |  78198 | 17463 |   4.9 |  84923 |       |       |        |       |       |        |       |       |        |       |       |        |
+ |----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
+ | 16 | 0 | i22 |       |      |       |       |      |       |       |      |       |       |      |       |       |      |       |       |      |       |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |
+ |----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
+ | 16 | 1 | i22 |   540 |  0.2 | 40439 |   682 |  0.2 | 48804 |   911 |  0.3 | 55739 |  1146 |  0.3 | 61662 |  1420 |  0.4 | 67063 |  1652 |  0.5 | 72020 |  1948 |   0.5 |  78270 |  2222 |   0.6 |  85013 |  2569 |   0.7 |  91755 |  3996 |   1.1 | 116173 |  6387 |   1.8 | 149754 | 11849 |   3.3 | 240396 |
+ |----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
+ | 32 | 0 | o16 |  4856 |  1.3 | 40432 |  8556 |  2.4 | 48736 | 11245 |  3.1 | 55658 | 19871 |  5.5 | 61538 | 22814 |  6.3 | 66915 | 25783 |  7.2 | 71880 |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |       |       |        |
+ |----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
+ | 32 | 1 | o17 |  1379 |  0.4 | 40438 |  1672 |  0.5 | 48795 |  2203 |  0.6 | 55735 |  2899 |  0.8 | 61654 |  2860 |  0.8 | 67102 |  3925 |  1.1 | 72048 |  4170 |   1.2 |  78301 |  4567 |   1.3 |  84999 |       |       |        |       |       |        |       |       |        |       |       |        |
+ |----+---+-----+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+------+-------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------+-------+-------+--------|
 
-** Custom version raxml with --stop-after-seconds [2019-04-05 Fri]
-*** H3 3997 sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, A%28H3N2%29/ONTARIO/RV2886/2018__P1 ... A%28H3N2%29/ANCONA/3/2019__
-**** full time --stop-after-seconds 0 no threads
-i22: 11652s (03:14:12)
-/syn/eu/raxml-acorg/raxmlHPC-oriane -p 13579 -N 1 -s ../source-4k.fas -n 4k-0s-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D
-**** --stop-after-seconds 1 no threads
-i22: 4227s (01:10:27)
-s=8k; /syn/eu/raxml-acorg/raxml-i22-avx --stop-after-seconds 1 -p 13579 -N 1 -s ../source-$s.fas -n $s-1s-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D
-**** full time --stop-after-seconds 0, 32 threads (o16, o17)
-for k in $(seq 4 11); do /syn/eu/raxml-acorg/raxml-i22-avx-pthreads -p 13579 -N 1 -T 32 -s ../source-${k}k.fas -n ${k}k-0s-T32-${HOSTNAME}-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D; printf "\n\n\n=====================================================================================\n\n\n"; done
-**** --stop-after-seconds 1, 32 threads (o16, o17)
-for k in $(seq 4 11); do /syn/eu/raxml-acorg/raxml-i22-avx-pthreads -p 13579 --stop-after-seconds 1 -N 1 -T 32 -s ../source-${k}k.fas -n ${k}k-1s-T32-${HOSTNAME}-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D; printf "T32 S1 ${k}k ${HOSTNAME}\n\n\n=====================================================================================\n\n\n"; done
-**** --stop-after-seconds 1, 16 threads (i22)
-for k in $(seq 4 11); do /syn/eu/raxml-acorg/raxml-i22-avx-pthreads -p 13579 --stop-after-seconds 1 -N 1 -T 16 -s ../source-${k}k.fas -n ${k}k-1s-T16-${HOSTNAME}-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D; printf "T16 S1 ${k}k ${HOSTNAME}\n\n\n=====================================================================================\n\n\n"; done
-*** H3 5k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
-**** full time --stop-after-seconds 0 no threads
-i22: 15106s 4.2h 48704
-**** --stop-after-seconds 1 no threads
-i22: 5222s 1.45h 48774
-*** H3 6k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
-**** full time --stop-after-seconds 0 no threads
-i22: 
-**** --stop-after-seconds 1 no threads
-i22: 7176s 2h 55717
-*** H3 7k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
-**** full time --stop-after-seconds 0 no threads
-i22: 
-**** --stop-after-seconds 1 no threads
-i22: 9116s 2.53h 61643
-* OLD (before <2019-09-01 Sun>)
-** On albertine
-*** (2019-04-11)
- ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli <h1 h3 bv by> [-m <i22, o16>] [--raxml 128] [--garli 1] [--number-of-sequences 4000] [--hamming-distance-threshold 160]
+*** Custom version raxml with --stop-after-seconds [2019-04-05 Fri]
+**** H3 3997 sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, A%28H3N2%29/ONTARIO/RV2886/2018__P1 ... A%28H3N2%29/ANCONA/3/2019__
+***** full time --stop-after-seconds 0 no threads
+ i22: 11652s (03:14:12)
+ /syn/eu/raxml-acorg/raxmlHPC-oriane -p 13579 -N 1 -s ../source-4k.fas -n 4k-0s-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D
+***** --stop-after-seconds 1 no threads
+ i22: 4227s (01:10:27)
+ s=8k; /syn/eu/raxml-acorg/raxml-i22-avx --stop-after-seconds 1 -p 13579 -N 1 -s ../source-$s.fas -n $s-1s-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D
+***** full time --stop-after-seconds 0, 32 threads (o16, o17)
+ for k in $(seq 4 11); do /syn/eu/raxml-acorg/raxml-i22-avx-pthreads -p 13579 -N 1 -T 32 -s ../source-${k}k.fas -n ${k}k-0s-T32-${HOSTNAME}-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D; printf "\n\n\n=====================================================================================\n\n\n"; done
+***** --stop-after-seconds 1, 32 threads (o16, o17)
+ for k in $(seq 4 11); do /syn/eu/raxml-acorg/raxml-i22-avx-pthreads -p 13579 --stop-after-seconds 1 -N 1 -T 32 -s ../source-${k}k.fas -n ${k}k-1s-T32-${HOSTNAME}-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D; printf "T32 S1 ${k}k ${HOSTNAME}\n\n\n=====================================================================================\n\n\n"; done
+***** --stop-after-seconds 1, 16 threads (i22)
+ for k in $(seq 4 11); do /syn/eu/raxml-acorg/raxml-i22-avx-pthreads -p 13579 --stop-after-seconds 1 -N 1 -T 16 -s ../source-${k}k.fas -n ${k}k-1s-T16-${HOSTNAME}-$(date +%m%d-%H%M%S) -m GTRGAMMAI -e 0.001 -o A%28H3N2%29/HAWAII/22/2012__MDCK1 -c 4 -f d --silent --no-seq-check -D; printf "T16 S1 ${k}k ${HOSTNAME}\n\n\n=====================================================================================\n\n\n"; done
+**** H3 5k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
+***** full time --stop-after-seconds 0 no threads
+ i22: 15106s 4.2h 48704
+***** --stop-after-seconds 1 no threads
+ i22: 5222s 1.45h 48774
+**** H3 6k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
+***** full time --stop-after-seconds 0 no threads
+ i22: 
+***** --stop-after-seconds 1 no threads
+ i22: 7176s 2h 55717
+**** H3 7k sequences A%28H3N2%29/HAWAII/22/2012__MDCK1, 
+***** full time --stop-after-seconds 0 no threads
+ i22: 
+***** --stop-after-seconds 1 no threads
+ i22: 9116s 2.53h 61643
+** OLD (before <2019-09-01 Sun>)
+*** On albertine
+**** (2019-04-11)
+  ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli <h1 h3 bv by> [-m <i22, o16>] [--raxml 128] [--garli 1] [--number-of-sequences 4000] [--hamming-distance-threshold 160]
 
- ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h1 --raxml 128 --garli 32
- ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h3 --raxml 128 --garli 32
- ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli bv --raxml 128 --garli 32
- ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli by --raxml 128 --garli 32
+  ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h1 --raxml 128 --garli 32
+  ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli h3 --raxml 128 --garli 32
+  ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli bv --raxml 128 --garli 32
+  ~/AD/sources/acmacs-whocc/bin/make-signature-pages-raxml-1s-garli by --raxml 128 --garli 32
 
- If processing directory exists, program starts again from the last saved state.
- Program sends email on completion or failure.
+  If processing directory exists, program starts again from the last saved state.
+  Program sends email on completion or failure.
 
-*** (2019-04-09)
- ~/AD/sources/acmacs-whocc/bin/make-signature-pages-201904 <h1 h3 bv by> <1s 30m 10h>
+**** (2019-04-09)
+  ~/AD/sources/acmacs-whocc/bin/make-signature-pages-201904 <h1 h3 bv by> <1s 30m 10h>
 
- If processing directory exists, program starts again from the last saved state.
- Program sends email on completion or failure.
+  If processing directory exists, program starts again from the last saved state.
+  Program sends email on completion or failure.
 
-*** Generate pdf with all sig pages
-** Check config
- ~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
+**** Generate pdf with all sig pages
+*** Check config
+  ~/AD/sources/acmacs-whocc/conf/make-signature-pages.config.json
 
-* OLD (before <2018-12-28 Fri>)
-Run on albertine ~/AD/sources/acmacs-whocc/bin/make-signature-pages.before-20181228 -t $(date '+%Y-%m%d')
-* OLD (before <2018-07-16 Mon>)
-** Making tree for the signature page from the WHO CC sequence and HI tables
-*** download sequences from gisaid (see GISAID.md) in put it into ~/ac/tables-store/sequences/gisaid-all-20160101-$(date +%Y%m%d).fas.bz2
-*** make ~/AD/data/seqdb.json.xz (make sure hidb in ~/AD/data/ are up to date), approximate running time: 5 minutes
-         ~/AD/bin/seqdb-update-whocc
-*** mkdir $(date +%Y-%m%d-%H%M), copy seqdb
-         D=$(date +%Y-%m%d-%H%M) && for V in bvic byam h1 h3; do mkdir /syn/eu/ac/results/whocc-tree/$V/$D; cp ~/AD/data/seqdb.json.xz /syn/eu/ac/results/whocc-tree/$V/$D; done
-*** export sequences from ./seqdb.json.xz
-**** base-seq. Use ~/AD/bin/seqdb-list --db ./seqdb.json.xz --re <name> to check, if the name below returns just one seq_id
+** OLD (before <2018-12-28 Fri>)
+ Run on albertine ~/AD/sources/acmacs-whocc/bin/make-signature-pages.before-20181228 -t $(date '+%Y-%m%d')
+** OLD (before <2018-07-16 Mon>)
+*** Making tree for the signature page from the WHO CC sequence and HI tables
+**** download sequences from gisaid (see GISAID.md) in put it into ~/ac/tables-store/sequences/gisaid-all-20160101-$(date +%Y%m%d).fas.bz2
+**** make ~/AD/data/seqdb.json.xz (make sure hidb in ~/AD/data/ are up to date), approximate running time: 5 minutes
+          ~/AD/bin/seqdb-update-whocc
+**** mkdir $(date +%Y-%m%d-%H%M), copy seqdb
+          D=$(date +%Y-%m%d-%H%M) && for V in bvic byam h1 h3; do mkdir /syn/eu/ac/results/whocc-tree/$V/$D; cp ~/AD/data/seqdb.json.xz /syn/eu/ac/results/whocc-tree/$V/$D; done
+**** export sequences from ./seqdb.json.xz
+***** base-seq. Use ~/AD/bin/seqdb-list --db ./seqdb.json.xz --re <name> to check, if the name below returns just one seq_id
 
-         BVIC: "VICTORIA/830/2013 MDCK2"
-         BYAM: "B/CHRISTCHURCH/503/2013 MDCK1" (since 2017-0214) "B/PHUKET/3073/2013 E4/E3" # "CAMBODIA/FSS29374/2014 MDCK1"
-         H3:   "HAWAII/22/2012 MDCK"
-         H1:   "SWITZERLAND/9772556/2013 SIAT2"
-**** start-date
-         H3: 20150301 (6686 sequences)
-**** recent 4000
-**** export command
-         env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu $VIRUS_TYPE --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq $BASE_SEQ $WORKING_DIR/source.fas
+          BVIC: "VICTORIA/830/2013 MDCK2"
+          BYAM: "B/CHRISTCHURCH/503/2013 MDCK1" (since 2017-0214) "B/PHUKET/3073/2013 E4/E3" # "CAMBODIA/FSS29374/2014 MDCK1"
+          H3:   "HAWAII/22/2012 MDCK"
+          H1:   "SWITZERLAND/9772556/2013 SIAT2"
+***** start-date
+          H3: 20150301 (6686 sequences)
+***** recent 4000
+***** export command
+          env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu $VIRUS_TYPE --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq $BASE_SEQ $WORKING_DIR/source.fas
 
-         env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu h3 --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "HAWAII/22/2012 MDCK" source.fas
-         env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu h1 --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "SWITZERLAND/9772556/2013 SIAT2" source.fas
-         env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu bvic --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "VICTORIA/830/2013 MDCK2" source.fas
-         env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu byam --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "B/CHRISTCHURCH/503/2013 MDCK1" source.fas
-*** Initilialize tree maker
-         env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/tree-maker init
-*** Edit $WORKING_DIR/tree-maker.config
-*** Submit tree maker and wait for completion
-         env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/tree-maker wait
-** Drawing tree
-*** Init settings
-         ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz --init-settings tree.settings.json tree.json.xz /tmp/tree.pdf && open /tmp/tree.pdf
-*** Edit settings in tree.settings.json
-*** Generate pdf with the tree
-         ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz -s tree.settings.json tree.json.xz tree.pdf && open tree.pdf
-** Signature page
-*** Init settings
-         ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz --chart <chart.sdb> --init-settings sigp.settings.json tree.json.xz /tmp/sigp.pdf && open /tmp/sigp.pdf
-*** Edit settings in sigp.settings.json
-*** Generate pdf with the signature page
-         ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz --chart <chart.sdb> -s sigp.settings.json tree.json.xz sigp.pdf && open sigp.pdf
+          env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu h3 --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "HAWAII/22/2012 MDCK" source.fas
+          env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu h1 --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "SWITZERLAND/9772556/2013 SIAT2" source.fas
+          env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu bvic --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "VICTORIA/830/2013 MDCK2" source.fas
+          env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/seqdb-export --db ./seqdb.json.xz --flu byam --recent 4000 --hamming-distance-threshold 160 --tree-maker --base-seq "B/CHRISTCHURCH/503/2013 MDCK1" source.fas
+**** Initilialize tree maker
+          env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/tree-maker init
+**** Edit $WORKING_DIR/tree-maker.config
+**** Submit tree maker and wait for completion
+          env LD_LIBRARY_PATH=$HOME/AD/lib ~/AD/bin/tree-maker wait
+*** Drawing tree
+**** Init settings
+          ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz --init-settings tree.settings.json tree.json.xz /tmp/tree.pdf && open /tmp/tree.pdf
+**** Edit settings in tree.settings.json
+**** Generate pdf with the tree
+          ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz -s tree.settings.json tree.json.xz tree.pdf && open tree.pdf
+*** Signature page
+**** Init settings
+          ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz --chart <chart.sdb> --init-settings sigp.settings.json tree.json.xz /tmp/sigp.pdf && open /tmp/sigp.pdf
+**** Edit settings in sigp.settings.json
+**** Generate pdf with the signature page
+          ~/AD/bin/sigp --seqdb ~/AD/data/seqdb.json.xz --chart <chart.sdb> -s sigp.settings.json tree.json.xz sigp.pdf && open sigp.pdf
 
- # ======================================================================
- ### Local Variables:
- ### eval: (add-hook 'before-save-hook 'time-stamp)
- ### End:
+  # ======================================================================
+  ### Local Variables:
+  ### eval: (add-hook 'before-save-hook 'time-stamp)
+  ### End:
