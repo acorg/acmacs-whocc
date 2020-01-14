@@ -12,6 +12,7 @@ def h1_overlay_relax(sources : [Path], target : Path, log_file=None):
 # ----------------------------------------------------------------------
 
 def h1_overlay(sources : [Path], target : Path, log_file=None):
+    module_logger.info(f"Log file: {log_file}")
     cmd = [os.path.expandvars("${ACMACSD_ROOT}/bin/chart-merge"),
            "-o", target,
            "-m", "overlay",
