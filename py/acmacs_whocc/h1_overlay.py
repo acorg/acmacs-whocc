@@ -17,7 +17,8 @@ def h1_overlay(sources : [Path], target : Path, log_file=None):
            "-m", "overlay",
            "--duplicates-distinct",
            ] + sources
-    subprocess.check_call([str(field) for field in cmd], stdout=_log(log_file), stderr=subprocess.STDOUT)
+    cmd = [str(field) for field in cmd]
+    subprocess.check_call(cmd, stdout=_log(log_file), stderr=subprocess.STDOUT)
 
 # ----------------------------------------------------------------------
 
