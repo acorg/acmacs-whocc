@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/string.hh"
 #include "acmacs-base/string-split.hh"
@@ -22,17 +20,19 @@ struct AntigenData
     acmacs::seqdb::ref antigen_seqdb;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const AntigenData& ag)
-{
-    out << ag.no << ' ' << *ag.antigen_chart;
-    if (ag.antigen_hidb)
-        hidb::report_tables(out, *ag.hidb, ag.antigen_hidb->tables(), hidb::report_tables::recent, "\n    ");
-    if (ag.antigen_seqdb) {
-        if (const auto& clades = ag.antigen_seqdb.seq().clades; !clades.empty())
-            out << "\n    clades: " << clades;
+template <> struct fmt::formatter<AntigenData> : fmt::formatter<acmacs::fmt_default_formatter> {
+    template <typename FormatCtx> auto format(const AntigenData& ag, FormatCtx& ctx)
+    {
+        format_to(ctx.out(), "{} {}", ag.no, *ag.antigen_chart);
+        if (ag.antigen_hidb)
+            hidb::report_tables(std::cout, *ag.hidb, ag.antigen_hidb->tables(), hidb::report_tables::recent, "\n    ");
+        if (ag.antigen_seqdb) {
+            if (const auto& clades = ag.antigen_seqdb.seq().clades; !clades.empty())
+                format_to(ctx.out(), "\n    clades: {}", clades);
+        }
+        return ctx.out();
     }
-    return out;
-}
+};
 
 // ----------------------------------------------------------------------
 
@@ -91,23 +91,23 @@ int main(int argc, char* const argv[])
             });
         }
         for (const auto& ad : antigens) {
-            std::cout << ad << '\n';
+            fmt::print("{}\n", ad);
             if (!report_aa_at_pos.empty()) {
                 const auto aa = ad.antigen_seqdb.seq().amino_acids.aligned();
-                std::cout << "   ";
+                fmt::print("   ");
                 for (auto pos : report_aa_at_pos) {
-                    std::cout << ' ' << pos;
+                    fmt::print(" {}", pos);
                     if (aa.size() >= pos)
-                        std::cout << aa[pos - 1];
+                        fmt::print("{}", aa[pos - 1]);
                     else
-                        std::cout << '?';
+                        fmt::print("?");
                 }
-                std::cout << '\n';
+                fmt::print("\n");
             }
         }
     }
     catch (std::exception& err) {
-        std::cerr << "ERROR: " << err.what() << '\n';
+        fmt::print(stderr, "ERROR: {}\n", err);
         exit_code = 2;
     }
     return exit_code;
