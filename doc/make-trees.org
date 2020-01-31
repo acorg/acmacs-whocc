@@ -1,4 +1,4 @@
-# Time-stamp: <2020-01-24 14:27:38 eu>
+# Time-stamp: <2020-01-30 16:33:10 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
 * [2019-12-02 Mon] raxml-ng
 https://github.com/amkozlov/raxml-ng/releases
@@ -13,6 +13,10 @@ make-trees h3
 make-trees "h1 h3"
 
 * Before 2019-12 Albertine
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+
 ** mkdir
 D=$(date +%Y-%m%d); mkdir /syn/eu/ac/results/signature-pages/${D} && cd /syn/eu/ac/results/signature-pages/${D} && cp ~/AD/data/seqdb.json.xz . && mkdir h1 h3 bv by
 
