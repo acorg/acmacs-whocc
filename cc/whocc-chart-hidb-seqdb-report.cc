@@ -72,7 +72,7 @@ int main(int argc, char* const argv[])
             return {index, &hidb, antigens_chart->at(index), hidb_antigens[index], seqdb_antigens[index]};
         });
         if (opt.clade)
-            antigens.erase(std::remove_if(antigens.begin(), antigens.end(), [clade = *opt.clade](const auto& ag) -> bool { return !ag.antigen_seqdb || !ag.antigen_seqdb.seq().has_clade(clade); }),
+            antigens.erase(std::remove_if(antigens.begin(), antigens.end(), [&seqdb, clade = *opt.clade](const auto& ag) -> bool { return !ag.antigen_seqdb || !ag.antigen_seqdb.has_clade(seqdb, clade); }),
                            antigens.end());
         std::cerr << "INFO: " << antigens.size() << " antigens upon filtering\n";
         if (opt.sort_by_tables) {
