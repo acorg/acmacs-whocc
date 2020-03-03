@@ -8,6 +8,7 @@ TARGETS = \
   $(DIST)/whocc-chart-hidb-seqdb-report \
   $(DIST)/whocc-melb-serum-id \
   $(DIST)/whocc-sera-of-chart \
+  $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines
 
 # ----------------------------------------------------------------------
