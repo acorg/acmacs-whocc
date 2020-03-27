@@ -44,7 +44,10 @@ def main(args):
             target = target_dir.joinpath(stem + ".ace")
             if not target.exists() or target.stat().st_mtime < source.stat().st_mtime:
                 print(time.ctime(target.stat().st_mtime) if target.exists() else "                        ", '<', time.ctime(source.stat().st_mtime), target)
-                subprocess.run("{acmacs_env} python3 $HOME/ac/acmacs/bin/convert.py -q '{source}' '{target}'".format(acmacs_env=acmacs_env(), source=source, target=target), shell=True, check=True)
+                if source.name.endswith("acd1.bz2") or source.name.endswith("acd1.xz"):
+                    subprocess.run("$HOME/AD/bin/chart-convert '{source}' '{target}'".format(source=source, target=target), shell=True, stdout=subprocess.DEVNULL, check=True)
+                else:
+                    subprocess.run("{acmacs_env} python3 $HOME/ac/acmacs/bin/convert.py -q '{source}' '{target}'".format(acmacs_env=acmacs_env(), source=source, target=target), shell=True, check=True)
 
 # ----------------------------------------------------------------------
 
