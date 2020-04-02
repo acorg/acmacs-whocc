@@ -61,7 +61,7 @@ class AntigenSerumData
 struct CellParameters
 {
     CellParameters(size_t aNumberOfTables, size_t aNumberOfTiters)
-        : cell_top_title_height(1.3), hstep(aNumberOfTables + 2.0), vstep(hstep), voffset_base(0.1), voffset_per_level((vstep - voffset_base * 2 - cell_top_title_height) / (aNumberOfTiters - 1)) {}
+        : cell_top_title_height(1.3), hstep(static_cast<double>(aNumberOfTables) + 2.0), vstep(hstep), voffset_base(0.1), voffset_per_level((vstep - voffset_base * 2 - cell_top_title_height) / static_cast<double>(aNumberOfTiters - 1)) {}
 
     double cell_top_title_height;
     double hstep;
@@ -441,21 +441,21 @@ void ChartData::plot(std::string_view output_filename, bool for_ref_in_last_tabl
 
     const acmacs::Viewport cell_viewport{acmacs::Size{cell_parameters.hstep, cell_parameters.vstep}};
 
-    acmacs::surface::PdfCairo surface(std::string(output_filename), ns * cell_parameters.hstep, na * cell_parameters.vstep + title_height, ns * cell_parameters.hstep);
+    acmacs::surface::PdfCairo surface(std::string(output_filename), static_cast<double>(ns) * cell_parameters.hstep, static_cast<double>(na) * cell_parameters.vstep + title_height, static_cast<double>(ns) * cell_parameters.hstep);
 
     std::string title;
     if (for_ref_in_last_table_only)
         title = mLab + " " + mVirusType + " " + mAssay + " " + mLastDate + "  previous tables:" + std::to_string(number_of_tables() - first_table_no() - 1) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
     else
         title = mLab + " " + mVirusType + " " + mAssay + " " + mFirstDate + "-" + mLastDate + "  tables:" + std::to_string(number_of_tables() - first_table_no()) + " sera:" + std::to_string(ns) + " antigens:" + std::to_string(na);
-    text(surface, {title_height, title_height * 0.7}, title, BLACK, NoRotation, title_height * 0.8, ns * cell_parameters.hstep - title_height * 2);
+    text(surface, {title_height, title_height * 0.7}, title, BLACK, NoRotation, title_height * 0.8, static_cast<double>(ns) * cell_parameters.hstep - title_height * 2);
 
     const auto first_tab_no = first_table_no();
     for (size_t antigen_no = 0, enabled_antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         if (mAntigens[antigen_no].enabled) {
             for (size_t serum_no = 0, enabled_serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
                 if (mSera[serum_no].enabled) {
-                    acmacs::surface::Surface& cell = surface.subsurface({enabled_serum_no * cell_parameters.hstep, enabled_antigen_no * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
+                    acmacs::surface::Surface& cell = surface.subsurface({static_cast<double>(enabled_serum_no) * cell_parameters.hstep, static_cast<double>(enabled_antigen_no) * cell_parameters.vstep + title_height}, Scaled{cell_parameters.hstep}, cell_viewport, true);
                       //plot_antigen_serum_cell(antigen_no, serum_no, cell, cell_parameters, first_tab_no);
                     plot_antigen_serum_cell_with_fixed_titer_range(antigen_no, serum_no, cell, cell_parameters, first_tab_no);
                     ++enabled_serum_no;
@@ -481,7 +481,7 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acma
     text(aCell, {aParameters.cell_top_title_height, aParameters.vstep - aParameters.voffset_base}, mAntigens[antigen_no], BLACK, Rotation{-M_PI_2}, aParameters.cell_top_title_height, (aParameters.vstep - aParameters.voffset_base * 1.5));
       // titer value marks
     for (const auto& element: mTiterLevel) {
-        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + element.second * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, *element.first, BLACK, Scaled{aParameters.cell_top_title_height / 2});
+        aCell.text({aParameters.hstep - aParameters.cell_top_title_height * 2, aParameters.cell_top_title_height + aParameters.voffset_base + static_cast<double>(element.second) * aParameters.voffset_per_level + aParameters.voffset_per_level * 0.5}, *element.first, BLACK, Scaled{aParameters.cell_top_title_height / 2});
     }
 
     double table_no = 2 - static_cast<int>(first_tab_no);
@@ -515,7 +515,7 @@ void ChartData::plot_antigen_serum_cell(size_t antigen_no, size_t serum_no, acma
 
 void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no, size_t serum_no, acmacs::surface::Surface& aCell, const CellParameters& aParameters, size_t first_tab_no)
 {
-    const double logged_titer_step = (aParameters.vstep - aParameters.voffset_base - aParameters.cell_top_title_height) / mYAxisLabels.size();
+    const double logged_titer_step = (aParameters.vstep - aParameters.voffset_base - aParameters.cell_top_title_height) / static_cast<double>(mYAxisLabels.size());
 
     const acmacs::Viewport& cell_v = aCell.viewport();
     if (std::find(mSera[serum_no].homologous.begin(), mSera[serum_no].homologous.end(), antigen_no) != mSera[serum_no].homologous.end())
@@ -532,7 +532,7 @@ void ChartData::plot_antigen_serum_cell_with_fixed_titer_range(size_t antigen_no
     for (const auto& titer_label: mYAxisLabels) {
         aCell.text_right_aligned({aParameters.hstep - aParameters.cell_top_title_height * 0.2,
                           // aParameters.cell_top_title_height + aParameters.voffset_base + titer_label_vpos * logged_titer_step + logged_titer_step * 0.5},
-                        aParameters.vstep - aParameters.voffset_base - titer_label_vpos * logged_titer_step - logged_titer_step * 0.5 + titer_label_font_size * 0.3},
+                aParameters.vstep - aParameters.voffset_base - static_cast<double>(titer_label_vpos) * logged_titer_step - logged_titer_step * 0.5 + titer_label_font_size * 0.3},
                    titer_label, BLACK, Scaled{titer_label_font_size});
         ++titer_label_vpos;
     }

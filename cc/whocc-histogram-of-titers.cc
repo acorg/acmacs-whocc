@@ -117,13 +117,13 @@ void TiterData::histogram(std::string_view filename)
 
     surface.line({left, padding}, {left, bottom}, BLACK, Pixels{1});
     for (size_t y_check_mark = 0; y_check_mark < y_num_check_marks; ++y_check_mark) {
-        const double mark_y = bottom - (y_check_mark + 1) * y_mark_step;
+        const double mark_y = bottom - static_cast<double>(y_check_mark + 1) * y_mark_step;
         surface.line({left - mark_size, mark_y}, {left, mark_y}, BLACK, Pixels{1});
-        surface.text_right_aligned({left - mark_size, mark_y + font_size / 2}, std::to_string(size_t(double(max_y) / double(y_num_check_marks) * (y_check_mark + 1))), BLACK, Pixels{font_size});
+        surface.text_right_aligned({left - mark_size, mark_y + font_size / 2}, std::to_string(size_t(double(max_y) / double(y_num_check_marks) * static_cast<double>(y_check_mark + 1))), BLACK, Pixels{font_size});
     }
 
       // const size_t x_num_check_marks = mTiters.size();
-    const double x_mark_step = (right - left) / mTiters.size();
+                const double x_mark_step = (right - left) / static_cast<double>(mTiters.size());
     surface.line({left, bottom}, {right, bottom}, BLACK, Pixels{1});
     size_t x_check_mark = 0;
     double label_font_size = font_size;
@@ -132,7 +132,7 @@ void TiterData::histogram(std::string_view filename)
         label_font_size *= x_mark_step / longest_label_width; // * 0.9;
     }
     for (const auto& entry: mTiters) {
-        const double bar_left = left + x_check_mark * x_mark_step; //, bar_right = bar_left + x_mark_step;
+        const double bar_left = left + static_cast<double>(x_check_mark) * x_mark_step; //, bar_right = bar_left + x_mark_step;
         const double bar_height = double(entry.second) / double(max_y) * (bottom - top);
         double label_width = surface.text_size(*entry.first, Pixels{label_font_size}).width;
         surface.text({bar_left + 0.5 * x_mark_step - label_width / 2, bottom + label_font_size * 1.5}, *entry.first, BLACK, Pixels{label_font_size});
