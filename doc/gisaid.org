@@ -1,7 +1,8 @@
-Time-stamp: <2020-01-03 17:23:31 eu>
+Time-stamp: <2020-04-02 18:35:59 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 ls -l ~/ac/sequences-2019/gis*.fas.xz
-* visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
+
+* [[https://platform.gisaid.org/epi3/start][GISAID]]
 ** SUBMISSION date (see last date in ~/ac/sequences-2019/)
 ** Required Segments: HA (checkbox at the left of HA)
 ** Click Search
@@ -9,13 +10,25 @@ ls -l ~/ac/sequences-2019/gis*.fas.xz
 ** Click Download
 ** Format: Sequences (DNA) as FASTA (second radio button)
 ** DNA: HA (checkbox to the left from HA)
-** FASTA Header: 
+** FASTA Header:
 Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e=Collection date_|_f=Submitter_|_g=Sample ID by sample provider_|_h=Sample ID by submitting lab_|_i=Last modified_|_j=Originating lab_|_k=Submitting lab_|_l=Segment_|_m=Segment number_|_n=Identifier_|_o=DNA Accession no._|_p=DNA INSDC_|_
 -- FASTA header field is max 350 chars, has to use abbreviated field names
 ** FASTA Header: Isolate name | Isolate ID | Type | Passage details/history | Lineage | Collection date | Submitter | Sample ID by sample provider | Sample ID by submitting lab | Last modified | Originating lab | Submitting lab | Segment | Segment number | Identifier | DNA Accession no. | DNA INSDC
 ** Date format: YYYY-MM-DD
 ** Click download
 
+
+* [[https://www.ncbi.nlm.nih.gov/genomes/FLU/Database/nph-select.cgi?go=database][NCBI]]
+- Select sequence type: Nucleotide
+- Segment: HA
+
+wget --recursive --relative --level=1 --cut-dirs=3 --no-directories --no-parent -nH -e robots=off -R "index.html*" https://ftp.ncbi.nih.gov/genomes/INFLUENZA/updates/2020-04-02/
+
+~albertine~ --> ~270Mb 2min
+#+BEGIN_SRC bash
+mkdir cd /syn/eu/ac/ncbi/$(date +%Y-%m%d) && cd /syn/eu/ac/ncbi/$(date +%Y-%m%d) &&
+for f in README genomeset.dat.gz influenza.cds.gz influenza.dat.gz influenza.faa.gz influenza.fna.gz influenza_aa.dat.gz influenza_na.dat.gz; do wget https://ftp.ncbi.nih.gov/genomes/INFLUENZA/$f; done
+#+END_SRC
 
 * Check downloaded fasta
 

@@ -7,6 +7,7 @@
 #include "acmacs-base/named-type.hh"
 #include "acmacs-base/string.hh"
 #include "acmacs-base/string-split.hh"
+#include "acmacs-base/filesystem.hh"
 #include "acmacs-base/read-file.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/factory-export.hh"
@@ -192,7 +193,7 @@ class FixSerumIds
             if (const auto pathname = entry.path(); entry.is_regular_file() && is_acmacs_file(pathname)) {
                 acmacs::chart::ChartModify chart(acmacs::chart::import_from_file(pathname));
                 if (fix_in_chart(chart)) {
-                    acmacs::file::backup(pathname, acmacs::file::backup_move::yes);
+                    acmacs::file::backup(pathname.native(), acmacs::file::backup_move::yes);
                     acmacs::chart::export_factory(chart, make_export_filename(pathname), program_name_, report_time::no);
                     ++fixed_charts;
                 }
