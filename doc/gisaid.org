@@ -1,4 +1,4 @@
-Time-stamp: <2020-04-02 18:35:59 eu>
+Time-stamp: <2020-04-06 14:47:15 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 ls -l ~/ac/sequences-2019/gis*.fas.xz
 
@@ -22,13 +22,38 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 - Select sequence type: Nucleotide
 - Segment: HA
 
+~albertine~ --> 27m 23Mb
+~/bin/ncbi-get
+
+** ncbi-get
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+
+#+BEGIN_SRC bash ~/bin/ncbi-get
+#! /bin/bash
+TODAY=$(date +%Y-%m%d)
+OUTPUT_DIR="/syn/eu/ac/ncbi/${TODAY}"
+URI="https://ftp.ncbi.nih.gov/genomes/INFLUENZA"
+
+function failed { exit 1; }
+trap failed ERR
+
+mkdir -p "${OUTPUT_DIR}"
+cd "${OUTPUT_DIR}"
+curl -s -O "${URI}/README"
+# genomeset.dat.gz influenza.cds.gz influenza.dat.gz influenza.faa.gz influenza.fna.gz influenza_aa.dat.gz influenza_na.dat.gz
+for filename in influenza.fna.gz influenza_na.dat.gz; do
+    echo "${filename}"
+    curl -s "${URI}/${filename}" | gzip -cd | xz -9e >"$(basename ${filename} .gz).xz"
+done
+realpath .
+ls -l
+du -sh .
+#+END_SRC
+
 wget --recursive --relative --level=1 --cut-dirs=3 --no-directories --no-parent -nH -e robots=off -R "index.html*" https://ftp.ncbi.nih.gov/genomes/INFLUENZA/updates/2020-04-02/
 
-~albertine~ --> ~270Mb 2min
-#+BEGIN_SRC bash
-mkdir cd /syn/eu/ac/ncbi/$(date +%Y-%m%d) && cd /syn/eu/ac/ncbi/$(date +%Y-%m%d) &&
-for f in README genomeset.dat.gz influenza.cds.gz influenza.dat.gz influenza.faa.gz influenza.fna.gz influenza_aa.dat.gz influenza_na.dat.gz; do wget https://ftp.ncbi.nih.gov/genomes/INFLUENZA/$f; done
-#+END_SRC
 
 * Check downloaded fasta
 
