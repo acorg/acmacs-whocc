@@ -153,7 +153,7 @@ class SerumIds
             return SerumIdRoot(serum_id);
     }
 
-    static inline std::string make_name(EntryPtr ptr) { return acmacs::string::join({std::get<Name>(*ptr), std::get<Reassortant>(*ptr), acmacs::string::join(" ", std::get<Annotations>(*ptr))}); }
+    static inline std::string make_name(EntryPtr ptr) { return acmacs::string::join(" ", std::get<Name>(*ptr), std::get<Reassortant>(*ptr), acmacs::string::join(" ", std::get<Annotations>(*ptr))); }
 
     static inline std::vector<std::string> tables(EntryPtr first, EntryPtr last, bool assay, bool rbc)
     {
