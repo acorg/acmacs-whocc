@@ -153,7 +153,7 @@ class SerumIds
             return SerumIdRoot(serum_id);
     }
 
-    static inline std::string make_name(EntryPtr ptr) { return acmacs::string::join(" ", std::get<Name>(*ptr), std::get<Reassortant>(*ptr), acmacs::string::join(" ", std::get<Annotations>(*ptr))); }
+    static inline std::string make_name(EntryPtr ptr) { return acmacs::string::join(acmacs::string::join_space, std::get<Name>(*ptr), std::get<Reassortant>(*ptr), acmacs::string::join(acmacs::string::join_space, std::get<Annotations>(*ptr))); }
 
     static inline std::vector<std::string> tables(EntryPtr first, EntryPtr last, bool assay, bool rbc)
     {
@@ -165,7 +165,7 @@ class SerumIds
             if (rbc)
                 fields.push_back(*std::get<acmacs::chart::RbcSpecies>(entry));
             fields.push_back(*std::get<acmacs::chart::TableDate>(entry));
-            return acmacs::string::join(":", fields);
+            return acmacs::string::join(acmacs::string::join_colon, fields);
         });
         std::reverse(tables.begin(), tables.end());
         return tables;
@@ -215,7 +215,7 @@ class FixSerumIds
             const auto sid = serum.serum_id();
             for (const auto& fix : data_) {
                 if (sid == acmacs::chart::SerumId{fix.first}) {
-                    std::cout << fmt::format("{} FIX {} {} {} {} --> {}\n", chart.info()->make_name(), serum.name(), serum.reassortant(), acmacs::string::join(" ", serum.annotations()), serum.serum_id(), fix.second);
+                    std::cout << fmt::format("{} FIX {} {} {} {} --> {}\n", chart.info()->make_name(), serum.name(), serum.reassortant(), acmacs::string::join(acmacs::string::join_space, serum.annotations()), serum.serum_id(), fix.second);
                     serum.serum_id(acmacs::chart::SerumId{fix.second});
                     modified = true;
                     break;
