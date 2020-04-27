@@ -1,4 +1,4 @@
-Time-stamp: <2020-04-06 14:47:15 eu>
+Time-stamp: <2020-04-27 12:39:39 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 ls -l ~/ac/sequences-2019/gis*.fas.xz
 
@@ -22,8 +22,10 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 - Select sequence type: Nucleotide
 - Segment: HA
 
-~albertine~ --> 27m 23Mb
+~albertine~ --> ~13m 23Mb
 ~/bin/ncbi-get
+
+cd ~/ac/sequences-2019/ncbi/ && scp -q i19:/syn/eu/ac/ncbi/$(date '+%Y-%m%d')/\* . && ls -la 
 
 ** ncbi-get
 :PROPERTIES:
@@ -60,15 +62,15 @@ wget --recursive --relative --level=1 --cut-dirs=3 --no-directories --no-parent 
 #+BEGIN_SRC bash
 dos2unix /d/gisaid_epiflu_sequence.fasta
 ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
-seqdb3-scan -v --gisaid --all-subtypes-messages --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
+seqdb3-scan -v --gisaid --all-subtypes-messages -m --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
 * Install into ~/ac/sequences-2019/
 xz -9ecv /d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid- .fas.xz
 
 * generate seqdb
-[[elisp:(eu-process "make-seqdb" "make-seqdb -H")][make-seqdb -H]]
-[[elisp:(eu-process "make-seqdb" "make-seqdb")][make-seqdb]]
+[[elisp:(eu-process "make-seqdb -H")][make-seqdb -H]]
+[[elisp:(eu-process "make-seqdb")][make-seqdb]]
 [[elisp:(eu-process "locations-distribute" "~/ac/acmacs/scripts/locations-distribute")][locations-distribute]]
 
 * OLD before 2019-08-26
