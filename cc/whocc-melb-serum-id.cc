@@ -13,6 +13,7 @@
 #include "acmacs-chart-2/factory-export.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/chart-modify.hh"
+#include "acmacs-whocc-data/labs.hh"
 
 // ----------------------------------------------------------------------
 
@@ -143,7 +144,7 @@ class SerumIds
     SerumIdRoot serum_id_root(const SerumEntry& serum, const TableEntry& table) const
     {
         const auto& serum_id = std::get<SerumId>(serum);
-        if (std::get<acmacs::chart::Lab>(table) == acmacs::chart::Lab{"MELB"}) {
+        if (std::get<acmacs::chart::Lab>(table) == acmacs::whocc::MELB) {
             if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R' || serum_id[0] == 'A') && serum_id[5] == '-' && serum_id->back() == 'D')
                 return SerumIdRoot(serum_id->substr(0, 5));
             else
