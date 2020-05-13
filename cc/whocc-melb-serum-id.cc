@@ -38,8 +38,8 @@ class SerumIds
     using SerumId = acmacs::chart::SerumId;
     using SerumIdRoot = acmacs::named_string_t<struct SerumIdRootTag>;
     using SerumEntry = std::tuple<Name, Reassortant, Annotations, SerumId, Passage>;
-    using TableEntry = std::tuple<acmacs::virus::type_subtype_t, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate>;
-    using Entry = std::tuple<SerumIdRoot, SerumId, Name, Reassortant, Annotations, acmacs::virus::type_subtype_t, acmacs::chart::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies,
+    using TableEntry = std::tuple<acmacs::virus::type_subtype_t, acmacs::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies, acmacs::chart::TableDate>;
+    using Entry = std::tuple<SerumIdRoot, SerumId, Name, Reassortant, Annotations, acmacs::virus::type_subtype_t, acmacs::Lab, acmacs::chart::Assay, acmacs::chart::RbcSpecies,
                              acmacs::chart::TableDate, Passage>;
     using Entries = std::vector<Entry>;
     using EntryPtr = typename Entries::const_iterator;
@@ -116,7 +116,7 @@ class SerumIds
     void add(const SerumEntry& serum, const TableEntry& table)
     {
         data_.emplace_back(serum_id_root(serum, table), std::get<SerumId>(serum), std::get<Name>(serum), std::get<Reassortant>(serum), std::get<Annotations>(serum),
-                           std::get<acmacs::virus::type_subtype_t>(table), std::get<acmacs::chart::Lab>(table), std::get<acmacs::chart::Assay>(table), std::get<acmacs::chart::RbcSpecies>(table),
+                           std::get<acmacs::virus::type_subtype_t>(table), std::get<acmacs::Lab>(table), std::get<acmacs::chart::Assay>(table), std::get<acmacs::chart::RbcSpecies>(table),
                            std::get<acmacs::chart::TableDate>(table), std::get<Passage>(serum));
     }
 
@@ -144,7 +144,7 @@ class SerumIds
     SerumIdRoot serum_id_root(const SerumEntry& serum, const TableEntry& table) const
     {
         const auto& serum_id = std::get<SerumId>(serum);
-        if (std::get<acmacs::chart::Lab>(table) == acmacs::whocc::MELB) {
+        if (std::get<acmacs::Lab>(table) == acmacs::whocc::MELB) {
             if (serum_id.size() > 6 && (serum_id[0] == 'F' || serum_id[0] == 'R' || serum_id[0] == 'A') && serum_id[5] == '-' && serum_id->back() == 'D')
                 return SerumIdRoot(serum_id->substr(0, 5));
             else
