@@ -58,7 +58,7 @@ int main(int argc, char* const argv[])
     try {
         Options opt(argc, argv);
         acmacs::seqdb::setup(opt.seqdb);
-        const std::vector<size_t> report_aa_at_pos = opt.aa ? acmacs::string::split_into_size_t(*opt.aa, ",") : std::vector<size_t>{};
+        const auto report_aa_at_pos = opt.aa ? acmacs::seqdb::extract_pos1_list(opt.aa) : acmacs::seqdb::pos1_list_t{};
 
         auto chart = acmacs::chart::import_from_file(opt.chart_file);
         const auto virus_type = chart->info()->virus_type(acmacs::chart::Info::Compute::Yes);
@@ -98,7 +98,7 @@ int main(int argc, char* const argv[])
                 for (auto pos : report_aa_at_pos) {
                     fmt::print(" {}", pos);
                     if (aa.size() >= pos)
-                        fmt::print("{}", aa[pos - 1]);
+                        fmt::print("{}", aa.at(pos));
                     else
                         fmt::print("?");
                 }
