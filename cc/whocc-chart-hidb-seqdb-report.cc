@@ -20,7 +20,7 @@ struct AntigenData
     acmacs::seqdb::ref antigen_seqdb;
 };
 
-template <> struct fmt::formatter<AntigenData> : fmt::formatter<acmacs::fmt_default_formatter> {
+template <> struct fmt::formatter<AntigenData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
     template <typename FormatCtx> auto format(const AntigenData& ag, FormatCtx& ctx)
     {
         format_to(ctx.out(), "{} {}", ag.no, *ag.antigen_chart);
