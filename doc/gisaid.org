@@ -1,4 +1,4 @@
-Time-stamp: <2020-06-05 11:24:01 eu>
+Time-stamp: <2020-06-05 12:20:39 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 ls -l ~/ac/sequences-2019/gis*.fas.xz
 
@@ -59,13 +59,20 @@ du -sh .
 wget --recursive --relative --level=1 --cut-dirs=3 --no-directories --no-parent -nH -e robots=off -R "index.html*" https://ftp.ncbi.nih.gov/genomes/INFLUENZA/updates/2020-04-02/
 
 
+** check ncbi
+
+#+BEGIN_SRC bash
+seqdb3-scan --ncbi ~/ac/sequences-2019/ncbi
+#+END_SRC
+
+
 * Check downloaded fasta
 
 #+BEGIN_SRC bash
 dos2unix /d/gisaid_epiflu_sequence.fasta
 (query-replace "\n3" " 3") - fix broken names for Serbian lab
 helm-x whocc-hidb5-update --> ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
-seqdb3-scan -v --gisaid --all-subtypes-messages -m --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
+seqdb3-scan --gisaid --all-subtypes-messages -m --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
 * Install into ~/ac/sequences-2019/
