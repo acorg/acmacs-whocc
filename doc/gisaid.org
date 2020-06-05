@@ -1,4 +1,4 @@
-Time-stamp: <2020-04-27 12:39:39 eu>
+Time-stamp: <2020-06-05 11:24:01 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 ls -l ~/ac/sequences-2019/gis*.fas.xz
 
@@ -21,6 +21,8 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 * [[https://www.ncbi.nlm.nih.gov/genomes/FLU/Database/nph-select.cgi?go=database][NCBI]]
 - Select sequence type: Nucleotide
 - Segment: HA
+
+** helm-x ncbi-get
 
 ~albertine~ --> ~13m 23Mb
 ~/bin/ncbi-get
@@ -61,7 +63,8 @@ wget --recursive --relative --level=1 --cut-dirs=3 --no-directories --no-parent 
 
 #+BEGIN_SRC bash
 dos2unix /d/gisaid_epiflu_sequence.fasta
-ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
+(query-replace "\n3" " 3") - fix broken names for Serbian lab
+helm-x whocc-hidb5-update --> ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
 seqdb3-scan -v --gisaid --all-subtypes-messages -m --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
