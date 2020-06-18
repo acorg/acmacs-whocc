@@ -42,20 +42,49 @@ sMinColBasisConvert = {
     None: "none",
     }
 
+sMergesToGet = set([
+    "CDC  A(H1N1)2009PDM HI",
+    "MELB A(H1N1)2009PDM HI",
+    "NIID A(H1N1)2009PDM HI",
+    # "NIMR A(H1N1)2009PDM HI",                 # custom
+    "CDC  A(H3N2)        FOCUS REDUCTION",
+    # "MELB A(H3N2)        FOCUS REDUCTION",    # custom
+    # "MELB A(H3N2)        HI",                 # custom
+    "NIID A(H3N2)        FOCUS REDUCTION",
+    "NIMR A(H3N2)        HI",
+    # NIMR Neut custom
+    "CDC  BV             HI",
+    "MELB BV             HI",
+    "NIID BV             HI",
+    # "NIMR BV             HI",                 # custom
+    "CDC  BY             HI",
+    "MELB BY             HI",
+    "NIID BY             HI",
+    "NIMR BY             HI",
+])
+
 # ----------------------------------------------------------------------
 
 def get_recent_merges(target_dir :Path, subtype=None, lab=None):
     if subtype is not None:
-        response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=sFixSubtype.get(subtype.upper(), subtype.upper()), labs = [lab.upper()] if lab else None)
+
+        def vt(en):
+            if en["virus_type"] == "B":
+                return f"""{en["virus_type"]}{en["lineage"][0]}"""
+            else:
+                return en["virus_type"]
+
+        subtype = subtype.upper()
+        response = api().command(C="ad_whocc_recent_merges", log=False, virus_types=sFixSubtype.get(subtype, subtype), labs=[lab.upper()] if lab else None)
         if "data" not in response:
             module_logger.error("No \"data\" in response of ad_whocc_recent_merges api command:\n{}".format(pprint.pformat(response)))
             raise RuntimeError("Unexpected result of ad_whocc_recent_merges c2 api command")
         response = response['data']
         response.sort(key=lambda e: "{lab:4s} {virus_type:10s} {assay}".format(**e))
         # module_logger.info(f"\n{pprint.pformat(response)}")
-        module_logger.info('WHO CC recent merges\n{}'.format("\n".join("{lab:4s} {virus_type:14s} {assay:31s} {minimum_column_basis}  {chart_id}  {mtime}".format(**e, mtime=datetime.datetime.fromisoformat(e["m"])) for e in response)))
+        print("\n".join("{lab:4s} {vt:14s} {assay:31s} {minimum_column_basis}  {chart_id}  {mtime}".format(**e, vt=vt(e), mtime=datetime.datetime.fromisoformat(e["m"])) for e in response), file=sys.stderr)
         for entry in response:
-            if entry["lab"] != "CNIC" and not (entry["lab"] == "NIID" and entry["virus_type"] == "A(H3N2)" and entry["assay"] == "HI"):
+            if f"""{entry["lab"]:4s} {vt(entry):14s} {entry["assay"]}""" in sMergesToGet:
                 basename = f"{entry['lab'].lower()}-{subtype.lower()}-{sAssayConvert[entry['assay']].lower()}.chain-{sMinColBasisConvert[entry['minimum_column_basis']]}"
                 filename = target_dir.joinpath(f"{basename}.ace")
                 mtime = datetime.datetime.fromisoformat(entry["m"]) + datetime.timedelta(hours=1)
