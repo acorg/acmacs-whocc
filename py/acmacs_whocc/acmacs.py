@@ -49,7 +49,7 @@ sMergesToGet = set([
     # "NIMR A(H1N1)2009PDM HI",                 # custom
     "CDC  A(H3N2)        FOCUS REDUCTION",
     # "MELB A(H3N2)        FOCUS REDUCTION",    # custom
-    # "MELB A(H3N2)        HI",                 # custom
+    "MELB A(H3N2)        HI",                 # then customize
     "NIID A(H3N2)        FOCUS REDUCTION",
     "NIMR A(H3N2)        HI",
     # NIMR Neut custom
