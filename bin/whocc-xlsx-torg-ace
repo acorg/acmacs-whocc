@@ -23,15 +23,19 @@ def main(args):
     writer.process()
     target_dir = writer.target_dir()
     target_prefix = writer.target_prefix()
-    if target_dir.joinpath(target_prefix + ".xlsx").exists() or target_dir.joinpath(target_prefix + ".xls").exists() or target_dir.joinpath(target_prefix + ".torg").exists() or target_dir.joinpath(target_prefix + ".ace").exists():
-        subprocess.check_call(f"ls -l {target_dir.joinpath(target_prefix)}*", shell=True)
-        raise RuntimeError("target already exists")
+    # if target_dir.joinpath(target_prefix + ".xlsx").exists() or target_dir.joinpath(target_prefix + ".xls").exists() or target_dir.joinpath(target_prefix + ".torg").exists() or target_dir.joinpath(target_prefix + ".ace").exists():
+    #     subprocess.check_call(f"ls -l {target_dir.joinpath(target_prefix)}*", shell=True)
+    #     raise RuntimeError("target already exists")
     shutil.copyfile(args.source[0], target_dir.joinpath(target_prefix + ".xlsx"))
-    with target_dir.joinpath(target_prefix + ".torg").open("w") as torg:
+    torg_filename = target_dir.joinpath(target_prefix + ".torg")
+    with torg_filename.open("w") as torg:
         writer.generate_header(torg)
+        writer.generate_body(torg)
     print("target:", target_dir, target_prefix)
-    writer.generate_header()
-    pprint.pprint(writer.rows, width=200)
+    # subprocess.check_call(["emacsclient", "-n", str(torg_filename)])
+    subprocess.check_call(["emacsclient", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle))"])
+    # writer.generate_header()
+    # pprint.pprint(writer.rows, width=200)
 
 # ======================================================================
 
@@ -49,6 +53,7 @@ class TorgWriter:
         self.lineage = None
         self.assay = None
         self.rbc = None
+        self.tested_by = ""
 
     def write(self, row):
         self.rows.append([field.strip() for field in row.split(self.field_delimiter)])
@@ -60,8 +65,10 @@ class TorgWriter:
                 self.get_date(cell)
                 self.get_rbc(cell)
                 self.get_subtype_lineage(cell)
+                self.get_tested_by(cell)
         self.fix_dates()
         self.update_each_cell(self.fix_lab_id)
+        self.update_each_cell(self.remove_redundant_data)
 
     def target_dir(self):
         try:
@@ -109,7 +116,13 @@ class TorgWriter:
             fd.write(f"- Lineage: {self.lineage}\n")
         if self.rbc:
             fd.write(f"- RBC: {self.rbc}\n")
-        fd.write(f"Tested by: \n\n")
+        fd.write(f"Tested by: {self.tested_by}\n\n")
+
+    def generate_body(self, fd = sys.stdout):
+        for row in self.rows:
+            fd.write("| ")
+            fd.write(" | ".join(row))
+            fd.write(" |\n")
 
     def get_lab(self, cell):
         if not self.lab:
@@ -152,6 +165,12 @@ class TorgWriter:
                     elif name in ["HONG KONG/45/2019", "HONG KONG/2671/2019", "IOWA/60/2018", "SOUTH AUSTRALIA/34/2019", "KANSAS/14/2017"]:
                         self.subtype = "A(H3N2)"
 
+    def get_tested_by(self, cell):
+        if not self.tested_by:
+            m = re.match(r"^Tested\s+By\s*:?\s*(.+)$", cell, flags=re.I)
+            if m:
+                self.tested_by = m.group(1)
+
     def fix_dates(self):
         if self.lab in ["CDC"]:
             fix_date = self.fix_date_USA
@@ -181,36 +200,17 @@ class TorgWriter:
             for col in range(len(row)):
                 row[col] = func(row[col])
 
+    def remove_redundant_data(self, cell):
+        m = re.match(r"^(Reference Antisera|Test Method: Manual|Details)$", cell, flags=re.I)
+        if m:
+            cell = ""
+        return cell
+
     def fix_lab_id(self, cell):
         if self.lab in ["MELB", "VIDRL"]:
             if re.match(r"^VW\d+$", cell, flags=re.I):
                 return f"MELB#{cell}"
         return cell
-
-    # def __init__(self, filepath :Path): #, lab, date, subtype, lineage, assay, rbc):
-    #     if filepath.exists():
-    #         filepath.rename(str(filepath) + "~")
-    #     self.fd = filepath.open("w")
-    #     self.fd.write("# -*- Torg -*-\n\n")
-    #     if not assay:
-    #         assay = "HI"
-    #     self.fd.write(f"- Lab: {lab}\n- Date: {date}\n- Subtype: {subtype}\n")
-    #     if lineage:
-    #         self.fd.write(f"- Lineage: {lineage}\n")
-    #     if rbc:
-    #         self.fd.write(f"- RBC: {rbc}\n")
-    #     self.fd.write(f"Tested by: \n\n")
-
-    # def __del__(self):
-    #     self.fd.close()
-
-    # def write(self, text):
-    #     self.fd.write("| ")
-    #     text = text.replace("|", " | ")
-    #     text = re.sub(r"\|\s+(Reference Antisera|Test Method: Manual|Details)\s+\|", "|  |", text, flags=re.I)
-    #     text = re.sub(r"\s([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])\s", r" \3-\2-\1 ", text, flags=re.I)
-    #     text = re.sub(r"\|\s+(VW\d+)\s+\|", r"| MELB#\1 |", text, flags=re.I)
-    #     self.fd.write(text)
 
 # ======================================================================
 
