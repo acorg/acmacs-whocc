@@ -52,7 +52,7 @@ def main(args):
 
 def make_ace(source, target):
     print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{source}\n{target}\n\n")
-    subprocess.run(["chart-org-table-to-ace", source, target])
+    subprocess.run(f"chart-org-table-to-ace '{source}' '{target}' && chart-fix-names-passages '{target}' '{target}' && chart-table '{target}'", shell=True)
 
 def sig_handler(signo, stack):
     raise RuntimeError(f"SIG {signo}")
@@ -222,7 +222,7 @@ class TorgWriter:
                 row[col] = func(row[col])
 
     def remove_redundant_data(self, cell):
-        m = re.match(r"^(Reference Antisera|Test Method: Manual|Details)$", cell, flags=re.I)
+        m = re.match(r"^(Reference Antisera|Test Method: Manual|Details|Sample|ID\s*#|Passage)$", cell, flags=re.I)
         if m:
             cell = ""
         return cell
