@@ -5,7 +5,7 @@
 Converts xlsx to torg, waits for torg editing, converts it to ace
 """
 
-import sys, os, pprint, subprocess, re, shutil
+import sys, os, pprint, subprocess, re, shutil, time, signal, datetime
 from pathlib import Path
 sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
@@ -36,6 +36,27 @@ def main(args):
     subprocess.check_call(["emacsclient", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle))"])
     # writer.generate_header()
     # pprint.pprint(writer.rows, width=200)
+    signal.signal(signal.SIGHUP, sig_handler)
+    while True:
+        # print("wating for SIGHUP")
+        try:
+            time.sleep(60 * 60)
+        except KeyboardInterrupt:
+            break
+        except Exception as err:
+            # print(err)
+            pass
+        make_ace(torg_filename, target_dir.joinpath(target_prefix + ".ace"))
+
+# ----------------------------------------------------------------------
+
+def make_ace(source, target):
+    print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{source}\n{target}\n\n")
+    subprocess.run(["chart-org-table-to-ace", source, target])
+
+def sig_handler(signo, stack):
+    raise RuntimeError(f"SIG {signo}")
+
 
 # ======================================================================
 
