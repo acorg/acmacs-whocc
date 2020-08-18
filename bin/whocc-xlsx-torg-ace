@@ -1,0 +1,269 @@
+#! /usr/bin/env python3
+# -*- Python -*-
+
+"""
+Converts xlsx to torg, waits for torg editing, converts it to ace
+"""
+
+import sys, os, pprint, subprocess, re, shutil
+from pathlib import Path
+sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
+import logging; module_logger = logging.getLogger(__name__)
+
+try:
+    from xlsx2csv import Xlsx2csv
+except:
+    print("pip3 install xlsx2csv\nhttps://github.com/dilshod/xlsx2csv", file=sys.stderr)
+    exit(1)
+
+# ======================================================================
+
+def main(args):
+    writer = read_xlsx(args.source[0])
+    writer.process()
+    target_dir = writer.target_dir()
+    target_prefix = writer.target_prefix()
+    if target_dir.joinpath(target_prefix + ".xlsx").exists() or target_dir.joinpath(target_prefix + ".xls").exists() or target_dir.joinpath(target_prefix + ".torg").exists() or target_dir.joinpath(target_prefix + ".ace").exists():
+        subprocess.check_call(f"ls -l {target_dir.joinpath(target_prefix)}*", shell=True)
+        raise RuntimeError("target already exists")
+    shutil.copyfile(args.source[0], target_dir.joinpath(target_prefix + ".xlsx"))
+    with target_dir.joinpath(target_prefix + ".torg").open("w") as torg:
+        writer.generate_header(torg)
+    print("target:", target_dir, target_prefix)
+    writer.generate_header()
+    pprint.pprint(writer.rows, width=200)
+
+# ======================================================================
+
+class TorgWriter:
+
+    class Error (RuntimeError): pass
+
+    field_delimiter = "\x01"
+
+    def __init__(self):
+        self.rows = []
+        self.lab = None
+        self.date = None
+        self.subtype = None
+        self.lineage = None
+        self.assay = None
+        self.rbc = None
+
+    def write(self, row):
+        self.rows.append([field.strip() for field in row.split(self.field_delimiter)])
+
+    def process(self):
+        for row in self.rows:
+            for cell in row:
+                self.get_lab(cell)
+                self.get_date(cell)
+                self.get_rbc(cell)
+                self.get_subtype_lineage(cell)
+        self.fix_dates()
+        self.update_each_cell(self.fix_lab_id)
+
+    def target_dir(self):
+        try:
+            dir = Path("~/ac/tables-store").expanduser()
+            if self.subtype == "B":
+                dir = dir.joinpath("B")
+            elif self.subtype == "A(H1N1)":
+                dir = dir.joinpath("H1PDM")
+            elif self.subtype == "A(H3N2)":
+                dir = dir.joinpath("H3")
+            else:
+                raise Error(f"unknown subtype {self.subtype}")
+            dir = dir.joinpath(self.lab)
+            if self.subtype == "B" and self.lab == "MELB":
+                dir  = dir.joinpath(self.lineage.lower())
+        except Error as err:
+            dir = "/d"
+            module_logger.warning(f"cannot infer target dir, \"{dir}\" is used: {err}")
+        return dir
+
+    def target_prefix(self):
+        try:
+            if self.subtype == "B":
+                prefix = f"b-{self.lab.lower()}-{self.rbc.lower()}-{self.date.replace('-', '')}"
+                if self.lineage == "YAMAGATA":
+                    prefix += "_002"
+            elif self.subtype == "A(H1N1)":
+                prefix = f"a-h1n1-{self.lab.lower()}-{self.rbc.lower()}-{self.date.replace('-', '')}"
+            elif self.subtype == "A(H3N2)":
+                if self.rbc:
+                    prefix = f"a-h3n2-{self.lab.lower()}-{self.rbc.lower()}-{self.date.replace('-', '')}"
+                else:
+                    prefix = f"a-h3n2-{self.lab.lower()}-{self.assay.lower()}-{self.date.replace('-', '')}"
+            else:
+                raise Error(f"unknown subtype {self.subtype}")
+        except Error as err:
+            prefix = "/d"
+            module_logger.warning(f"cannot infer target prefix, \"{prefix}\" is used: {err}")
+        return prefix
+
+    def generate_header(self, fd = sys.stdout):
+        fd.write("# -*- Torg -*-\n\n")
+        fd.write(f"- Lab: {self.lab}\n- Date: {self.date}\n- Subtype: {self.subtype}\n- Assay: {self.assay}\n")
+        if self.lineage:
+            fd.write(f"- Lineage: {self.lineage}\n")
+        if self.rbc:
+            fd.write(f"- RBC: {self.rbc}\n")
+        fd.write(f"Tested by: \n\n")
+
+    def get_lab(self, cell):
+        if not self.lab:
+            if re.match(r"Reference\s+Antisera", cell, flags=re.I):
+                self.lab = "MELB"
+            elif re.match(r"Reference\s+Viruses", cell, flags=re.I):
+                self.lab = "CDC"
+
+    def get_date(self, cell):
+        if not self.date:
+            m = re.match(r"^(?:Test\s+Date|Date\s+Tested)\s*:?\s+([0-9\-/]+)$", cell, flags=re.I)
+            if m:
+                self.date = m.group(1) # convert later, when lab is clarified
+
+    def get_rbc(self, cell):
+        if not self.rbc:
+            m = re.match(r"^RBC\s+Type\s*:?\s+(.+)$", cell, flags=re.I)
+            if m:
+                self.rbc = m.group(1).lower()
+
+    def get_subtype_lineage(self, cell):
+        m = re.match(r"^([AB])/([^/]+)/0*([^/]+)/(\d+)$", cell, flags=re.I)
+        if m:
+            type, location, isolation, year = (gr.upper() for gr in m.groups())
+            name = f"{location}/{isolation}/{year}"
+            if type == "B":
+                if not self.subtype:
+                    self.subtype = "B"
+                    self.assay = "HI"
+                if not self.lineage:
+                    if name in ["BRISBANE/60/2008", "MARYLAND/15/2016", "COLORADO/6/2017", "WASHINGTON/2/2019"]:
+                        self.lineage = "VICTORIA"
+                    elif name in ["MASSACHUSETTS/2/2012", "PHUKET/3073/2013"]:
+                        self.lineage = "YAMAGATA"
+            elif type == "A":
+                if not self.subtype:
+                    if name in ["CALIFORNIA/7/2009", "MICHIGAN/45/2015", "BRISBANE/2/2018", "HAWAII/70/2019"] or "/SWL" in name:
+                        self.subtype = "A(H1N1)"
+                        self.assay = "HI"
+                    elif name in ["HONG KONG/45/2019", "HONG KONG/2671/2019", "IOWA/60/2018", "SOUTH AUSTRALIA/34/2019", "KANSAS/14/2017"]:
+                        self.subtype = "A(H3N2)"
+
+    def fix_dates(self):
+        if self.lab in ["CDC"]:
+            fix_date = self.fix_date_USA
+        elif self.lab in ["MELB", "NIID", "NIMR", "VIDRL", "CRICK"]:
+            fix_date = self.fix_date_Europe
+        else:
+            module_logger.warning(f"Lab was not inferred, cannot fix dates")
+            fix_date = None
+        if fix_date:
+            self.date = fix_date(self.date)
+            self.update_each_cell(fix_date)
+
+    def fix_date_USA(self, date):
+        m = re.match(r"^([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])$", date)
+        if m:
+            date = f"{m.group(3)}-{m.group(1)}-{m.group(2)}"
+        return date
+
+    def fix_date_Europe(self, date):
+        m = re.match(r"^([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])$", date)
+        if m:
+            date = f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+        return date
+
+    def update_each_cell(self, func):
+        for row in self.rows:
+            for col in range(len(row)):
+                row[col] = func(row[col])
+
+    def fix_lab_id(self, cell):
+        if self.lab in ["MELB", "VIDRL"]:
+            if re.match(r"^VW\d+$", cell, flags=re.I):
+                return f"MELB#{cell}"
+        return cell
+
+    # def __init__(self, filepath :Path): #, lab, date, subtype, lineage, assay, rbc):
+    #     if filepath.exists():
+    #         filepath.rename(str(filepath) + "~")
+    #     self.fd = filepath.open("w")
+    #     self.fd.write("# -*- Torg -*-\n\n")
+    #     if not assay:
+    #         assay = "HI"
+    #     self.fd.write(f"- Lab: {lab}\n- Date: {date}\n- Subtype: {subtype}\n")
+    #     if lineage:
+    #         self.fd.write(f"- Lineage: {lineage}\n")
+    #     if rbc:
+    #         self.fd.write(f"- RBC: {rbc}\n")
+    #     self.fd.write(f"Tested by: \n\n")
+
+    # def __del__(self):
+    #     self.fd.close()
+
+    # def write(self, text):
+    #     self.fd.write("| ")
+    #     text = text.replace("|", " | ")
+    #     text = re.sub(r"\|\s+(Reference Antisera|Test Method: Manual|Details)\s+\|", "|  |", text, flags=re.I)
+    #     text = re.sub(r"\s([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])\s", r" \3-\2-\1 ", text, flags=re.I)
+    #     text = re.sub(r"\|\s+(VW\d+)\s+\|", r"| MELB#\1 |", text, flags=re.I)
+    #     self.fd.write(text)
+
+# ======================================================================
+
+def read_xlsx(source):
+    import csv
+    kwargs = {
+        'dateformat': "%Y-%m-%d",
+        'delimiter': TorgWriter.field_delimiter,
+        'escape_strings': False,
+        'exclude_hidden_sheets': True,
+        'exclude_sheet_pattern': '',
+        'floatformat': None,
+        'hyperlinks': False,
+        'ignore_formats': [''],
+        'include_sheet_pattern': '^.*$',
+        'lineterminator': '\n',
+        'merge_cells': False,
+        'outputencoding': 'utf-8',
+        'quoting': csv.QUOTE_NONE,
+        'scifloat': False,
+        'sheetdelimiter': "**************************************************",
+        'skip_empty_lines': True,
+        'skip_trailing_columns': False,
+        'timeformat': None
+    }
+    xlsx2csv = Xlsx2csv(source, **kwargs)
+    # xlsx2csv.convert(TorgWriter(Path(sys.argv[2])), 1)
+    writer = TorgWriter()
+    xlsx2csv.convert(writer, 1)
+    return writer
+
+# ======================================================================
+
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    # parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
+    # parser.add_argument('-s', '--source', action='store', dest='source', required=True)
+    # parser.add_argument('-o', '--output', action='store', dest='output', required=True)
+
+    parser.add_argument("source", nargs=1)
+
+    args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    exit_code = main(args)
+except Exception as err:
+    logging.error('{}\n{}'.format(err, traceback.format_exc()))
+    exit_code = 1
+exit(exit_code)
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
