@@ -85,7 +85,7 @@ class TorgWriter:
         self.lab_id_columns = collections.Counter()
         self.clade_rows = collections.Counter()
         self.clade_columns = collections.Counter()
-        
+
     def write(self, row):
         self.rows.append([field.strip() for field in row.split(self.field_delimiter)])
 
@@ -303,11 +303,19 @@ class TorgWriter:
     # ----------------------------------------------------------------------
 
     def post_process_MELB(self):
-        print("MELB")
-        # print("name_columns: ", self.name_columns.most_common(1), self.name_columns)
-        # print("name_rows: ", self.name_rows.most_common(1), self.name_rows)
-        # print("antigen_date_columns: ", self.antigen_date_columns.most_common(1), self.antigen_date_columns)
-        # print("passage_columns: ", self.passage_columns.most_common(1), self.passage_columns)
+        name_column = self.name_columns and self.name_columns.most_common(1)[0][0]
+        name_row = self.name_rows and self.name_rows.most_common(1)[0][0]
+        row_abbr_names = self.rows[name_row]
+        for col_no in range(len(row_abbr_names)):
+            m = re.match(r"^([A-Z]{2,})(\d+)$", row_abbr_names[col_no], flags=re.I)
+            if m:
+                loc, iso = (en.upper() for en in m.groups())
+                for row in self.rows[name_row + 1:]:
+                    name_fields = row[name_column].upper().split("/")
+                    if len(name_fields) > 2 and name_fields[1].startswith(loc) and name_fields[2].startswith(iso):
+                        print(f"{row_abbr_names[col_no]} --> {row[name_column]}")
+                        row_abbr_names[col_no] = row[name_column]
+                        break
 
 # ======================================================================
 
