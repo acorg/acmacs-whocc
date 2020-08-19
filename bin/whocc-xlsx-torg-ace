@@ -78,9 +78,14 @@ class TorgWriter:
         self.tested_by = ""
         self.name_columns = collections.Counter()
         self.name_rows = collections.Counter()
-        self.antigen_passage_columns = collections.Counter()
+        self.passage_columns = collections.Counter()
+        self.passage_rows = collections.Counter()
         self.antigen_date_columns = collections.Counter()
-
+        self.serum_id_rows = collections.Counter()
+        self.lab_id_columns = collections.Counter()
+        self.clade_rows = collections.Counter()
+        self.clade_columns = collections.Counter()
+        
     def write(self, row):
         self.rows.append([field.strip() for field in row.split(self.field_delimiter)])
 
@@ -148,9 +153,11 @@ class TorgWriter:
         fd.write(f"Tested by: {self.tested_by}\n\n")
 
     def generate_body(self, fd = sys.stdout):
-        name_column = self.name_columns and self.name_columns.most_common(1)[0][0]
-        date_column = self.antigen_date_columns and self.antigen_date_columns.most_common(1)[0][0]
-        passage_column = self.antigen_passage_columns and self.antigen_passage_columns.most_common(1)[0][0]
+        name_column = self.name_columns and (self.name_columns.most_common(1)[0][0] + 1)
+        date_column = self.antigen_date_columns and (self.antigen_date_columns.most_common(1)[0][0] + 1)
+        passage_column = self.passage_columns and (self.passage_columns.most_common(1)[0][0] + 1)
+        lab_id_column = self.lab_id_columns and (self.lab_id_columns.most_common(1)[0][0] + 1)
+        clade_column = self.clade_columns and (self.clade_columns.most_common(1)[0][0] + 1)
         fd.write("| ")
         for col_no in range(len(self.rows[0])):
             if name_column == col_no:
@@ -159,11 +166,30 @@ class TorgWriter:
                 fd.write("date |")
             elif passage_column == col_no:
                 fd.write("passage |")
+            elif lab_id_column == col_no:
+                fd.write("lab_id |")
+            elif clade_column == col_no:
+                fd.write("#clade |")
             else:
                 fd.write("  |")
         fd.write("\n")
 
-        for row in self.rows:
+        name_row = self.name_rows and self.name_rows.most_common(1)[0][0]
+        passage_row = self.passage_rows and self.passage_rows.most_common(1)[0][0]
+        serum_id_row = self.serum_id_rows and self.serum_id_rows.most_common(1)[0][0]
+        clade_row = self.clade_rows and self.clade_rows.most_common(1)[0][0]
+        for row_no, row in enumerate(self.rows):
+            if row_no == name_row:
+                fd.write("| name ")
+            elif row_no == passage_row:
+                fd.write("| passage ")
+            elif row_no == serum_id_row:
+                fd.write("| serum_id ")
+            elif row_no == clade_row:
+                fd.write("| #clade ")
+            else:
+                fd.write("|  ")
+
             fd.write("| ")
             fd.write(" | ".join(row))
             fd.write(" |\n")
@@ -229,32 +255,37 @@ class TorgWriter:
             self.date = fix_date(self.date)
             self.update_each_cell(fix_date)
 
-    def fix_date_USA(self, date):
+    def fix_date_USA(self, date, row_no=None, col=None):
         m = re.match(r"^([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])$", date)
         if m:
             date = f"{m.group(3)}-{m.group(1)}-{m.group(2)}"
         return date
 
-    def fix_date_Europe(self, date):
+    def fix_date_Europe(self, date, row_no=None, col=None):
         m = re.match(r"^([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])$", date)
         if m:
             date = f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
         return date
 
     def update_each_cell(self, func):
-        for row in self.rows:
+        for row_no, row in enumerate(self.rows):
             for col in range(len(row)):
-                row[col] = func(row[col])
+                row[col] = func(row[col], row_no, col)
 
-    def remove_redundant_data(self, cell):
+    def remove_redundant_data(self, cell, row_no, col_no):
         m = re.match(r"^(Reference Antisera|Test Method: Manual|Details|Sample|ID\s*#|Passage|Date)$", cell, flags=re.I)
         if m:
             cell = ""
+        if cell.lower() == "clade>":
+            self.clade_columns.update({col_no: 1})
+            self.clade_rows.update({row_no: 1})
+            cell = ""
         return cell
 
-    def fix_lab_id(self, cell):
+    def fix_lab_id(self, cell, row_no, col_no):
         if self.lab in ["MELB", "VIDRL"]:
             if re.match(r"^VW\d+$", cell, flags=re.I):
+                self.lab_id_columns.update({col_no: 1})
                 return f"MELB#{cell}"
         return cell
 
@@ -262,7 +293,10 @@ class TorgWriter:
         if re.match(r"^[0-3][0-9]/[01][0-9]/(?:19|20)?[0-9][0-9]$", cell):
             self.antigen_date_columns.update({col_no: 1})
         elif re.search(r"(MDCK|SIAT|HCK|E)", cell, flags=re.I):
-            self.antigen_passage_columns.update({col_no: 1})
+            self.passage_columns.update({col_no: 1})
+            self.passage_rows.update({row_no: 1})
+        elif self.lab == "MELB" and re.match(r"^[AF]\d{3,}(-\d+D)?$", cell, flags=re.I):
+            self.serum_id_rows.update({row_no: 1})
         elif self.lab == "MELB" and re.match(r"^[A-Z]{2,}\d+$", cell, flags=re.I):
             self.name_rows.update({row_no: 1})
 
@@ -270,10 +304,10 @@ class TorgWriter:
 
     def post_process_MELB(self):
         print("MELB")
-        print("name_columns: ", self.name_columns.most_common(1), self.name_columns)
-        print("name_rows: ", self.name_rows.most_common(1), self.name_rows)
-        print("antigen_date_columns: ", self.antigen_date_columns.most_common(1), self.antigen_date_columns)
-        print("antigen_passage_columns: ", self.antigen_passage_columns.most_common(1), self.antigen_passage_columns)
+        # print("name_columns: ", self.name_columns.most_common(1), self.name_columns)
+        # print("name_rows: ", self.name_rows.most_common(1), self.name_rows)
+        # print("antigen_date_columns: ", self.antigen_date_columns.most_common(1), self.antigen_date_columns)
+        # print("passage_columns: ", self.passage_columns.most_common(1), self.passage_columns)
 
 # ======================================================================
 
