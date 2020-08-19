@@ -5,7 +5,7 @@
 Converts xlsx to torg, waits for torg editing, converts it to ace
 """
 
-import sys, os, pprint, subprocess, re, shutil, time, signal, datetime
+import sys, os, pprint, subprocess, re, shutil, time, signal, datetime, collections
 from pathlib import Path
 sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
@@ -33,7 +33,9 @@ def main(args):
         writer.generate_body(torg)
     print("target:", target_dir, target_prefix)
     # subprocess.check_call(["emacsclient", "-n", str(torg_filename)])
-    subprocess.check_call(["emacsclient", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle))"])
+    subprocess.check_call(["emacsclient", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (save-buffer))"])
+    if args.stop_on_torg:
+        return
     # writer.generate_header()
     # pprint.pprint(writer.rows, width=200)
     signal.signal(signal.SIGHUP, sig_handler)
@@ -57,7 +59,6 @@ def make_ace(source, target):
 def sig_handler(signo, stack):
     raise RuntimeError(f"SIG {signo}")
 
-
 # ======================================================================
 
 class TorgWriter:
@@ -75,21 +76,28 @@ class TorgWriter:
         self.assay = None
         self.rbc = None
         self.tested_by = ""
+        self.name_columns = collections.Counter()
+        self.name_rows = collections.Counter()
+        self.antigen_passage_columns = collections.Counter()
+        self.antigen_date_columns = collections.Counter()
 
     def write(self, row):
         self.rows.append([field.strip() for field in row.split(self.field_delimiter)])
 
     def process(self):
-        for row in self.rows:
-            for cell in row:
+        for row_no, row in enumerate(self.rows):
+            for col_no, cell in enumerate(row):
                 self.get_lab(cell)
                 self.get_date(cell)
                 self.get_rbc(cell)
-                self.get_subtype_lineage(cell)
+                self.get_subtype_lineage(cell, row_no, col_no)
                 self.get_tested_by(cell)
+                self.get_field_type(cell, row_no, col_no)
         self.fix_dates()
         self.update_each_cell(self.fix_lab_id)
         self.update_each_cell(self.remove_redundant_data)
+        if self.lab in ["MELB", "VIDRL"]:
+            self.post_process_MELB()
 
     def target_dir(self):
         try:
@@ -140,6 +148,21 @@ class TorgWriter:
         fd.write(f"Tested by: {self.tested_by}\n\n")
 
     def generate_body(self, fd = sys.stdout):
+        name_column = self.name_columns and self.name_columns.most_common(1)[0][0]
+        date_column = self.antigen_date_columns and self.antigen_date_columns.most_common(1)[0][0]
+        passage_column = self.antigen_passage_columns and self.antigen_passage_columns.most_common(1)[0][0]
+        fd.write("| ")
+        for col_no in range(len(self.rows[0])):
+            if name_column == col_no:
+                fd.write("name |")
+            elif date_column == col_no:
+                fd.write("date |")
+            elif passage_column == col_no:
+                fd.write("passage |")
+            else:
+                fd.write("  |")
+        fd.write("\n")
+
         for row in self.rows:
             fd.write("| ")
             fd.write(" | ".join(row))
@@ -164,9 +187,11 @@ class TorgWriter:
             if m:
                 self.rbc = m.group(1).lower()
 
-    def get_subtype_lineage(self, cell):
+    def get_subtype_lineage(self, cell, row_no, col_no):
         m = re.match(r"^([AB])/([^/]+)/0*([^/]+)/(\d+)$", cell, flags=re.I)
         if m:
+            self.name_columns.update({col_no: 1})
+            self.name_rows.update({row_no: 1})
             type, location, isolation, year = (gr.upper() for gr in m.groups())
             name = f"{location}/{isolation}/{year}"
             if type == "B":
@@ -222,7 +247,7 @@ class TorgWriter:
                 row[col] = func(row[col])
 
     def remove_redundant_data(self, cell):
-        m = re.match(r"^(Reference Antisera|Test Method: Manual|Details|Sample|ID\s*#|Passage)$", cell, flags=re.I)
+        m = re.match(r"^(Reference Antisera|Test Method: Manual|Details|Sample|ID\s*#|Passage|Date)$", cell, flags=re.I)
         if m:
             cell = ""
         return cell
@@ -232,6 +257,23 @@ class TorgWriter:
             if re.match(r"^VW\d+$", cell, flags=re.I):
                 return f"MELB#{cell}"
         return cell
+
+    def get_field_type(self, cell, row_no, col_no):
+        if re.match(r"^[0-3][0-9]/[01][0-9]/(?:19|20)?[0-9][0-9]$", cell):
+            self.antigen_date_columns.update({col_no: 1})
+        elif re.search(r"(MDCK|SIAT|HCK|E)", cell, flags=re.I):
+            self.antigen_passage_columns.update({col_no: 1})
+        elif self.lab == "MELB" and re.match(r"^[A-Z]{2,}\d+$", cell, flags=re.I):
+            self.name_rows.update({row_no: 1})
+
+    # ----------------------------------------------------------------------
+
+    def post_process_MELB(self):
+        print("MELB")
+        print("name_columns: ", self.name_columns.most_common(1), self.name_columns)
+        print("name_rows: ", self.name_rows.most_common(1), self.name_rows)
+        print("antigen_date_columns: ", self.antigen_date_columns.most_common(1), self.antigen_date_columns)
+        print("antigen_passage_columns: ", self.antigen_passage_columns.most_common(1), self.antigen_passage_columns)
 
 # ======================================================================
 
@@ -270,6 +312,7 @@ import argparse, traceback
 try:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    parser.add_argument('-t', action='store_true', dest='stop_on_torg', default=False, help='Stop after generating torg file.')
     # parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
     # parser.add_argument('-s', '--source', action='store', dest='source', required=True)
     # parser.add_argument('-o', '--output', action='store', dest='output', required=True)
