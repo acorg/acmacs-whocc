@@ -33,7 +33,7 @@ def main(args):
         writer.generate_body(torg)
     print("target:", target_dir, target_prefix)
     # subprocess.check_call(["emacsclient", "-n", str(torg_filename)])
-    subprocess.check_call(["emacsclient", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (save-buffer))"])
+    subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (forward-line 0) (save-buffer))"])
     if args.stop_on_torg:
         return
     # writer.generate_header()
@@ -103,6 +103,7 @@ class TorgWriter:
         self.update_each_cell(self.remove_redundant_data)
         if self.lab in ["MELB", "VIDRL"]:
             self.post_process_MELB()
+        print(f"Lab:     {self.lab}\nSubtype: {self.subtype}\nDate:    {self.date}\nAssay:   {self.assay or ''}\nRBC:     {self.rbc or ''}\nLineage: {self.lineage or ''}\n")
 
     def target_dir(self):
         try:
@@ -256,16 +257,25 @@ class TorgWriter:
             self.update_each_cell(fix_date)
 
     def fix_date_USA(self, date, row_no=None, col=None):
-        m = re.match(r"^([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])$", date)
+        m = re.match(r"^([0-3]?[0-9])/([01]?[0-9])/((?:19|20)?[0-9][0-9])$", date)
         if m:
-            date = f"{m.group(3)}-{m.group(1)}-{m.group(2)}"
+            date = f"{self.fix_year(m.group(3))}-{int(m.group(1)):02d}-{int(m.group(2)):02d}"
         return date
 
     def fix_date_Europe(self, date, row_no=None, col=None):
-        m = re.match(r"^([0-3][0-9])/([01][0-9])/((?:19|20)[0-9][0-9])$", date)
+        m = re.match(r"^([0-3]?[0-9])/([01]?[0-9])/((?:19|20)?[0-9][0-9])$", date)
         if m:
-            date = f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+            date = f"{self.fix_year(m.group(3))}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
         return date
+
+    def fix_year(self, year):
+        if len(year) == 2:
+            if int(year) > 30:
+                return f"19{year}"
+            else:
+                return f"20{year}"
+        else:
+            return year
 
     def update_each_cell(self, func):
         for row_no, row in enumerate(self.rows):
@@ -307,15 +317,22 @@ class TorgWriter:
         name_row = self.name_rows and self.name_rows.most_common(1)[0][0]
         row_abbr_names = self.rows[name_row]
         for col_no in range(len(row_abbr_names)):
+            loc, iso = None, None
             m = re.match(r"^([A-Z]{2,})(\d+)$", row_abbr_names[col_no], flags=re.I)
             if m:
                 loc, iso = (en.upper() for en in m.groups())
+            if not loc:
+                m = re.match(r"^([A-Z]{2,})/([A-Z\d]+)$", row_abbr_names[col_no], flags=re.I)
+                if m:
+                    loc, iso = (en.upper() for en in m.groups())
+            if loc and iso:
                 for row in self.rows[name_row + 1:]:
                     name_fields = row[name_column].upper().split("/")
                     if len(name_fields) > 2 and name_fields[1].startswith(loc) and name_fields[2].startswith(iso):
-                        print(f"{row_abbr_names[col_no]} --> {row[name_column]}")
+                        print(f"{row_abbr_names[col_no]:15s} --> {row[name_column]}")
                         row_abbr_names[col_no] = row[name_column]
                         break
+        print("\n")
 
 # ======================================================================
 
