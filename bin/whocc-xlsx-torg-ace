@@ -138,7 +138,7 @@ class TorgWriter:
                 if self.rbc:
                     prefix = f"a-h3n2-{self.lab.lower()}-{self.rbc.lower()}-{self.date.replace('-', '')}"
                 else:
-                    prefix = f"a-h3n2-{self.lab.lower()}-{self.assay.lower()}-{self.date.replace('-', '')}"
+                    prefix = f"a-h3n2-{self.lab.lower()}-{self.assay.lower().replace(' ', '-')}-{self.date.replace('-', '')}"
             else:
                 raise Error(f"unknown subtype {self.subtype}")
         except Exception as err:
@@ -294,7 +294,7 @@ class TorgWriter:
                 row[col] = func(row[col], row_no, col)
 
     def remove_redundant_data(self, cell, row_no, col_no):
-        m = re.match(r"^(Reference Antisera|Reference Antigens|Test Method: Manual|Details|Sample|ID\s*#|Passage|Passage Details|Date|VM|Sample Date|Comments)$", cell, flags=re.I)
+        m = re.match(r"^(Reference Antisera|Reference Antigens|Test Method: Manual|Details|Sample|ID\s*#|Passage|Passage Details|Date|VW|Sample Date|Comments)$", cell, flags=re.I)
         if m:
             cell = ""
         if cell.lower() == "clade>":
@@ -336,6 +336,14 @@ class TorgWriter:
                 m = re.match(r"^([A-Z]{2,})/([A-Z\d]+)$", row_abbr_names[col_no], flags=re.I)
                 if m:
                     loc, iso = (en.upper() for en in m.groups())
+            if not loc:
+                m = re.match(r"^A/([A-Z\s]+)/([A-Z\-\d]+)$", row_abbr_names[col_no], flags=re.I) # A/Darwin/726
+                if m:
+                    loc, iso = (en.upper() for en in m.groups())
+                    if loc == "HK":
+                        loc = "HONG KONG"
+                    elif loc == "STH AUS":
+                        loc = "SOUTH AUSTRALIA"
             if loc and iso:
                 for row in self.rows[name_row + 1:]:
                     name_fields = row[name_column].upper().split("/")
