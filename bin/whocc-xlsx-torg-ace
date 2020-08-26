@@ -294,7 +294,7 @@ class TorgWriter:
                 row[col] = func(row[col], row_no, col)
 
     def remove_redundant_data(self, cell, row_no, col_no):
-        m = re.match(r"^(Reference Antisera|Test Method: Manual|Details|Sample|ID\s*#|Passage|Date)$", cell, flags=re.I)
+        m = re.match(r"^(Reference Antisera|Reference Antigens|Test Method: Manual|Details|Sample|ID\s*#|Passage|Passage Details|Date|VM|Sample Date|Comments)$", cell, flags=re.I)
         if m:
             cell = ""
         if cell.lower() == "clade>":
@@ -318,7 +318,7 @@ class TorgWriter:
             self.passage_rows.update({row_no: 1})
         elif self.lab == "MELB" and re.match(r"^[AF]\d{3,}(-\d+D)?$", cell, flags=re.I):
             self.serum_id_rows.update({row_no: 1})
-        elif self.lab == "MELB" and re.match(r"^[A-Z]{2,}\d+$", cell, flags=re.I):
+        elif self.lab == "MELB" and (re.match(r"^[A-Z]{2,}\d+$", cell, flags=re.I) or re.match(r"^A/[A-Z]+/\d+$", cell, flags=re.I)):
             self.name_rows.update({row_no: 1})
 
     # ----------------------------------------------------------------------
