@@ -103,6 +103,8 @@ class TorgWriter:
         self.update_each_cell(self.remove_redundant_data)
         if self.lab in ["MELB", "VIDRL"]:
             self.post_process_MELB()
+        if not self.lab:
+            module_logger.warning(f"LAB not detected")
         print(f"Lab:     {self.lab}\nSubtype: {self.subtype}\nDate:    {self.date}\nAssay:   {self.assay or ''}\nRBC:     {self.rbc or ''}\nLineage: {self.lineage or ''}\n")
 
     def target_dir(self):
@@ -119,7 +121,7 @@ class TorgWriter:
             dir = dir.joinpath(self.lab)
             if self.subtype == "B" and self.lab == "MELB":
                 dir  = dir.joinpath(self.lineage.lower())
-        except Error as err:
+        except Exception as err:
             dir = "/d"
             module_logger.warning(f"cannot infer target dir, \"{dir}\" is used: {err}")
         return dir
@@ -139,7 +141,7 @@ class TorgWriter:
                     prefix = f"a-h3n2-{self.lab.lower()}-{self.assay.lower()}-{self.date.replace('-', '')}"
             else:
                 raise Error(f"unknown subtype {self.subtype}")
-        except Error as err:
+        except Exception as err:
             prefix = "/d"
             module_logger.warning(f"cannot infer target prefix, \"{prefix}\" is used: {err}")
         return prefix
@@ -196,11 +198,20 @@ class TorgWriter:
             fd.write(" |\n")
 
     def get_lab(self, cell):
-        if not self.lab:
-            if re.match(r"Reference\s+Antisera", cell, flags=re.I):
-                self.lab = "MELB"
-            elif re.match(r"Reference\s+Viruses", cell, flags=re.I):
-                self.lab = "CDC"
+        if re.match(r"Reference\s+Antisera", cell, flags=re.I):
+            lab = "MELB"
+        elif re.match(r"^\s*Focus\s+Reduction\s+Assay\s*$", cell, flags=re.I):
+            lab = "MELB"
+            self.assay = "FOCUS REDUCTION"
+        elif re.match(r"Reference\s+Viruses", cell, flags=re.I):
+            lab = "CDC"
+        else:
+            lab = None
+        if lab is not None:
+            if not self.lab:
+                self.lab = lab
+            elif self.lab != lab:
+                module_logger.warning(f"Lab detection conflict: {self.lab} vs {lab} ({cell})")
 
     def get_date(self, cell):
         if not self.date:
