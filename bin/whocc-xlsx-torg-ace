@@ -90,6 +90,7 @@ class TorgWriter:
         self.rows.append([field.strip() for field in row.split(self.field_delimiter)])
 
     def process(self):
+        self.remove_extra_columns_rows()
         for row_no, row in enumerate(self.rows):
             for col_no, cell in enumerate(row):
                 self.get_lab(cell)
@@ -147,7 +148,7 @@ class TorgWriter:
         return prefix
 
     def generate_header(self, fd = sys.stdout):
-        fd.write("# -*- Torg -*-\n\n")
+        fd.write("# -*- Org -*-\n\n")
         fd.write(f"- Lab: {self.lab}\n- Date: {self.date}\n- Subtype: {self.subtype}\n- Assay: {self.assay}\n")
         if self.lineage:
             fd.write(f"- Lineage: {self.lineage}\n")
@@ -162,6 +163,9 @@ class TorgWriter:
         lab_id_column = self.lab_id_columns and (self.lab_id_columns.most_common(1)[0][0] + 1)
         clade_column = self.clade_columns and (self.clade_columns.most_common(1)[0][0] + 1)
         fd.write("| ")
+        if len(self.rows[0]) > 30:
+            pprint.pprint(self.rows)
+            raise RuntimeError(f"too many columns: {len(self.rows[0])}")
         for col_no in range(len(self.rows[0])):
             if name_column == col_no:
                 fd.write("name |")
@@ -320,6 +324,12 @@ class TorgWriter:
             self.serum_id_rows.update({row_no: 1})
         elif self.lab == "MELB" and (re.match(r"^[A-Z]{2,}\d+$", cell, flags=re.I) or re.match(r"^A/[A-Z]+/\d+$", cell, flags=re.I)):
             self.name_rows.update({row_no: 1})
+
+    def remove_extra_columns_rows(self):
+        max_col = max(max(col for col, cell in enumerate(row, 1) if cell) for row in self.rows)
+        self.rows = [row[:max_col] for row in self.rows]
+        max_row = max(no for no, row in enumerate(self.rows, 1) if any(row))
+        self.rows = self.rows[:max_row]
 
     # ----------------------------------------------------------------------
 
