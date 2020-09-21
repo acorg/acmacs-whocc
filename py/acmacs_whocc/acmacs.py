@@ -45,7 +45,7 @@ sMinColBasisConvert = {
 sMergesToGet = set([
     # custom "CDC  A(H1N1)2009PDM HI",
     "MELB A(H1N1)2009PDM HI",
-    # custom "NIID A(H1N1)2009PDM HI",
+    "NIID A(H1N1)2009PDM HI",
     # custom "NIMR A(H1N1)2009PDM HI",   
     "CDC  A(H3N2)        FOCUS REDUCTION",
     # custom "MELB A(H3N2)        FOCUS REDUCTION",
