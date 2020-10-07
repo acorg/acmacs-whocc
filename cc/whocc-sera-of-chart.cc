@@ -7,6 +7,7 @@
 #include "acmacs-base/enumerate.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/factory-import.hh"
+#include "acmacs-chart-2/serum-circle.hh"
 #include "hidb-5/hidb.hh"
 
 // ----------------------------------------------------------------------
@@ -117,8 +118,8 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
                 serum_data.push_back({sr_no, *serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), serum_tables});
                 const auto homologous_antigens = serum->homologous_antigens();
                 for (auto ag_no : homologous_antigens) {
-                    const auto empirical = chart.serum_circle_radius_empirical(ag_no, sr_no, 0);
-                    const auto theoretical = chart.serum_circle_radius_theoretical(ag_no, sr_no, 0);
+                    const auto empirical = acmacs::chart::serum_circle_empirical(ag_no, sr_no, chart, 0);
+                    const auto theoretical = acmacs::chart::serum_circle_theoretical(ag_no, sr_no, chart, 0);
                     serum_data.back().radii.push_back({ag_no, chart.antigen(ag_no)->full_name(), empirical.per_antigen()[0].titer, empirical.per_antigen()[0].radius, theoretical.per_antigen()[0].radius});
                 }
                 if (homologous_antigens->empty())
