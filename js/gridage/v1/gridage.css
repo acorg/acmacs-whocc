@@ -1,0 +1,70 @@
+:root {
+    --main-section-title-size: 1.2em;
+    --main-section-title-separator: 1em;
+    --grid-image-size: 800px;
+}
+
+/* ---------------------------------------------------------------------- */
+
+ol.main {
+    list-style: none;
+    counter-reset: ol-main-counter;
+}
+ol.main > li {
+    counter-increment: ol-main-counter;
+    margin-bottom: 2em;
+}
+ol.main > li > .section-title {
+    font-weight: bold;
+    font-size: var(--main-section-title-size);
+}
+ol.main > li > .section-title-separator {
+    height: var(--main-section-title-separator);
+}
+ol.main > li:before {
+    content: counter(ol-main-counter) ". ";
+    font-weight: bold;
+    font-size: var(--main-section-title-size);
+}
+
+/* ---------------------------------------------------------------------- */
+
+.grid {
+    no-outline: 1px solid pink;
+    display: grid;
+    grid-auto-flow: column;
+    justify-content: start;
+}
+.grid .title {
+    align-self: end;
+}
+.grid .pdf {
+    align-self: begin;
+}
+
+.grid object {
+    width: var(--grid-image-size);
+    height: var(--grid-image-size);
+}
+.grid img {
+    width: var(--grid-image-size);
+    height: var(--grid-image-size);
+}
+
+.grid-2 {
+    grid-template-rows: auto calc(var(--grid-image-size) * 1.0425);
+    grid-column-gap: 2em;
+}
+
+/* ---------------------------------------------------------------------- */
+
+.image-resizer {
+    margin-left: 5em;
+}
+.image-resizer > .label {
+    padding-left: 1em;
+}
+
+
+/* ---------------------------------------------------------------------- */
+/* ====================================================================== */

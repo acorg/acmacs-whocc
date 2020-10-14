@@ -1,0 +1,28 @@
+{
+    "title": {
+        "short": "",
+        "long": "",
+        "date": "$(date +%Y-%m-%d)"
+    },
+    "page": [
+        {
+            "title": "",
+            "columns": [
+                [
+                    {"T": "title", "text": ""},
+                    {"T": "pdf", "file": ""}
+                ],
+                [
+                    {"T": "title", "text": ""},
+                    {"T": "pdf", "file": ""}
+                ]
+            ]
+        }
+    ],
+    "emacs": [
+        "Local Variables:",
+        "eval: (add-hook 'after-save-hook 'eu-open-pwd-in-web-return-to-emacs nil 'local)",
+        "End:",
+        ""
+    ]
+}
