@@ -4,6 +4,7 @@
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/enumerate.hh"
+#include "acmacs-base/quicklook.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/stress.hh"
@@ -189,6 +190,9 @@ struct Options : public argv
 
     std::string_view help_pre() const override { return "compare titers of mutiple tables"; }
     argument<str_array> charts{*this, arg_name{"chart"}, mandatory};
+
+    option<str> output{*this, 'o'};
+
 };
 
 int main(int argc, char* const argv[])
@@ -225,19 +229,22 @@ int main(int argc, char* const argv[])
         }
         fmt::print("best_stress: {}\n", best_stress);
 
-        const std::array colors_of_tables {GREEN, GREEN, BLUE, GREEN, CYAN, GREEN, GREEN, CYAN, RED, BLUE, RED, GREEN, GREEN, GREEN, BLUE, GREEN, GREEN};
-        const double size = 800.0;
-        acmacs::surface::PdfCairo surface("/d/a.pdf", size, size, size);
-        const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
-        acmacs::Viewport viewport;
-        viewport.set_from_center_size(bb.center(), bb.diameter());
-        viewport.whole_width();
-        fmt::print("{}\n", viewport);
-        acmacs::surface::Surface& rescaled_surface = surface.subsurface(acmacs::PointCoordinates::zero2D, Scaled{surface.viewport().size.width}, viewport, true);
-        rescaled_surface.grid(Scaled{1.0}, GREY, Pixels{1});
-        for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
-            rescaled_surface.circle_filled(best_layout[t1], Pixels{10}, AspectNormal, NoRotation, BLACK, Pixels{1}, acmacs::surface::Dash::NoDash, colors_of_tables[t1]);
-            rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], RED, Pixels{10});
+        if (opt.output) {
+            const std::array colors_of_tables{GREEN, GREEN, BLUE, GREEN, CYAN, GREEN, GREEN, CYAN, RED, BLUE, RED, GREEN, GREEN, GREEN, BLUE, GREEN, GREEN};
+            const double size = 800.0;
+            acmacs::surface::PdfCairo surface(opt.output, size, size, size);
+            const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
+            acmacs::Viewport viewport;
+            viewport.set_from_center_size(bb.center(), bb.diameter());
+            viewport.whole_width();
+            fmt::print("{}\n", viewport);
+            acmacs::surface::Surface& rescaled_surface = surface.subsurface(acmacs::PointCoordinates::zero2D, Scaled{surface.viewport().size.width}, viewport, true);
+            rescaled_surface.grid(Scaled{1.0}, GREY, Pixels{1});
+            for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
+                rescaled_surface.circle_filled(best_layout[t1], Pixels{10}, AspectNormal, NoRotation, BLACK, Pixels{1}, acmacs::surface::Dash::NoDash, colors_of_tables[t1]);
+                rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], RED, Pixels{10});
+            }
+            acmacs::open(opt.output, 1, 1);
         }
     }
     catch (std::exception& err) {
