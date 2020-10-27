@@ -230,7 +230,25 @@ int main(int argc, char* const argv[])
         fmt::print("best_stress: {}\n", best_stress);
 
         if (opt.output) {
-            const std::array colors_of_tables{GREEN, GREEN, BLUE, GREEN, CYAN, GREEN, GREEN, CYAN, RED, BLUE, RED, GREEN, GREEN, GREEN, BLUE, GREEN, GREEN};
+            const std::array colors_of_tables{
+                GREEN,   // 20180206 Leah G/Heidi
+                RED,     // 20180227 Tasuola
+                BLUE,   // 20180528 Rob
+                RED,     // 20180605 Tasuola
+                BLUE,   // 20180626 Rob
+                GREEN,   // 20180821 Heidi/Malet
+                GREEN,   // 20180918 Heidi/Tas
+                GREEN,   // 20181127 Heidi
+                RED,   // 20181213 Tasuola
+                RED,   // 20190211 Tasuola/Rob
+                RED,   // 20190409 Tasuola
+                GREEN,   // 20190514 Leah
+                GREEN,   // 20190521 Leah
+                GREEN,   // 20190716 Leah/Heidi
+                GREEN,    // 20190820 Leah
+                GREEN,   // 20190903 Leah
+                GREEN    // 20190918 Leah
+            };
             const double size = 800.0;
             acmacs::surface::PdfCairo surface(opt.output, size, size, size);
             const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
