@@ -9,7 +9,8 @@ TARGETS = \
   $(DIST)/whocc-melb-serum-id \
   $(DIST)/whocc-sera-of-chart \
   $(DIST)/chart-vaccines \
-  $(DIST)/chart-update-vaccines
+  $(DIST)/chart-update-vaccines \
+  $(DIST)/chart-table-compare
 
 # ----------------------------------------------------------------------
 
