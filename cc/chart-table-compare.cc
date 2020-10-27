@@ -209,11 +209,11 @@ int main(int argc, char* const argv[])
         data.report_average_deviation_from_mean_per_table();
 
         acmacs::chart::Stress stress(acmacs::number_of_dimensions_t{2}, data.num_tables());
-        stress.table_distances() = data.make_distance_matrix();
+        stress.table_distances() = data.make_distance_matrix(true);
 
         double best_stress{9e99};
         acmacs::Layout best_layout(data.num_tables(), stress.number_of_dimensions());
-        for (auto attempt : acmacs::range(100ul)) {
+        for (auto attempt : acmacs::range(1ul)) {
             acmacs::Layout layout(data.num_tables(), stress.number_of_dimensions());
             acmacs::chart::LayoutRandomizerPlain rnd(10.0, std::nullopt);
             for (auto point_no : acmacs::range(layout.number_of_points()))
@@ -247,7 +247,40 @@ int main(int argc, char* const argv[])
                 GREEN,   // 20190716 Leah/Heidi
                 GREEN,    // 20190820 Leah
                 GREEN,   // 20190903 Leah
-                GREEN    // 20190918 Leah
+                GREEN,    // 20190918 Leah
+
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
+                GREEN,
             };
             const double size = 800.0;
             acmacs::surface::PdfCairo surface(opt.output, size, size, size);
