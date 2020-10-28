@@ -153,10 +153,13 @@ class ChartData
         if (report) {
             for (size_t t1 = 0; t1 < (tables_.size() - 1); ++t1) {
                 for (size_t t2 = t1 + 1; t2 < tables_.size(); ++t2) {
-                    auto& distances = matrix[t1 * tables_.size() + t2];
-                    ranges::sort(distances);
-                    fmt::print("{} {} mean:{} median:{} max:{} {}\n", tables_[t1], tables_[t2], ranges::accumulate(distances, 0.0) / static_cast<double>(distances.size()),
-                               distances[distances.size() / 2], distances.back(), distances);
+                    if (auto& distances = matrix[t1 * tables_.size() + t2]; !distances.empty()) {
+                        ranges::sort(distances);
+                        fmt::print("{} {} mean:{} median:{} max:{} {}\n", tables_[t1], tables_[t2], ranges::accumulate(distances, 0.0) / static_cast<double>(distances.size()),
+                                   distances[distances.size() / 2], distances.back(), distances);
+                    }
+                    else
+                        fmt::print("{} {}: *no distances*\n", tables_[t1], tables_[t2]);
                 }
             }
         }
@@ -164,9 +167,10 @@ class ChartData
         acmacs::chart::TableDistances table_distances;
         for (size_t t1 = 0; t1 < (tables_.size() - 1); ++t1) {
             for (size_t t2 = t1 + 1; t2 < tables_.size(); ++t2) {
-                auto& distances = matrix[t1 * tables_.size() + t2];
-                const auto mean = ranges::accumulate(distances, 0.0) / static_cast<double>(distances.size());
-                table_distances.add_value(acmacs::chart::Titer::Regular, t1, t2, mean);
+                if (auto& distances = matrix[t1 * tables_.size() + t2]; !distances.empty()) {
+                    const auto mean = ranges::accumulate(distances, 0.0) / static_cast<double>(distances.size());
+                    table_distances.add_value(acmacs::chart::Titer::Regular, t1, t2, mean);
+                }
             }
         }
         return table_distances;
@@ -192,7 +196,7 @@ struct Options : public argv
     argument<str_array> charts{*this, arg_name{"chart"}, mandatory};
 
     option<str> output{*this, 'o'};
-
+    option<size_t> number_of_optimizations{*this, 'n', dflt{100ul}};
 };
 
 int main(int argc, char* const argv[])
@@ -209,11 +213,11 @@ int main(int argc, char* const argv[])
         data.report_average_deviation_from_mean_per_table();
 
         acmacs::chart::Stress stress(acmacs::number_of_dimensions_t{2}, data.num_tables());
-        stress.table_distances() = data.make_distance_matrix(true);
+        stress.table_distances() = data.make_distance_matrix();
 
         double best_stress{9e99};
         acmacs::Layout best_layout(data.num_tables(), stress.number_of_dimensions());
-        for (auto attempt : acmacs::range(1ul)) {
+        for ([[maybe_unused]] auto attempt : acmacs::range(*opt.number_of_optimizations)) {
             acmacs::Layout layout(data.num_tables(), stress.number_of_dimensions());
             acmacs::chart::LayoutRandomizerPlain rnd(10.0, std::nullopt);
             for (auto point_no : acmacs::range(layout.number_of_points()))
@@ -248,39 +252,6 @@ int main(int argc, char* const argv[])
                 GREEN,    // 20190820 Leah
                 GREEN,   // 20190903 Leah
                 GREEN,    // 20190918 Leah
-
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
-                GREEN,
             };
             const double size = 800.0;
             acmacs::surface::PdfCairo surface(opt.output, size, size, size);
@@ -292,8 +263,9 @@ int main(int argc, char* const argv[])
             acmacs::surface::Surface& rescaled_surface = surface.subsurface(acmacs::PointCoordinates::zero2D, Scaled{surface.viewport().size.width}, viewport, true);
             rescaled_surface.grid(Scaled{1.0}, GREY, Pixels{1});
             for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
-                rescaled_surface.circle_filled(best_layout[t1], Pixels{10}, AspectNormal, NoRotation, BLACK, Pixels{1}, acmacs::surface::Dash::NoDash, colors_of_tables[t1]);
-                rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], RED, Pixels{10});
+                const auto fill = t1 < colors_of_tables.size() ? colors_of_tables[t1] : GREEN;
+                rescaled_surface.circle_filled(best_layout[t1], Pixels{10}, AspectNormal, NoRotation, BLACK, Pixels{1}, acmacs::surface::Dash::NoDash, fill);
+                rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], BLACK, Pixels{10});
             }
             acmacs::open(opt.output, 1, 1);
         }
