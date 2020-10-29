@@ -11,6 +11,7 @@
 #include "acmacs-chart-2/randomizer.hh"
 #include "acmacs-chart-2/bounding-ball.hh"
 #include "acmacs-draw/surface-cairo.hh"
+#include "acmacs-draw/drawi-generator.hh"
 
 // ----------------------------------------------------------------------
 
@@ -195,7 +196,7 @@ struct Options : public argv
     std::string_view help_pre() const override { return "compare titers of mutiple tables"; }
     argument<str_array> charts{*this, arg_name{"chart"}, mandatory};
 
-    option<str> output{*this, 'o'};
+    option<str> output{*this, 'o', desc{"output .drawi file"}};
     option<size_t> number_of_optimizations{*this, 'n', dflt{100ul}};
 };
 
@@ -234,41 +235,46 @@ int main(int argc, char* const argv[])
         fmt::print("best_stress: {}\n", best_stress);
 
         if (opt.output) {
-            const std::array colors_of_tables{
-                GREEN,   // 20180206 Leah G/Heidi
-                RED,     // 20180227 Tasuola
-                BLUE,   // 20180528 Rob
-                RED,     // 20180605 Tasuola
-                BLUE,   // 20180626 Rob
-                GREEN,   // 20180821 Heidi/Malet
-                GREEN,   // 20180918 Heidi/Tas
-                GREEN,   // 20181127 Heidi
-                RED,   // 20181213 Tasuola
-                RED,   // 20190211 Tasuola/Rob
-                RED,   // 20190409 Tasuola
-                GREEN,   // 20190514 Leah
-                GREEN,   // 20190521 Leah
-                GREEN,   // 20190716 Leah/Heidi
-                GREEN,    // 20190820 Leah
-                GREEN,   // 20190903 Leah
-                GREEN,    // 20190918 Leah
-            };
-            const double size = 800.0;
-            acmacs::surface::PdfCairo surface(opt.output, size, size, size);
-            const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
-            acmacs::Viewport viewport;
-            viewport.set_from_center_size(bb.center(), bb.diameter());
-            viewport.whole_width();
-            fmt::print("{}\n", viewport);
-            acmacs::surface::Surface& rescaled_surface = surface.subsurface(acmacs::PointCoordinates::zero2D, Scaled{surface.viewport().size.width}, viewport, true);
-            rescaled_surface.grid(Scaled{1.0}, GREY, Pixels{1});
-            for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
-                const auto fill = t1 < colors_of_tables.size() ? colors_of_tables[t1] : GREEN;
-                rescaled_surface.circle_filled(best_layout[t1], Pixels{10}, AspectNormal, NoRotation, BLACK, Pixels{1}, acmacs::surface::Dash::NoDash, fill);
-                rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], BLACK, Pixels{10});
-            }
-            acmacs::open(opt.output, 1, 1);
+            acmacs::drawi::Generator gen;
+            gen.generate(opt.output);
         }
+
+        // if (opt.output) {
+        //     const std::array colors_of_tables{
+        //         GREEN,   // 20180206 Leah G/Heidi
+        //         RED,     // 20180227 Tasuola
+        //         BLUE,   // 20180528 Rob
+        //         RED,     // 20180605 Tasuola
+        //         BLUE,   // 20180626 Rob
+        //         GREEN,   // 20180821 Heidi/Malet
+        //         GREEN,   // 20180918 Heidi/Tas
+        //         GREEN,   // 20181127 Heidi
+        //         RED,   // 20181213 Tasuola
+        //         RED,   // 20190211 Tasuola/Rob
+        //         RED,   // 20190409 Tasuola
+        //         GREEN,   // 20190514 Leah
+        //         GREEN,   // 20190521 Leah
+        //         GREEN,   // 20190716 Leah/Heidi
+        //         GREEN,    // 20190820 Leah
+        //         GREEN,   // 20190903 Leah
+        //         GREEN,    // 20190918 Leah
+        //     };
+        //     const double size = 800.0;
+        //     acmacs::surface::PdfCairo surface(opt.output, size, size, size);
+        //     const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
+        //     acmacs::Viewport viewport;
+        //     viewport.set_from_center_size(bb.center(), bb.diameter());
+        //     viewport.whole_width();
+        //     fmt::print("{}\n", viewport);
+        //     acmacs::surface::Surface& rescaled_surface = surface.subsurface(acmacs::PointCoordinates::zero2D, Scaled{surface.viewport().size.width}, viewport, true);
+        //     rescaled_surface.grid(Scaled{1.0}, GREY, Pixels{1});
+        //     for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
+        //         const auto fill = t1 < colors_of_tables.size() ? colors_of_tables[t1] : GREEN;
+        //         rescaled_surface.circle_filled(best_layout[t1], Pixels{10}, AspectNormal, NoRotation, BLACK, Pixels{1}, acmacs::surface::Dash::NoDash, fill);
+        //         rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], BLACK, Pixels{10});
+        //     }
+        //     acmacs::open(opt.output, 1, 1);
+        // }
     }
     catch (std::exception& err) {
         AD_ERROR("{}", err);
