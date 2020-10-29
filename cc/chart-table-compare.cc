@@ -240,7 +240,6 @@ int main(int argc, char* const argv[])
             gen.viewport().set_from_center_size(bb.center(), bb.diameter());
             for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
                 gen.add_point().coord(best_layout[t1]).fill(GREEN).outline(BLACK).outline_width(Pixels{1}).size(Pixels{10}).shape(acmacs::drawi::Generator::Point::Triangle).label(data.tables()[t1]);
-                // rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], BLACK, Pixels{10});
             }
             gen.generate(opt.output);
         }
@@ -265,21 +264,6 @@ int main(int argc, char* const argv[])
         //         GREEN,   // 20190903 Leah
         //         GREEN,    // 20190918 Leah
         //     };
-        //     const double size = 800.0;
-        //     acmacs::surface::PdfCairo surface(opt.output, size, size, size);
-        //     const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
-        //     acmacs::Viewport viewport;
-        //     viewport.set_from_center_size(bb.center(), bb.diameter());
-        //     viewport.whole_width();
-        //     fmt::print("{}\n", viewport);
-        //     acmacs::surface::Surface& rescaled_surface = surface.subsurface(acmacs::PointCoordinates::zero2D, Scaled{surface.viewport().size.width}, viewport, true);
-        //     rescaled_surface.grid(Scaled{1.0}, GREY, Pixels{1});
-        //     for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
-        //         const auto fill = t1 < colors_of_tables.size() ? colors_of_tables[t1] : GREEN;
-        //         rescaled_surface.circle_filled(best_layout[t1], Pixels{10}, AspectNormal, NoRotation, BLACK, Pixels{1}, acmacs::surface::Dash::NoDash, fill);
-        //         rescaled_surface.text(best_layout[t1] + acmacs::PointCoordinates{-0.05, 0.05}, data.tables()[t1], BLACK, Pixels{10});
-        //     }
-        //     acmacs::open(opt.output, 1, 1);
         // }
     }
     catch (std::exception& err) {
