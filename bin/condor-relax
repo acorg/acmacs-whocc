@@ -19,6 +19,14 @@ def main():
         source = os.path.realpath(args.source[0]) # before chdir in make_working_dir
         working_dir = make_working_dir(args)
         condor_relax_grid(args, source=source, working_dir=working_dir)
+        output = combine_results(source=source, working_dir=working_dir, keep_projections=args.keep_projections)
+        if args.keep_intermediate:
+            print(f"working dir: {working_dir}")
+        else:
+            import shutil
+            shutil.rmtree(working_dir)
+        print(output)
+        print(f"syget -p {os.path.basename(output)}")
         return 0
     except Exception as err:
         logging.error('{}\n{}'.format(err, traceback.format_exc()))
@@ -66,6 +74,27 @@ def condor_relax_grid(args, source, working_dir):
 
 # ----------------------------------------------------------------------
 
+def combine_results(source, working_dir, keep_projections):
+    import subprocess
+    output = f"{os.path.splitext(source)[0]}.relaxed.ace"
+    backup_file(output)
+    subprocess.check_call(f"chart-combine-projections {working_dir}/*.output.*.ace -k {keep_projections} -o {output}", shell=True)
+    return output
+
+# ----------------------------------------------------------------------
+
+def backup_file(filename):
+    if Path(filename).exists():
+        import time
+        name, ext = os.path.splitext(filename)
+        infix = time.strftime("%Y-%m%d-%H%M%S", time.localtime(os.stat(filename).st_mtime))
+        try:
+            os.rename(filename, f"{name}.{infix}{ext}")
+        except Exception as err:
+            logging.warning('Cannot create backup copy of {}: {}'.format(filename, err), exc_info=True)
+
+# ----------------------------------------------------------------------
+
 def make_working_dir(args):
     import time
     global now
@@ -75,7 +104,6 @@ def make_working_dir(args):
         now = datetime.datetime.now().strftime("%Y-%m%d-%H%M%S")
         working_dir = Path(real_cwd, f"{Path(args.source[0]).stem}.{now}")
     working_dir.mkdir()
-    print(f"working dir: {working_dir}")
     os.chdir(working_dir)
     return working_dir
 
