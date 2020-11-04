@@ -55,9 +55,11 @@ int main(int argc, char* const argv[])
         for (size_t t1 = 0; t1 < (charts.size() - 1); ++t1) {
             for (size_t t2 = t1 + 1; t2 < charts.size(); ++t2) {
                 acmacs::chart::CommonAntigensSera common(charts[t1], charts[t2], acmacs::chart::CommonAntigensSera::match_level_t::strict);
-                const auto procrustes_data = acmacs::chart::procrustes(*charts[t1].projection(0), *charts[t2].projection(0), common.points(), acmacs::chart::procrustes_scaling_t::no);
-                table_distances.add_value(acmacs::chart::Titer::Regular, t1, t2, procrustes_data.rms);
-                AD_DEBUG("{} {}  {:6.4f}", chart_name(charts[t1]), chart_name(charts[t2]), procrustes_data.rms);
+                if (!common.points().empty()) {
+                    const auto procrustes_data = acmacs::chart::procrustes(*charts[t1].projection(0), *charts[t2].projection(0), common.points(), acmacs::chart::procrustes_scaling_t::no);
+                    table_distances.add_value(acmacs::chart::Titer::Regular, t1, t2, procrustes_data.rms);
+                    AD_DEBUG("{} {}  {:6.4f}", chart_name(charts[t1]), chart_name(charts[t2]), procrustes_data.rms);
+                }
             }
         }
 
