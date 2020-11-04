@@ -10,7 +10,8 @@ TARGETS = \
   $(DIST)/whocc-sera-of-chart \
   $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines \
-  $(DIST)/chart-table-compare
+  $(DIST)/chart-table-compare \
+  $(DIST)/chart-table-map-compare
 
 # ----------------------------------------------------------------------
 
