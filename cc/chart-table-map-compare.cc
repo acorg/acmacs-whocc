@@ -94,6 +94,7 @@ int main(int argc, char* const argv[])
             for (size_t t1 = 0; t1 < charts.size(); ++t1) {
                 gen.add<acmacs::drawi::Generator::Point>().coord(best_layout[t1]).label(chart_name(charts[t1]));
             }
+            gen.add<acmacs::drawi::Generator::PointModify>().shape("triangle").fill(GREEN);
             gen.generate(opt.output);
         }
     }
