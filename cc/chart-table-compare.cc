@@ -239,8 +239,8 @@ int main(int argc, char* const argv[])
             const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
             gen.viewport().set_from_center_size(bb.center(), bb.diameter());
             for (size_t t1 = 0; t1 < data.num_tables(); ++t1) {
-                // gen.add_point().coord(best_layout[t1]).fill(GREEN).outline(BLACK).outline_width(Pixels{1}).size(Pixels{10}).shape(acmacs::drawi::Generator::Point::Triangle).label(data.tables()[t1]);
-                gen.add_point().coord(best_layout[t1]).label(data.tables()[t1]);
+                // gen.add<acmacs::drawi::Generator::Point>().coord(best_layout[t1]).fill(GREEN).outline(BLACK).outline_width(Pixels{1}).size(Pixels{10}).shape(acmacs::drawi::Generator::Point::Triangle).label(data.tables()[t1]);
+                gen.add<acmacs::drawi::Generator::Point>().coord(best_layout[t1]).label(data.tables()[t1]);
             }
             gen.generate(opt.output);
         }
