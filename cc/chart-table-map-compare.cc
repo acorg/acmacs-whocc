@@ -25,6 +25,7 @@ struct Options : public argv
     argument<str_array> charts{*this, arg_name{"chart"}, mandatory};
 
     option<str> output{*this, 'o', desc{"output .drawi file"}};
+    option<str> pdf_output{*this, "pdf", desc{"output .pdf file"}};
     option<size_t> number_of_optimizations{*this, 'n', dflt{100ul}};
     option<str> minimum_column_basis{*this, 'm', dflt{"none"}};
     option<size_t> number_of_dimensions{*this, 'd', dflt{2ul}};
@@ -43,7 +44,12 @@ int main(int argc, char* const argv[])
         for (const auto& filename : opt.charts)
             charts.emplace_back(acmacs::chart::import_from_file(filename));
 
-        const auto chart_name = [](const auto& chart) { return chart.info()->date(); };
+        const auto chart_name = [](const auto& chart) {
+            if (const auto date = chart.info()->date(); !date.empty())
+                return *date;
+            else
+                return chart.info()->make_name();
+        };
 
         for (auto& chart : charts) {
             chart.projections_modify()->remove_all();
@@ -98,7 +104,7 @@ int main(int argc, char* const argv[])
                 const auto label = chart_name(charts[t1]);
                 gen.add<acmacs::drawi::Generator::Point>().coord(best_layout[t1]).label(label);
                 if (label.size() >= 4 && (label[0] == '1' || label[0] == '2'))
-                    years.push_back(label->substr(0, 4));
+                    years.push_back(label.substr(0, 4));
             }
             gen.add<acmacs::drawi::Generator::PointModify>().shape(acmacs::drawi::Generator::Point::Triangle).fill(GREEN).size(Pixels{10}).label_size(Pixels{7}).label_offset({0.0, 1.2});
 
@@ -111,6 +117,9 @@ int main(int argc, char* const argv[])
             }
 
             gen.generate(opt.output);
+
+            if (opt.pdf_output)
+                acmacs::run_and_detach({"drawi", opt.output->data(), opt.pdf_output->data(), "--open"}, 0);
         }
     }
     catch (std::exception& err) {
