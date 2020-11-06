@@ -90,11 +90,11 @@ int main(int argc, char* const argv[])
         if (opt.output) {
             acmacs::drawi::Generator gen;
             const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
-            gen.viewport().set_from_center_size(bb.center(), bb.diameter());
+            gen.viewport().set_from_center_size(bb.center(), bb.hv_diameter_whole_number());
             for (size_t t1 = 0; t1 < charts.size(); ++t1) {
                 gen.add<acmacs::drawi::Generator::Point>().coord(best_layout[t1]).label(chart_name(charts[t1]));
             }
-            gen.add<acmacs::drawi::Generator::PointModify>().shape("triangle").fill(GREEN);
+            gen.add<acmacs::drawi::Generator::PointModify>().shape(acmacs::drawi::Generator::Point::Triangle).fill(GREEN).size(Pixels{10}).label_size(Pixels{7}).label_offset({0.0, 1.2});
             gen.generate(opt.output);
         }
     }
