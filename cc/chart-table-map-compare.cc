@@ -56,7 +56,7 @@ int main(int argc, char* const argv[])
             chart.relax(acmacs::chart::number_of_optimizations_t{*opt.number_of_optimizations}, acmacs::chart::MinimumColumnBasis{opt.minimum_column_basis},
                         acmacs::number_of_dimensions_t{*opt.number_of_dimensions}, acmacs::chart::use_dimension_annealing::no, acmacs::chart::optimization_options{precision});
             chart.projections_modify()->sort();
-            AD_DEBUG("{}  {:9.4f}", chart_name(chart), chart.projections()->best()->stress());
+            // AD_DEBUG("{}  {:9.4f}", chart_name(chart), chart.projections()->best()->stress());
         }
 
         acmacs::chart::TableDistances table_distances;
@@ -115,6 +115,10 @@ int main(int argc, char* const argv[])
                     gen.add<acmacs::drawi::Generator::PointModify>().select("name"sv, fmt::format("~{}", year)).fill(acmacs::color::perceptually_uniform_heatmap(years.size(), no));
                 }
             }
+
+            const auto title = fmt::format("{} {} {} {} {}-{}", charts[0].info()->lab(), charts[0].info()->virus_type(), charts[0].lineage(), charts[0].info()->assay(), years.front(), years.back());
+            gen.title(title);
+            // AD_DEBUG("title: \"{}\"", title);
 
             gen.generate(opt.output);
 
