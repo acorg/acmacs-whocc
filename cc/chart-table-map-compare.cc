@@ -3,6 +3,7 @@
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/quicklook.hh"
+#include "acmacs-base/color-gradient.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/chart-modify.hh"
 #include "acmacs-chart-2/procrustes.hh"
@@ -32,6 +33,7 @@ struct Options : public argv
 
 int main(int argc, char* const argv[])
 {
+    using namespace std::string_view_literals;
     int exit_code = 0;
     try {
         Options opt(argc, argv);
@@ -88,13 +90,26 @@ int main(int argc, char* const argv[])
         AD_DEBUG("best_stress: {}", best_stress);
 
         if (opt.output) {
+            std::vector<std::string> years;
             acmacs::drawi::Generator gen;
             const acmacs::BoundingBall bb{minimum_bounding_ball(best_layout)};
             gen.viewport().set_from_center_size(bb.center(), bb.hv_diameter_whole_number());
-            for (size_t t1 = 0; t1 < charts.size(); ++t1) {
-                gen.add<acmacs::drawi::Generator::Point>().coord(best_layout[t1]).label(chart_name(charts[t1]));
+            for (const auto t1 : range_from_0_to(charts.size())) {
+                const auto label = chart_name(charts[t1]);
+                gen.add<acmacs::drawi::Generator::Point>().coord(best_layout[t1]).label(label);
+                if (label.size() >= 4 && (label[0] == '1' || label[0] == '2'))
+                    years.push_back(label->substr(0, 4));
             }
             gen.add<acmacs::drawi::Generator::PointModify>().shape(acmacs::drawi::Generator::Point::Triangle).fill(GREEN).size(Pixels{10}).label_size(Pixels{7}).label_offset({0.0, 1.2});
+
+            sort_unique(years);
+            if (years.size() > 1) {
+                for (const auto [no, year] : ranges::views::zip(ranges::views::iota(0ul), years)) {
+                    AD_DEBUG("{:2d} {}", no, year);
+                    gen.add<acmacs::drawi::Generator::PointModify>().select("name"sv, fmt::format("~{}", year)).fill(acmacs::color::perceptually_uniform_heatmap(years.size(), no));
+                }
+            }
+
             gen.generate(opt.output);
         }
     }
