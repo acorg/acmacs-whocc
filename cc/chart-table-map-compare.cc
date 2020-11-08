@@ -56,7 +56,7 @@ int main(int argc, char* const argv[])
             chart.relax(acmacs::chart::number_of_optimizations_t{*opt.number_of_optimizations}, acmacs::chart::MinimumColumnBasis{opt.minimum_column_basis},
                         acmacs::number_of_dimensions_t{*opt.number_of_dimensions}, acmacs::chart::use_dimension_annealing::no, acmacs::chart::optimization_options{precision});
             chart.projections_modify()->sort();
-            // AD_DEBUG("{}  {:9.4f}", chart_name(chart), chart.projections()->best()->stress());
+            AD_DEBUG("{}  {:9.4f}", chart_name(chart), chart.projections()->best()->stress());
         }
 
         acmacs::chart::TableDistances table_distances;
@@ -65,7 +65,8 @@ int main(int argc, char* const argv[])
                 acmacs::chart::CommonAntigensSera common(charts[t1], charts[t2], acmacs::chart::CommonAntigensSera::match_level_t::strict);
                 if (!common.points().empty()) {
                     const auto procrustes_data = acmacs::chart::procrustes(*charts[t1].projection(0), *charts[t2].projection(0), common.points(), acmacs::chart::procrustes_scaling_t::no);
-                    table_distances.add_value(acmacs::chart::Titer::Regular, t1, t2, procrustes_data.rms);
+                    if (!std::isnan(procrustes_data.rms))
+                        table_distances.add_value(acmacs::chart::Titer::Regular, t1, t2, procrustes_data.rms);
                     AD_DEBUG("{} {}  {:6.4f}", chart_name(charts[t1]), chart_name(charts[t2]), procrustes_data.rms);
                 }
             }
