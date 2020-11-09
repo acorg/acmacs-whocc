@@ -1,4 +1,4 @@
-Time-stamp: <2020-09-06 10:13:07 eu>
+Time-stamp: <2020-11-09 14:50:45 eu>
 * already downloaded from gisaid: ~/ac/sequences-2019
 ls -l ~/ac/sequences-2019/gis*.fas.xz
 
@@ -73,11 +73,13 @@ dos2unix /d/gisaid_epiflu_sequence.fasta
 # 2019
 (query-replace "\n/" "/") - fix broken names for Serbian lab
 (query-replace "\ntype:" " type:") - fix broken names for Serbian lab
-# 2020
 (query-replace "\n3" " 3") - fix broken names for Serbian lab
+# 2020
 (query-replace "?A8" "(")
 (query-replace "?A9" ")")
 (query-replace ">recombinant A/" ">A/")
+(query-replace-regexp "\\(/201[89]\\)_201[89]-[0-9][0-9]-[0-9][0-9]_|_a=" "\\1_|_a=")
+
 helm-x whocc-hidb5-update --> ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
 seqdb3-scan --gisaid --all-subtypes-messages -m --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
 #+END_SRC
