@@ -19,7 +19,7 @@ def main():
         source = os.path.realpath(args.source[0]) # before chdir in make_working_dir
         working_dir = make_working_dir(args)
         condor_relax_grid(args, source=source, working_dir=working_dir)
-        output = combine_results(source=source, working_dir=working_dir, keep_projections=args.keep_projections)
+        output = combine_results(source=source, working_dir=working_dir, minimum_column_basis=args.minimum_column_basis, keep_projections=args.keep_projections)
         if args.keep_intermediate:
             print(f"working dir: {working_dir}")
         else:
@@ -74,9 +74,9 @@ def condor_relax_grid(args, source, working_dir):
 
 # ----------------------------------------------------------------------
 
-def combine_results(source, working_dir, keep_projections):
+def combine_results(source, working_dir, minimum_column_basis, keep_projections):
     import subprocess
-    output = f"{os.path.splitext(source)[0]}.relaxed.ace"
+    output = f"{os.path.splitext(source)[0]}.{minimum_column_basis}-relaxed.ace"
     backup_file(output)
     subprocess.check_call(f"chart-combine-projections {working_dir}/*.output.*.ace -k {keep_projections} -o {output}", shell=True)
     return output
@@ -85,7 +85,7 @@ def combine_results(source, working_dir, keep_projections):
 
 def backup_file(filename):
     if Path(filename).exists():
-        import time
+        import timegit
         name, ext = os.path.splitext(filename)
         infix = time.strftime("%Y-%m%d-%H%M%S", time.localtime(os.stat(filename).st_mtime))
         try:
