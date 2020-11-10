@@ -11,7 +11,8 @@ TARGETS = \
   $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines \
   $(DIST)/chart-table-compare \
-  $(DIST)/chart-table-map-compare
+  $(DIST)/chart-table-map-compare \
+  $(DIST)/test-openxls
 
 # ----------------------------------------------------------------------
 
@@ -52,6 +53,10 @@ test: install
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
+
+$(DIST)/test-openxls: $(BUILD)/test-openxls.o  | $(DIST)
+	$(call echo_link_exe,$@)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(OPENXLSX_LIBS) $(AD_RPATH)
 
 $(DIST)/%: $(BUILD)/%.o | $(DIST)
 	$(call echo_link_exe,$@)
