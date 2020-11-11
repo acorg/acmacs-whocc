@@ -58,7 +58,7 @@ $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BU
 
 $(DIST)/%: $(BUILD)/%.o | $(DIST)
 	$(call echo_link_exe,$@)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if [[ $@ == *xls* ]]; then echo "$(XLSX_LIBS)"; fi)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 
 # ======================================================================
 ### Local Variables:
