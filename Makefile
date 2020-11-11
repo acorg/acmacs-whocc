@@ -34,7 +34,7 @@ LDLIBS = \
   $(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
   $(CAIRO_LIBS) $(XZ_LIBS) $(CXX_LIBS)
 
-XLSX_LIBS = $(OPENXLSX_LIBS)
+XLSX_LIBS = $(XLNT_LIBS)
 
 # ----------------------------------------------------------------------
 

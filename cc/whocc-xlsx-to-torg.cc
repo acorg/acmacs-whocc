@@ -1,6 +1,6 @@
 #include "acmacs-base/argv.hh"
-#include "acmacs-base/openxlsx.hh"
 #include "acmacs-base/range-v3.hh"
+#include "acmacs-whocc/xlsx.hh"
 
 // ----------------------------------------------------------------------
 
@@ -21,12 +21,18 @@ int main(int argc, char* const argv[])
         Options opt(argc, argv);
 
         for (auto& xlsx : opt.xlsx) {
-            OpenXLSX::XLDocument doc{std::string{xlsx}};
-            auto workbook = doc.workbook();
-            fmt::print("sheets: {}\nworksheets: {}\n", workbook.sheetCount(), workbook.worksheetCount());
-            for (auto sheet_no : range_from_1_to_including(static_cast<uint16_t>(workbook.sheetCount()))) {
-                const auto sheet = workbook.sheet(sheet_no);
-                fmt::print("{:02d} {}\n", sheet_no, sheet.name());
+            auto doc = acmacs::xlsx::open(xlsx);
+            for (auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
+                auto sheet = doc.sheet(sheet_no);
+                fmt::print("{:2d} \"{}\"  {}:{}\n", sheet_no, sheet.name(), sheet.number_of_rows(), sheet.number_of_columns());
+                for (const auto row : range_from_0_to(sheet.number_of_rows())) {
+                    for (const auto column : range_from_0_to(sheet.number_of_columns())) {
+                        if (const auto cell = sheet.cell(row, column); !acmacs::xlsx::is_empty(cell))
+                            fmt::print("    {:3d}:{:2d}  {}\n", row, column, cell);
+                    }
+                }
+                fmt::print("\n\n");
+                break;
             }
         }
     }
@@ -34,6 +40,7 @@ int main(int argc, char* const argv[])
         AD_ERROR("{}", err);
         exit_code = 2;
     }
+    return exit_code;
 }
 
 // ----------------------------------------------------------------------
