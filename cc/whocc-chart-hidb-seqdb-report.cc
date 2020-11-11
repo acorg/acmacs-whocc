@@ -74,7 +74,7 @@ int main(int argc, char* const argv[])
         if (opt.clade)
             antigens.erase(std::remove_if(antigens.begin(), antigens.end(), [&seqdb, clade = *opt.clade](const auto& ag) -> bool { return !ag.antigen_seqdb || !ag.antigen_seqdb.has_clade(seqdb, clade); }),
                            antigens.end());
-        std::cerr << "INFO: " << antigens.size() << " antigens upon filtering\n";
+        AD_INFO("{} antigens upon filtering", antigens.size());
         if (opt.sort_by_tables) {
             auto hidb_tables = hidb.tables();
             std::sort(antigens.begin(), antigens.end(), [&](const auto& e1, const auto& e2) -> bool {
@@ -107,7 +107,7 @@ int main(int argc, char* const argv[])
         }
     }
     catch (std::exception& err) {
-        fmt::print(stderr, "ERROR: {}\n", err);
+        AD_ERROR("{}", err);
         exit_code = 2;
     }
     return exit_code;

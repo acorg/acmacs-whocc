@@ -8,11 +8,11 @@ TARGETS = \
   $(DIST)/whocc-chart-hidb-seqdb-report \
   $(DIST)/whocc-melb-serum-id \
   $(DIST)/whocc-sera-of-chart \
+  $(DIST)/whocc-xlsx-to-torg \
   $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines \
   $(DIST)/chart-table-compare \
-  $(DIST)/chart-table-map-compare \
-  $(DIST)/test-openxls
+  $(DIST)/chart-table-map-compare
 
 # ----------------------------------------------------------------------
 
@@ -34,6 +34,8 @@ LDLIBS = \
   $(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
   $(CAIRO_LIBS) $(XZ_LIBS) $(CXX_LIBS)
 
+XLSX_LIBS = $(OPENXLSX_LIBS)
+
 # ----------------------------------------------------------------------
 
 install: make-installation-dirs $(TARGETS)
@@ -54,13 +56,9 @@ $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BU
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
 
-$(DIST)/test-openxls: $(BUILD)/test-openxls.o  | $(DIST)
-	$(call echo_link_exe,$@)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(OPENXLSX_LIBS) $(AD_RPATH)
-
 $(DIST)/%: $(BUILD)/%.o | $(DIST)
 	$(call echo_link_exe,$@)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if [[ $@ == *xls* ]]; then echo "$(XLSX_LIBS)"; fi)
 
 # ======================================================================
 ### Local Variables:
