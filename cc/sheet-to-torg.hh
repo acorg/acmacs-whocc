@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "acmacs-whocc/sheet.hh"
 
 // ----------------------------------------------------------------------
@@ -16,6 +18,9 @@ namespace acmacs::sheet::inline v1
 
       private:
         std::unique_ptr<Sheet> sheet_;
+        std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_;
+        range titer_columns_;
+        std::vector<size_t> antigen_rows_;
 
         const Sheet& sheet() const { return *sheet_; }
 

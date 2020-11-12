@@ -23,11 +23,14 @@ void acmacs::sheet::v1::SheetToTorg::preprocess()
 
 void acmacs::sheet::v1::SheetToTorg::find_titers()
 {
+    std::vector<std::pair<size_t, range>> rows;
     for (const auto row : range_from_0_to(sheet().number_of_rows())) {
-        const auto titers = sheet().titer_range(row);
-        if (!titers.empty())
+        if (auto titers = sheet().titer_range(row); !titers.empty()) {
             AD_DEBUG("row:{:2d} {:c}:{:c}", row + 1, titers.first + 'A', titers.second - 1 + 'A');
+            rows.emplace_back(row, std::move(titers));
+        }
     }
+    ranges::sort(rows, [](const auto& e1, const auto& e2) { return e1.second.first < e2.second.first; });
 
 } // acmacs::sheet::v1::SheetToTorg::find_titers
 
