@@ -25,6 +25,9 @@ namespace acmacs::sheet::inline v1
         const Sheet& sheet() const { return *sheet_; }
 
         void find_titers();
+        void find_antigen_name_column();
+        void find_antigen_date_column();
+        void find_antigen_passage_column();
     };
 
 } // namespace acmacs::xlsx::inline v1

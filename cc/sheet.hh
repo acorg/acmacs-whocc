@@ -34,6 +34,18 @@ namespace acmacs::sheet::inline v1
             cell);
     }
 
+    inline bool is_date(const cell_t& cell)
+    {
+        return std::visit(
+            []<typename Content>(const Content&) {
+                if constexpr (std::is_same_v<Content, date::year_month_day>)
+                    return true;
+                else
+                    return false;
+            },
+            cell);
+    }
+
     // ----------------------------------------------------------------------
 
     struct range : public std::pair<size_t, size_t>
@@ -54,6 +66,10 @@ namespace acmacs::sheet::inline v1
         virtual size_t number_of_rows() const = 0;
         virtual size_t number_of_columns() const = 0;
         virtual cell_t cell(size_t row, size_t col) const = 0; // row and col are zero based
+
+        bool matches(const std::regex& re, const cell_t& cell) const;
+        bool matches(const std::regex& re, size_t row, size_t col) const { return matches(re, cell(row, col)); }
+        bool is_date(size_t row, size_t col) const { return acmacs::sheet::is_date(cell(row, col)); }
 
         bool maybe_titer(const cell_t& cell) const;
         bool maybe_titer(size_t row, size_t col) const { return maybe_titer(cell(row, col)); }

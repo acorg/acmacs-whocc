@@ -21,10 +21,10 @@ namespace acmacs::xlsx::inline v1
             size_t number_of_rows() const override { return sheet_.highest_row(); }
             size_t number_of_columns() const override { return sheet_.highest_column().index; }
 
-            static inline date::year_month_day make_date(const ::xlnt::datetime& dt, size_t row, size_t col)
+            static inline date::year_month_day make_date(const ::xlnt::datetime& dt, size_t /*row*/, size_t /*col*/)
             {
-                if (dt.hour || dt.minute || dt.second || dt.microsecond)
-                    AD_WARNING("xlnt datetime at {:c}{} contains time: {}", col + 'A', row + 1, dt.to_string());
+                // if (dt.hour || dt.minute || dt.second || dt.microsecond)
+                //     AD_WARNING("xlnt datetime at {:c}{} contains time: {}", col + 'A', row + 1, dt.to_string());
                 return date::year{dt.year} / date::month{static_cast<unsigned>(dt.month)} / dt.day;
             }
 
