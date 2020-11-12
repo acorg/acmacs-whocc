@@ -14,11 +14,14 @@ namespace acmacs::sheet::inline v1
       public:
         SheetToTorg(std::unique_ptr<Sheet> a_sheet) : sheet_{std::move(a_sheet)} {}
 
+        std::string name() const { return sheet().name(); }
         void preprocess();
+        std::string torg() const;
 
       private:
         std::unique_ptr<Sheet> sheet_;
         std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_;
+        size_t longest_antigen_name_{0}, longest_antigen_passage_{0};
         range titer_columns_;
         std::vector<size_t> antigen_rows_;
 

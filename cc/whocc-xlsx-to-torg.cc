@@ -24,9 +24,10 @@ int main(int argc, char* const argv[])
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
             for ([[maybe_unused]] auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
-                AD_INFO("Sheet {:2d}", sheet_no + 1);
                 auto converter = acmacs::sheet::SheetToTorg{doc.sheet(sheet_no)};
+                AD_INFO("Sheet {:2d} {}", sheet_no + 1, converter.name());
                 converter.preprocess();
+                fmt::print("\n{}\n\n", converter.torg());
                 // break;
             }
         }

@@ -70,6 +70,8 @@ namespace acmacs::sheet::inline v1
         bool matches(const std::regex& re, const cell_t& cell) const;
         bool matches(const std::regex& re, size_t row, size_t col) const { return matches(re, cell(row, col)); }
         bool is_date(size_t row, size_t col) const { return acmacs::sheet::is_date(cell(row, col)); }
+        size_t size(const cell_t& cell) const;
+        size_t size(size_t row, size_t col) const { return size(cell(row, col)); }
 
         bool maybe_titer(const cell_t& cell) const;
         bool maybe_titer(size_t row, size_t col) const { return maybe_titer(cell(row, col)); }

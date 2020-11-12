@@ -19,6 +19,21 @@ bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, const cell_t& cell)
 
 // ----------------------------------------------------------------------
 
+size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
+{
+    return std::visit(
+        []<typename Content>(const Content& arg) {
+            if constexpr (std::is_same_v<Content, std::string>)
+                return arg.size();
+            else
+                return 0ul;
+        },
+        cell);
+
+} // acmacs::sheet::v1::Sheet::size
+
+// ----------------------------------------------------------------------
+
 #include "acmacs-base/global-constructors-push.hh"
 
 static const std::regex re_titer{"^(<|[<>]?[0-9]+)$", acmacs::regex::icase};

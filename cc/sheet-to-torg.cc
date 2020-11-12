@@ -59,8 +59,17 @@ void acmacs::sheet::v1::SheetToTorg::find_titers()
 
 void acmacs::sheet::v1::SheetToTorg::find_antigen_name_column()
 {
+    const auto is_name = [this](size_t row, size_t col) {
+        if (sheet().matches(re_antigen_name, row, col)) {
+            longest_antigen_name_ = std::max(longest_antigen_name_, sheet().size(row, col));
+            return true;
+        }
+        else
+            return false;
+    };
+
     for (const auto col : range_from_0_to(titer_columns_.first)) { // to the left from titers
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](size_t row) { return sheet().matches(re_antigen_name, row, col); })) == antigen_rows_.size()) {
+        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_name](size_t row) { return is_name(row, col); })) == antigen_rows_.size()) {
             antigen_name_column_ = col;
             break;
         }
@@ -95,8 +104,17 @@ void acmacs::sheet::v1::SheetToTorg::find_antigen_date_column()
 
 void acmacs::sheet::v1::SheetToTorg::find_antigen_passage_column()
 {
+    const auto is_passage = [this](size_t row, size_t col) {
+        if (sheet().matches(re_antigen_passage, row, col)) {
+            longest_antigen_passage_ = std::max(longest_antigen_passage_, sheet().size(row, col));
+            return true;
+        }
+        else
+            return false;
+    };
+
     for (const auto col : range_from_0_to(sheet().number_of_columns())) {
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](size_t row) { return sheet().matches(re_antigen_passage, row, col); })) >= (antigen_rows_.size() / 2)) {
+        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_passage](size_t row) { return is_passage(row, col); })) >= (antigen_rows_.size() / 2)) {
             antigen_passage_column_ = col;
             break;
         }
@@ -108,6 +126,29 @@ void acmacs::sheet::v1::SheetToTorg::find_antigen_passage_column()
         AD_WARNING("Antigen passage column not found");
 
 } // acmacs::sheet::v1::SheetToTorg::find_antigen_passage_column
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::SheetToTorg::torg() const
+{
+    fmt::memory_buffer result;
+    fmt::format_to(result, "# -*- Org -*-\n\n");
+
+    fmt::format_to(result, "|          | {:{}s} |       date | {:{}s} |", "name", longest_antigen_name_, "passage", longest_antigen_passage_);
+    for ([[maybe_unused]] const auto col : ranges::views::iota(titer_columns_.first, titer_columns_.second))
+        fmt::format_to(result, " |");
+    fmt::format_to(result, "\n");
+
+    for (const auto row : antigen_rows_) {
+        fmt::format_to(result, "|          | {:{}s} | {} | {:{}s} |",                                      //
+                       fmt::format("{}", sheet().cell(row, *antigen_name_column_)), longest_antigen_name_, //
+                       sheet().cell(row, *antigen_date_column_),                                           //
+                       fmt::format("{}", sheet().cell(row, *antigen_passage_column_)), longest_antigen_passage_);
+        fmt::format_to(result, "\n");
+    }
+    return fmt::to_string(result);
+
+} // acmacs::sheet::v1::SheetToTorg::torg
 
 // ----------------------------------------------------------------------
 
