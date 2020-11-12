@@ -1,7 +1,7 @@
 #pragma once
 
-// #include <variant>
 #include "acmacs-base/fmt.hh"
+#include "acmacs-base/date.hh"
 
 // ----------------------------------------------------------------------
 
@@ -12,9 +12,12 @@ namespace acmacs::xlsx::inline v1
         class empty
         {
         };
+        class error
+        {
+        };
     } // namespace cell
 
-    using cell_t = std::variant<cell::empty, bool, std::string>;
+    using cell_t = std::variant<cell::empty, cell::error, bool, std::string, double, long, date::year_month_day>;
 
     inline bool is_empty(const cell_t& cell)
     {
@@ -40,10 +43,14 @@ template <> struct fmt::formatter<acmacs::xlsx::cell_t> : fmt::formatter<acmacs:
             [&ctx]<typename Content>(const Content& arg) {
                 if constexpr (std::is_same_v<Content, acmacs::xlsx::cell::empty>)
                     format_to(ctx.out(), "<empty>");
+                else if constexpr (std::is_same_v<Content, acmacs::xlsx::cell::error>)
+                    format_to(ctx.out(), "<error>");
                 else if constexpr (std::is_same_v<Content, bool>)
                     format_to(ctx.out(), "{}", arg);
-                else if constexpr (std::is_same_v<Content, std::string>)
+                else if constexpr (std::is_same_v<Content, std::string> || std::is_same_v<Content, double> || std::is_same_v<Content, long>)
                     format_to(ctx.out(), "{}", arg);
+                else if constexpr (std::is_same_v<Content, date::year_month_day>)
+                    format_to(ctx.out(), "{}", date::display(arg));
                 else
                     format_to(ctx.out(), "<*unknown*>");
             },

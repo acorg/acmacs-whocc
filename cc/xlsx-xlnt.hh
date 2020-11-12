@@ -1,5 +1,6 @@
 #pragma once
 
+#include "acmacs-base/float.hh"
 #include "acmacs-base/xlnt.hh"
 #include "acmacs-whocc/xlsx-cell.hh"
 
@@ -18,6 +19,13 @@ namespace acmacs::xlsx::inline v1
             size_t number_of_rows() const { return sheet_.highest_row(); }
             size_t number_of_columns() const { return sheet_.highest_column().index; }
 
+            static inline date::year_month_day make_date(const ::xlnt::datetime& dt)
+            {
+                if (dt.hour || dt.minute || dt.second || dt.microsecond)
+                    AD_WARNING("xlnt datetime contains time: {}", dt.to_string());
+                return date::year{dt.year} / date::month{static_cast<unsigned>(dt.month)} / dt.day;
+            }
+
             cell_t cell(size_t row, size_t col) const // row and col are zero based
             {
                 const ::xlnt::cell_reference ref{static_cast<::xlnt::column_t::index_t>(col + 1), static_cast<::xlnt::row_t>(row + 1)};
@@ -32,12 +40,22 @@ namespace acmacs::xlsx::inline v1
                         return cell.value<bool>();
                     case ::xlnt::cell_type::inline_string:
                     case ::xlnt::cell_type::shared_string:
-                        return cell.value<std::string>();
-                    case ::xlnt::cell_type::date:
-                    case ::xlnt::cell_type::error:
-                    case ::xlnt::cell_type::number:
                     case ::xlnt::cell_type::formula_string:
-                        break;
+                        if (const auto val = cell.value<std::string>(); !val.empty())
+                            return val;
+                        else
+                            return cell::empty{};
+                    case ::xlnt::cell_type::number:
+                        if (cell.is_date())
+                            return make_date(cell.value<::xlnt::datetime>());
+                        else if (const auto vald = cell.value<double>(); !float_equal(vald, std::round(vald)))
+                            return vald;
+                        else
+                            return static_cast<long>(cell.value<long long>());
+                    case ::xlnt::cell_type::date:
+                        return make_date(cell.value<::xlnt::datetime>());
+                    case ::xlnt::cell_type::error:
+                        return cell::error{};
                 }
                 return cell::empty{};
             }
