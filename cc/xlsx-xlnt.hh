@@ -21,10 +21,10 @@ namespace acmacs::xlsx::inline v1
             size_t number_of_rows() const override { return sheet_.highest_row(); }
             size_t number_of_columns() const override { return sheet_.highest_column().index; }
 
-            static inline date::year_month_day make_date(const ::xlnt::datetime& dt)
+            static inline date::year_month_day make_date(const ::xlnt::datetime& dt, size_t row, size_t col)
             {
                 if (dt.hour || dt.minute || dt.second || dt.microsecond)
-                    AD_WARNING("xlnt datetime contains time: {}", dt.to_string());
+                    AD_WARNING("xlnt datetime at {:c}{} contains time: {}", col + 'A', row + 1, dt.to_string());
                 return date::year{dt.year} / date::month{static_cast<unsigned>(dt.month)} / dt.day;
             }
 
@@ -49,13 +49,13 @@ namespace acmacs::xlsx::inline v1
                             return acmacs::sheet::cell::empty{};
                     case ::xlnt::cell_type::number:
                         if (cell.is_date())
-                            return make_date(cell.value<::xlnt::datetime>());
+                            return make_date(cell.value<::xlnt::datetime>(), row, col);
                         else if (const auto vald = cell.value<double>(); !float_equal(vald, std::round(vald)))
                             return vald;
                         else
                             return static_cast<long>(cell.value<long long>());
                     case ::xlnt::cell_type::date:
-                        return make_date(cell.value<::xlnt::datetime>());
+                        return make_date(cell.value<::xlnt::datetime>(), row, col);
                     case ::xlnt::cell_type::error:
                         return acmacs::sheet::cell::error{};
                 }
