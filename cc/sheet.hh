@@ -1,12 +1,15 @@
 #pragma once
 
+#include <variant>
+
 #include "acmacs-base/fmt.hh"
 #include "acmacs-base/date.hh"
 
 // ----------------------------------------------------------------------
 
-namespace acmacs::xlsx::inline v1
+namespace acmacs::sheet::inline v1
 {
+
     namespace cell
     {
         class empty
@@ -23,7 +26,7 @@ namespace acmacs::xlsx::inline v1
     {
         return std::visit(
             []<typename Content>(const Content&) {
-                if constexpr (std::is_same_v<Content, acmacs::xlsx::cell::empty>)
+                if constexpr (std::is_same_v<Content, cell::empty>)
                     return true;
                 else
                     return false;
@@ -31,19 +34,45 @@ namespace acmacs::xlsx::inline v1
             cell);
     }
 
-} // namespace acmacs::xlsx::inline v1
+    // ----------------------------------------------------------------------
+
+    struct range : public std::pair<size_t, size_t>
+    {
+        range() : std::pair<size_t, size_t>{static_cast<size_t>(-1), static_cast<size_t>(-1)} {}
+
+        constexpr bool valid() const { return first != static_cast<size_t>(-1) && first <= second; }
+        constexpr bool empty() const { return !valid() || first == second; }
+        constexpr size_t size() const { return valid() ? second - first : 0ul; }
+    };
+
+    class Sheet
+    {
+      public:
+        virtual ~Sheet() = default;
+
+        virtual std::string name() const = 0;
+        virtual size_t number_of_rows() const = 0;
+        virtual size_t number_of_columns() const = 0;
+        virtual cell_t cell(size_t row, size_t col) const = 0; // row and col are zero based
+
+        bool maybe_titer(const cell_t& cell) const;
+        bool maybe_titer(size_t row, size_t col) const { return maybe_titer(cell(row, col)); }
+        range titer_range(size_t row) const; // returns column range, returns empty range if not found
+    };
+
+} // namespace acmacs
 
 // ----------------------------------------------------------------------
 
-template <> struct fmt::formatter<acmacs::xlsx::cell_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
 {
-    template <typename FormatCtx> auto format(const acmacs::xlsx::cell_t& value, FormatCtx& ctx)
+    template <typename FormatCtx> auto format(const acmacs::sheet::cell_t& cell, FormatCtx& ctx)
     {
         std::visit(
             [&ctx]<typename Content>(const Content& arg) {
-                if constexpr (std::is_same_v<Content, acmacs::xlsx::cell::empty>)
+                if constexpr (std::is_same_v<Content, acmacs::sheet::cell::empty>)
                     format_to(ctx.out(), "<empty>");
-                else if constexpr (std::is_same_v<Content, acmacs::xlsx::cell::error>)
+                else if constexpr (std::is_same_v<Content, acmacs::sheet::cell::error>)
                     format_to(ctx.out(), "<error>");
                 else if constexpr (std::is_same_v<Content, bool>)
                     format_to(ctx.out(), "{}", arg);
@@ -54,7 +83,7 @@ template <> struct fmt::formatter<acmacs::xlsx::cell_t> : fmt::formatter<acmacs:
                 else
                     format_to(ctx.out(), "<*unknown*>");
             },
-            value);
+            cell);
         return ctx.out();
     }
 };

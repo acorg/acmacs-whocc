@@ -60,6 +60,10 @@ $(DIST)/%: $(BUILD)/%.o | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 
+$(DIST)/whocc-xlsx-to-torg: $(BUILD)/whocc-xlsx-to-torg.o $(BUILD)/sheet-to-torg.o $(BUILD)/sheet.o | $(DIST)
+	$(call echo_link_exe,$@)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
+
 # ======================================================================
 ### Local Variables:
 ### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))

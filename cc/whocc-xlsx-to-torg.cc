@@ -1,5 +1,6 @@
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/range-v3.hh"
+#include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/xlsx.hh"
 
 // ----------------------------------------------------------------------
@@ -23,15 +24,8 @@ int main(int argc, char* const argv[])
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
             for (auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
-                auto sheet = doc.sheet(sheet_no);
-                fmt::print("{:2d} \"{}\"  {}:{}\n", sheet_no, sheet.name(), sheet.number_of_rows(), sheet.number_of_columns());
-                for (const auto row : range_from_0_to(sheet.number_of_rows())) {
-                    for (const auto column : range_from_0_to(sheet.number_of_columns())) {
-                        if (const auto cell = sheet.cell(row, column); !acmacs::xlsx::is_empty(cell))
-                            fmt::print("    {:3d}:{:2d}  {}\n", row, column, cell);
-                    }
-                }
-                fmt::print("\n\n");
+                auto converter = acmacs::sheet::SheetToTorg{doc.sheet(sheet_no)};
+                converter.preprocess();
                 break;
             }
         }

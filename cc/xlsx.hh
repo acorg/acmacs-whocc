@@ -15,13 +15,10 @@ namespace acmacs::xlsx::inline v1
     class Sheet : public _SheetBase
     {
       public:
-
-      private:
     };
 
     class Doc : public _DocBase
     {
-      public:
       protected:
         Doc(std::string_view filename) : _DocBase(filename) {}
 
