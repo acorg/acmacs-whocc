@@ -17,6 +17,12 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     fmt::memory_buffer result;
     fmt::format_to(result, "# -*- Org -*-\n\n");
 
+    fmt::format_to(result, "- Lab: {}\n", extractor_->lab());
+    fmt::format_to(result, "- Date: {}\n", "");
+    fmt::format_to(result, "- Subtype: {}\n", extractor_->subtype());
+    fmt::format_to(result, "- Assay: {}\n", extractor_->assay());
+    fmt::format_to(result, "\n");
+
     fmt::format_to(result, "|          | {:{}s} |       date | {:{}s} |", "name", extractor_->longest_antigen_name(), "passage", extractor_->longest_antigen_passage());
     for ([[maybe_unused]] const auto col : range_from_to(extractor_->titer_columns()))
         fmt::format_to(result, " |");

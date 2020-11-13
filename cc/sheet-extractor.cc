@@ -1,10 +1,13 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/log.hh"
+#include "acmacs-base/string-compare.hh"
 #include "acmacs-whocc/sheet-extractor.hh"
 
 // ----------------------------------------------------------------------
 
 #include "acmacs-base/global-constructors-push.hh"
+
+static const std::regex re_table_title_crick{R"(^Table .-.\.Antigenic analysis of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?) viruses\s*-\s*(Plaque Reduction Neutralisation \(MDCK-SIAT\))?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
 static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
@@ -15,7 +18,20 @@ static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::r
 
 std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(const Sheet& sheet)
 {
-    auto extractor = std::make_unique<Extractor>(sheet);
+    std::unique_ptr<Extractor> extractor;
+    std::smatch match;
+    if (sheet.matches(re_table_title_crick, match, 0, 0)) {
+        if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
+            extractor = std::make_unique<ExtractorCrickPRN>(sheet);
+        }
+        else {
+            extractor = std::make_unique<ExtractorCrick>(sheet);
+            extractor->subtype(match.str(1));
+        }
+    }
+    else {
+        extractor = std::make_unique<Extractor>(sheet);
+    }
     extractor->preprocess();
     return extractor;
 
@@ -126,6 +142,25 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column()
         AD_WARNING("Antigen passage column not found");
 
 } // acmacs::sheet::v1::Extractor::find_antigen_passage_column
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
+    : Extractor(a_sheet)
+{
+    lab("CRICK");
+
+} // acmacs::sheet::v1::ExtractorCrick::ExtractorCrick
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::ExtractorCrickPRN::ExtractorCrickPRN(const Sheet& a_sheet)
+    : ExtractorCrick(a_sheet)
+{
+    assay("PRN");
+    subtype("A(H3N2)");
+
+} // acmacs::sheet::v1::ExtractorCrick::ExtractorCrick
 
 // ----------------------------------------------------------------------
 

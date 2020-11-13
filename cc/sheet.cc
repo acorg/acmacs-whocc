@@ -18,6 +18,21 @@ bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, const cell_t& cell)
 
 // ----------------------------------------------------------------------
 
+bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, std::smatch& match, const cell_t& cell) const
+{
+    return std::visit(
+        [&re, &match]<typename Content>(const Content& arg) {
+            if constexpr (std::is_same_v<Content, std::string>)
+                return std::regex_search(arg, match, re);
+            else
+                return false;
+        },
+        cell);
+
+} // acmacs::sheet::v1::Sheet::matches
+
+// ----------------------------------------------------------------------
+
 size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
 {
     return std::visit(
