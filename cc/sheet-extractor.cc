@@ -7,7 +7,7 @@
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_table_title_crick{R"(^Table .-.\.Antigenic analysis of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?) viruses\s*-\s*(Plaque Reduction Neutralisation \(MDCK-SIAT\))?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
+static const std::regex re_table_title_crick{R"(^Table [X0-9-]+\.\s*Antigenic analysis of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?) viruses\s*-\s*(Plaque Reduction Neutralisation \(MDCK-SIAT\))?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
 static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
@@ -28,8 +28,10 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
             extractor = std::make_unique<ExtractorCrick>(sheet);
             extractor->subtype(match.str(1));
         }
+        extractor->date(date::from_string(match.str(3), date::allow_incomplete::no, date::throw_on_error::no));
     }
     else {
+        AD_WARNING("no specific extractor found");
         extractor = std::make_unique<Extractor>(sheet);
     }
     extractor->preprocess();

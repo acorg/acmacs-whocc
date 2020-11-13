@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "acmacs-base/date.hh"
 #include "acmacs-whocc/sheet.hh"
 
 // ----------------------------------------------------------------------
@@ -24,12 +25,14 @@ namespace acmacs::sheet::inline v1
         std::string_view lineage() const { return lineage_; }
         std::string_view assay() const { return assay_; }
         std::string_view rbc() const { return rbc_; }
+        std::string date() const { return date::display(date_); }
 
         void lab(std::string_view a_lab) { lab_ = a_lab; }
         void subtype(std::string_view a_subtype) { subtype_ = a_subtype; }
         void lineage(std::string_view a_lineage) { lineage_ = a_lineage; }
         void assay(std::string_view a_assay) { assay_ = a_assay; }
         void rbc(std::string_view a_rbc) { rbc_ = a_rbc; }
+        void date(const date::year_month_day& a_date) { date_ = a_date; }
 
         std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }
@@ -54,12 +57,12 @@ namespace acmacs::sheet::inline v1
         std::string lineage_;
         std::string assay_{"HI"};
         std::string rbc_;
+        date::year_month_day date_{date::invalid_date()};
 
         std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_;
         size_t longest_antigen_name_{0}, longest_antigen_passage_{0};
         range titer_columns_;
         std::vector<size_t> antigen_rows_;
-
     };
 
     std::unique_ptr<Extractor> extractor_factory(const Sheet& sheet);
