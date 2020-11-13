@@ -96,6 +96,36 @@ std::string acmacs::sheet::v1::Extractor::antigen_passage(size_t ag_no) const
 
 // ----------------------------------------------------------------------
 
+std::string acmacs::sheet::v1::Extractor::serum_name(size_t sr_no) const
+{
+    return {};
+
+} // acmacs::sheet::v1::Extractor::serum_name
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::serum_passage(size_t sr_no) const
+{
+    if (serum_passage_row().has_value())
+        return fmt::format("{}", sheet().cell(serum_columns().at(sr_no), *serum_passage_row()));
+    else
+        return {};
+
+} // acmacs::sheet::v1::Extractor::serum_passage
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::serum_id(size_t sr_no) const
+{
+    if (serum_id_row().has_value())
+        return fmt::format("{}", sheet().cell(serum_columns().at(sr_no), *serum_id_row()));
+    else
+        return {};
+
+} // acmacs::sheet::v1::Extractor::serum_id
+
+// ----------------------------------------------------------------------
+
 void acmacs::sheet::v1::Extractor::preprocess()
 {
     find_titers();
@@ -227,7 +257,17 @@ void acmacs::sheet::v1::Extractor::find_serum_passage_row(const std::regex& re)
 
 void acmacs::sheet::v1::Extractor::find_serum_id_row(const std::regex& re)
 {
-    AD_WARNING("[{}] Serum id row not found", lab());
+    for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
+        if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
+            serum_id_row_ = row;
+            break;
+        }
+    }
+
+    if (serum_id_row_.has_value())
+        AD_INFO("[{}] Serum id row: {}", lab(), *serum_id_row_ + 1);
+    else
+        AD_WARNING("[{}] Serum id row not found", lab());
 
 } // acmacs::sheet::v1::Extractor::find_serum_id_row
 

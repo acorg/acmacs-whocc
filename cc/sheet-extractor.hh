@@ -33,9 +33,13 @@ namespace acmacs::sheet::inline v1
         size_t longest_antigen_name() const { return longest_antigen_name_; }
         size_t longest_antigen_passage() const { return longest_antigen_passage_; }
 
-        std::string antigen_name(size_t ag_no) const;
-        std::string antigen_date(size_t ag_no) const;
-        std::string antigen_passage(size_t ag_no) const;
+        virtual std::string antigen_name(size_t ag_no) const;
+        virtual std::string antigen_date(size_t ag_no) const;
+        virtual std::string antigen_passage(size_t ag_no) const;
+
+        virtual std::string serum_name(size_t sr_no) const;
+        virtual std::string serum_passage(size_t sr_no) const;
+        virtual std::string serum_id(size_t sr_no) const;
 
         void lab(std::string_view a_lab) { lab_ = a_lab; }
         void subtype(std::string_view a_subtype) { subtype_ = a_subtype; }
@@ -61,6 +65,9 @@ namespace acmacs::sheet::inline v1
         std::optional<size_t> antigen_passage_column() const { return antigen_passage_column_; }
         const std::vector<size_t>& antigen_rows() const { return antigen_rows_; }
         const std::vector<size_t>& serum_columns() const { return serum_columns_; }
+
+        std::optional<size_t> serum_passage_row() const { return serum_passage_row_; }
+        std::optional<size_t> serum_id_row() const { return serum_id_row_; }
 
         std::vector<size_t>& serum_columns() { return serum_columns_; }
 
