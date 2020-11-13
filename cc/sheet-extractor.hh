@@ -53,8 +53,8 @@ namespace acmacs::sheet::inline v1
         virtual void find_antigen_date_column();
         virtual void find_antigen_passage_column();
         virtual void find_serum_rows();
-        virtual void find_serum_passage_row();
-        virtual void find_serum_id_row();
+        virtual void find_serum_passage_row(const std::regex& re);
+        virtual void find_serum_id_row(const std::regex& re);
 
         std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }

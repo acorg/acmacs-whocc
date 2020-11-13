@@ -16,6 +16,7 @@ static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCKCELL|EGG)", acmacs::r
 
 static const std::regex re_crick_serum_name_1{"^[AB]/[A-Z '_-]+$", acmacs::regex::icase};
 static const std::regex re_crick_serum_name_2{"^[A-Z0-9-]+(/[0-9]+)?$", acmacs::regex::icase};
+static const std::regex re_crick_serum_id{"^F[0-9][0-9]/[0-2][0-9]$", acmacs::regex::icase};
 
 static const std::regex re_crick_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_crick_prn_read{"^read$", acmacs::regex::icase};
@@ -206,10 +207,10 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column()
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::Extractor::find_serum_passage_row()
+void acmacs::sheet::v1::Extractor::find_serum_passage_row(const std::regex& re)
 {
     for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
-        if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this](size_t col) { return sheet().matches(re_serum_passage, row, col); })) >= (number_of_sera() / 2)) {
+        if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
             serum_passage_row_ = row;
             break;
         }
@@ -224,7 +225,7 @@ void acmacs::sheet::v1::Extractor::find_serum_passage_row()
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::Extractor::find_serum_id_row()
+void acmacs::sheet::v1::Extractor::find_serum_id_row(const std::regex& re)
 {
     AD_WARNING("[{}] Serum id row not found", lab());
 
@@ -251,8 +252,8 @@ acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
 void acmacs::sheet::v1::ExtractorCrick::find_serum_rows()
 {
     find_serum_name_rows();
-    find_serum_passage_row();
-    find_serum_id_row();
+    find_serum_passage_row(re_serum_passage);
+    find_serum_id_row(re_crick_serum_id);
 
 } // acmacs::sheet::v1::ExtractorCrick::find_serum_rows
 
