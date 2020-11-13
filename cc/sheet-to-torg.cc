@@ -23,6 +23,33 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     const size_t sr_id_row{3};
     const size_t sr_col_base{4};
 
+    std::vector<std::vector<std::string>> data(extractor_->number_of_antigens() + 4, std::vector<std::string>(extractor_->number_of_sera() + 4));
+    data[0][ag_name_col] = "name";
+    data[0][ag_date_col] = "date";
+    data[0][ag_passage_col] = "passage";
+    data[sr_name_row][0] = "name";
+    data[sr_passage_row][0] = "passage";
+    data[sr_id_row][0] = "serum_id";
+
+    for (const auto ag_no : range_from_0_to(extractor_->number_of_antigens())) {
+        data[ag_row_base + ag_no][ag_name_col] = extractor_->antigen_name(ag_no);
+        data[ag_row_base + ag_no][ag_date_col] = extractor_->antigen_date(ag_no);
+        data[ag_row_base + ag_no][ag_passage_col] = extractor_->antigen_passage(ag_no);
+        for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
+            data[sr_name_row][sr_col_base + sr_no] = extractor_->serum_name(sr_no);
+            data[sr_passage_row][sr_col_base + sr_no] = extractor_->serum_passage(sr_no);
+            data[sr_id_row][sr_col_base + sr_no] = extractor_->serum_id(sr_no);
+        }
+    }
+
+    // ----------------------------------------------------------------------
+
+    std::vector<size_t> column_widths(data[0].size(), 0);
+    for (const auto col : range_from_0_to(data[0].size()))
+        column_widths[col] = ranges::max(data | ranges::views::transform([col](const auto& row) { return row[col].size(); }));
+
+    // ----------------------------------------------------------------------
+
     fmt::memory_buffer result;
     fmt::format_to(result, "# -*- Org -*-\n\n");
 
@@ -36,46 +63,12 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
         fmt::format_to(result, "- Lineage: {}\n", lineage);
     fmt::format_to(result, "\n");
 
-    std::vector<std::vector<std::string>> data(extractor_->number_of_antigens() + 4, std::vector<std::string>(extractor_->number_of_sera() + 4));
-    data[0][ag_name_col] = "name";
-    data[0][ag_date_col] = "date";
-    data[0][ag_passage_col] = "passage";
-    data[sr_name_row][0] = "name";
-    data[sr_passage_row][0] = "passage";
-    data[sr_id_row][0] = "serum_id";
-
-    for (const auto ag_no : range_from_0_to(extractor_->number_of_antigens())) {
-        data[ag_row_base + ag_no][ag_name_col] = extractor_->antigen_name(ag_no);
-        data[ag_row_base + ag_no][ag_date_col] = extractor_->antigen_date(ag_no);
-        data[ag_row_base + ag_no][ag_passage_col] = extractor_->antigen_passage(ag_no);
-    }
-
-    std::vector<size_t> column_widths(data[0].size(), 0);
-    for (const auto col : range_from_0_to(data[0].size()))
-        column_widths[col] = ranges::max(data | ranges::views::transform([col](const auto& row) { return row[col].size(); }));
-
     for (const auto& row : data) {
         fmt::format_to(result, "|");
         for (const auto col : range_from_0_to(row.size()))
             fmt::format_to(result, " {:{}s} |", row[col], column_widths[col]);
         fmt::format_to(result, "\n");
     }
-
-    // fmt::format_to(result, "|          | {:{}s} |       date | {:{}s} |", "name", extractor_->longest_antigen_name(), "passage", extractor_->longest_antigen_passage());
-    // for ([[maybe_unused]] const auto col : range_from_0_to(extractor_->number_of_sera()))
-    //     fmt::format_to(result, " |");
-    // fmt::format_to(result, "\n");
-
-    // fmt::format_to(result, "|          | {:{}s} |            | {:{}s} |", "", extractor_->longest_antigen_name(), "", extractor_->longest_antigen_passage());
-    // fmt::format_to(result, "\n");
-
-    // for (const auto ag_no : range_from_0_to(extractor_->number_of_antigens())) {
-    //     fmt::format_to(result, "|          | {:{}s} | {} | {:{}s} |",                       //
-    //                    extractor_->antigen_name(ag_no), extractor_->longest_antigen_name(), //
-    //                    extractor_->antigen_date(ag_no),                                     //
-    //                    extractor_->antigen_passage(ag_no), extractor_->longest_antigen_passage());
-    //     fmt::format_to(result, "\n");
-    // }
 
     return fmt::to_string(result);
 

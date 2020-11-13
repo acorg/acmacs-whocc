@@ -106,8 +106,12 @@ std::string acmacs::sheet::v1::Extractor::serum_name(size_t sr_no) const
 
 std::string acmacs::sheet::v1::Extractor::serum_passage(size_t sr_no) const
 {
-    if (serum_passage_row().has_value())
-        return fmt::format("{}", sheet().cell(serum_columns().at(sr_no), *serum_passage_row()));
+    if (serum_passage_row().has_value()) {
+        if (const auto cell = sheet().cell(*serum_passage_row(), serum_columns().at(sr_no)); !is_empty(cell))
+            return fmt::format("{}", cell);
+        else
+            return {};
+    }
     else
         return {};
 
@@ -117,8 +121,12 @@ std::string acmacs::sheet::v1::Extractor::serum_passage(size_t sr_no) const
 
 std::string acmacs::sheet::v1::Extractor::serum_id(size_t sr_no) const
 {
-    if (serum_id_row().has_value())
-        return fmt::format("{}", sheet().cell(serum_columns().at(sr_no), *serum_id_row()));
+    if (serum_id_row().has_value()) {
+        if (const auto cell = sheet().cell(*serum_id_row(), serum_columns().at(sr_no)); !is_empty(cell))
+            return fmt::format("{}", cell);
+        else
+            return {};
+    }
     else
         return {};
 
