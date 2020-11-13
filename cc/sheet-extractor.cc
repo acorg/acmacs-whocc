@@ -7,7 +7,7 @@
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_table_title_crick{R"(^Table [X0-9-]+\.\s*Antigenic analysis of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?) viruses\s*-\s*(Plaque Reduction Neutralisation \(MDCK-SIAT\))?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
+static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?) viruses\s*-?\s*\(?(Plaque Reduction Neutralisation \(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
 static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
@@ -26,7 +26,20 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
         }
         else {
             extractor = std::make_unique<ExtractorCrick>(sheet);
-            extractor->subtype(match.str(1));
+            auto subtype = match.str(1);
+            extractor->subtype(subtype);
+            if (subtype == "B" && match.length(2) > 4) {
+                switch (match.str(2)[0]) {
+                    case 'V':
+                    case 'v':
+                        extractor->lineage("VICTORIA");
+                        break;
+                    case 'Y':
+                    case 'y':
+                        extractor->lineage("YAMAGATA");
+                        break;
+                }
+            }
         }
         extractor->date(date::from_string(match.str(3), date::allow_incomplete::no, date::throw_on_error::no));
     }
@@ -57,7 +70,7 @@ void acmacs::sheet::v1::Extractor::find_titers()
     std::vector<std::pair<size_t, range>> rows;
     range common;
     for (const auto row : range_from_0_to(sheet().number_of_rows())) {
-        if (auto titers = sheet().titer_range(row); !titers.empty()) {
+        if (auto titers = sheet().titer_range(row); !titers.empty() && titers.first > 0) {
             // AD_DEBUG("row:{:2d} {:c}:{:c}", row + 1, titers.first + 'A', titers.second - 1 + 'A');
             if (!common.valid())
                 common = titers;
@@ -87,14 +100,17 @@ void acmacs::sheet::v1::Extractor::find_antigen_name_column()
     };
 
     for (const auto col : range_from_0_to(titer_columns_.first)) { // to the left from titers
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_name](size_t row) { return is_name(row, col); })) == antigen_rows_.size()) {
+        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_name](size_t row) { return is_name(row, col); })) > (antigen_rows_.size() / 2)) {
             antigen_name_column_ = col;
             break;
         }
     }
 
-    if (antigen_name_column_.has_value())
+    if (antigen_name_column_.has_value()) {
         AD_INFO("Antigen name column: {:c}", *antigen_name_column_ + 'A');
+        // remote antigen rows that have no name
+        ranges::actions::remove_if(antigen_rows_, [this, is_name](size_t row) { return !is_name(row, *antigen_name_column_); });
+    }
     else
         AD_WARNING("Antigen name column not found");
 
