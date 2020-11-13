@@ -12,6 +12,9 @@ static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\.\s*Antigenic
 static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
 
+static const std::regex re_crick_serum_name_1{"^[AB]/[A-Z '_-]+$", acmacs::regex::icase};
+static const std::regex re_crick_serum_name_2{"^[A-Z0-9-]+(/[0-9]+)?$", acmacs::regex::icase};
+
 #include "acmacs-base/diagnostics-pop.hh"
 
 // ----------------------------------------------------------------------
@@ -215,6 +218,30 @@ acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
 
 void acmacs::sheet::v1::ExtractorCrick::find_serum_rows()
 {
+    fmt::memory_buffer report;
+    for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
+        if (const size_t matches = static_cast<size_t>(ranges::count_if(range_from_to(titer_columns()), [row, this](size_t col) { return sheet().matches(re_crick_serum_name_1, row, col); })); matches == titer_columns().size()) {
+            serum_name_1_row_ = row;
+            break;
+        }
+        else if (matches)
+            fmt::format_to(report, "    re_crick_serum_name_1 row:{} matches:{}\n", row, matches);
+    }
+
+    if (serum_name_1_row_.has_value())
+        AD_INFO("[Crick]: Serum name row 1: {}", *serum_name_1_row_);
+    else
+        AD_WARNING("[Crick]: No serum name row 1 found (titer columns: {:c}:{:c} size:{})\n{}", titer_columns().first + 'A', titer_columns().second + 'A', titer_columns().size(), fmt::to_string(report));
+
+    if (serum_name_1_row_.has_value() && static_cast<size_t>(ranges::count_if(range_from_to(titer_columns()), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })) == titer_columns().size())
+            serum_name_2_row_ = *serum_name_1_row_ + 1;
+    else
+        AD_DEBUG("re_crick_serum_name_2 {}: {}", *serum_name_1_row_ + 1, static_cast<size_t>(ranges::count_if(range_from_to(titer_columns()), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })));
+
+    if (serum_name_2_row_.has_value())
+        AD_INFO("[Crick]: Serum name row 2: {}", *serum_name_2_row_);
+    else
+        AD_WARNING("[Crick]: No serum name row 2 found");
 
 } // acmacs::sheet::v1::ExtractorCrick::find_serum_rows
 
