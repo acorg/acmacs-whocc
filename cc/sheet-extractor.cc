@@ -12,6 +12,7 @@ static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\.\s*Antigenic
 
 static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
+static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCKCELL|EGG)", acmacs::regex::icase};
 
 static const std::regex re_crick_serum_name_1{"^[AB]/[A-Z '_-]+$", acmacs::regex::icase};
 static const std::regex re_crick_serum_name_2{"^[A-Z0-9-]+(/[0-9]+)?$", acmacs::regex::icase};
@@ -205,6 +206,32 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column()
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::Extractor::find_serum_passage_row()
+{
+    for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
+        if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this](size_t col) { return sheet().matches(re_serum_passage, row, col); })) >= (number_of_sera() / 2)) {
+            serum_passage_row_ = row;
+            break;
+        }
+    }
+
+    if (serum_passage_row_.has_value())
+        AD_INFO("[{}] Serum passage row: {}", lab(), *serum_passage_row_ + 1);
+    else
+        AD_WARNING("[{}] Serum passage row not found", lab());
+
+} // acmacs::sheet::v1::Extractor::find_serum_passage_row
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::Extractor::find_serum_id_row()
+{
+    AD_WARNING("[{}] Serum id row not found", lab());
+
+} // acmacs::sheet::v1::Extractor::find_serum_id_row
+
+// ----------------------------------------------------------------------
+
 void acmacs::sheet::v1::Extractor::find_serum_rows()
 {
 
@@ -224,7 +251,8 @@ acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
 void acmacs::sheet::v1::ExtractorCrick::find_serum_rows()
 {
     find_serum_name_rows();
-
+    find_serum_passage_row();
+    find_serum_id_row();
 
 } // acmacs::sheet::v1::ExtractorCrick::find_serum_rows
 
@@ -244,7 +272,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows()
     }
 
     if (serum_name_1_row_.has_value())
-        AD_INFO("[Crick]: Serum name row 1: {}", *serum_name_1_row_);
+        AD_INFO("[Crick]: Serum name row 1: {}", *serum_name_1_row_ + 1);
     else
         AD_WARNING("[Crick]: No serum name row 1 found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
 
@@ -254,7 +282,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows()
         AD_DEBUG("re_crick_serum_name_2 {}: {}", *serum_name_1_row_ + 1, static_cast<size_t>(ranges::count_if(serum_columns(), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })));
 
     if (serum_name_2_row_.has_value())
-        AD_INFO("[Crick]: Serum name row 2: {}", *serum_name_2_row_);
+        AD_INFO("[Crick]: Serum name row 2: {}", *serum_name_2_row_ + 1);
     else
         AD_WARNING("[Crick]: No serum name row 2 found");
 
