@@ -54,12 +54,46 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
 
 // ----------------------------------------------------------------------
 
+std::string acmacs::sheet::v1::Extractor::antigen_name(size_t ag_no) const
+{
+    if (antigen_name_column().has_value())
+        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_name_column()));
+    else
+        return {};
+
+} // acmacs::sheet::v1::Extractor::antigen_name
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::antigen_date(size_t ag_no) const
+{
+    if (antigen_date_column().has_value())
+        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_date_column()));
+    else
+        return {};
+
+} // acmacs::sheet::v1::Extractor::antigen_date
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::antigen_passage(size_t ag_no) const
+{
+    if (antigen_passage_column().has_value())
+        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_passage_column()));
+    else
+        return {};
+
+} // acmacs::sheet::v1::Extractor::antigen_passage
+
+// ----------------------------------------------------------------------
+
 void acmacs::sheet::v1::Extractor::preprocess()
 {
     find_titers();
     find_antigen_name_column();
     find_antigen_date_column();
     find_antigen_passage_column();
+    find_serum_rows();
 
 } // acmacs::sheet::v1::Extractor::preprocess
 
@@ -163,6 +197,13 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column()
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::Extractor::find_serum_rows()
+{
+
+} // acmacs::sheet::v1::Extractor::find_serum_rows
+
+// ======================================================================
+
 acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
     : Extractor(a_sheet)
 {
@@ -171,6 +212,14 @@ acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
 } // acmacs::sheet::v1::ExtractorCrick::ExtractorCrick
 
 // ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCrick::find_serum_rows()
+{
+
+} // acmacs::sheet::v1::ExtractorCrick::find_serum_rows
+
+
+// ======================================================================
 
 acmacs::sheet::v1::ExtractorCrickPRN::ExtractorCrickPRN(const Sheet& a_sheet)
     : ExtractorCrick(a_sheet)

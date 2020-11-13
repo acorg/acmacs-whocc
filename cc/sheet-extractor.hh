@@ -27,6 +27,16 @@ namespace acmacs::sheet::inline v1
         std::string_view rbc() const { return rbc_; }
         std::string date() const { return date::display(date_); }
 
+        size_t number_of_antigens() const { return antigen_rows().size(); }
+        size_t number_of_sera() const { return titer_columns().size(); }
+
+        size_t longest_antigen_name() const { return longest_antigen_name_; }
+        size_t longest_antigen_passage() const { return longest_antigen_passage_; }
+
+        std::string antigen_name(size_t ag_no) const;
+        std::string antigen_date(size_t ag_no) const;
+        std::string antigen_passage(size_t ag_no) const;
+
         void lab(std::string_view a_lab) { lab_ = a_lab; }
         void subtype(std::string_view a_subtype) { subtype_ = a_subtype; }
         void lineage(std::string_view a_lineage) { lineage_ = a_lineage; }
@@ -34,21 +44,21 @@ namespace acmacs::sheet::inline v1
         void rbc(std::string_view a_rbc) { rbc_ = a_rbc; }
         void date(const date::year_month_day& a_date) { date_ = a_date; }
 
-        std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
-        std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }
-        std::optional<size_t> antigen_passage_column() const { return antigen_passage_column_; }
-        size_t longest_antigen_name() const { return longest_antigen_name_; }
-        size_t longest_antigen_passage() const { return longest_antigen_passage_; }
-        const range& titer_columns() const { return titer_columns_; }
-        const std::vector<size_t>& antigen_rows() const { return antigen_rows_; }
 
         void preprocess();
 
-    protected:
+      protected:
         virtual void find_titers();
         virtual void find_antigen_name_column();
         virtual void find_antigen_date_column();
         virtual void find_antigen_passage_column();
+        virtual void find_serum_rows();
+
+        std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
+        std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }
+        std::optional<size_t> antigen_passage_column() const { return antigen_passage_column_; }
+        const range& titer_columns() const { return titer_columns_; }
+        const std::vector<size_t>& antigen_rows() const { return antigen_rows_; }
 
       private:
         const Sheet& sheet_;
@@ -73,6 +83,12 @@ namespace acmacs::sheet::inline v1
     {
       public:
         ExtractorCrick(const Sheet& a_sheet);
+
+      protected:
+        void find_serum_rows() override;
+
+      private:
+        std::optional<size_t> serum_name_1_row_, serum_name_2_row_, serum_passage_row_, serum_id_row_;
     };
 
     class ExtractorCrickPRN : public ExtractorCrick
@@ -81,7 +97,7 @@ namespace acmacs::sheet::inline v1
         ExtractorCrickPRN(const Sheet& a_sheet);
     };
 
-} // namespace acmacs::xlsx::inline v1
+} // namespace acmacs::sheet::inline v1
 
 // ----------------------------------------------------------------------
 /// Local Variables:

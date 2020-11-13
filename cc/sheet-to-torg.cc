@@ -28,15 +28,15 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     fmt::format_to(result, "\n");
 
     fmt::format_to(result, "|          | {:{}s} |       date | {:{}s} |", "name", extractor_->longest_antigen_name(), "passage", extractor_->longest_antigen_passage());
-    for ([[maybe_unused]] const auto col : range_from_to(extractor_->titer_columns()))
+    for ([[maybe_unused]] const auto col : range_from_0_to(extractor_->number_of_sera()))
         fmt::format_to(result, " |");
     fmt::format_to(result, "\n");
 
-    for (const auto row : extractor_->antigen_rows()) {
-        fmt::format_to(result, "|          | {:{}s} | {} | {:{}s} |",                                                                //
-                       fmt::format("{}", sheet().cell(row, *extractor_->antigen_name_column())), extractor_->longest_antigen_name(), //
-                       sheet().cell(row, *extractor_->antigen_date_column()),                                                        //
-                       fmt::format("{}", sheet().cell(row, *extractor_->antigen_passage_column())), extractor_->longest_antigen_passage());
+    for (const auto ag_no : range_from_0_to(extractor_->number_of_antigens())) {
+        fmt::format_to(result, "|          | {:{}s} | {} | {:{}s} |",                       //
+                       extractor_->antigen_name(ag_no), extractor_->longest_antigen_name(), //
+                       extractor_->antigen_date(ag_no),                                     //
+                       extractor_->antigen_passage(ag_no), extractor_->longest_antigen_passage());
         fmt::format_to(result, "\n");
     }
     return fmt::to_string(result);
