@@ -1,4 +1,3 @@
-#include "acmacs-base/regex.hh"
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-whocc/sheet.hh"
 

@@ -128,7 +128,7 @@ class ChartData
         std::vector<std::pair<double, size_t>> deviations(tables_.size(), {0.0, 0});
         for (const auto& en : collapsed_) {
             const auto mean = en.mean_logged_titer();
-            ranges::for_each(ranges::views::iota(0ul, deviations.size()) //
+            ranges::for_each(range_from_0_to(deviations.size()) //
                                  | ranges::views::filter([&en](size_t t_no) { return !en.titers[t_no].is_dont_care(); }),
                              [&en, &deviations, mean](size_t t_no) {
                                  deviations[t_no].first += std::abs(en.titers[t_no].logged_with_thresholded() - mean);

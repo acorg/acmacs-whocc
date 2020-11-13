@@ -14,6 +14,11 @@ TARGETS = \
   $(DIST)/chart-table-compare \
   $(DIST)/chart-table-map-compare
 
+SHEET_SOURCES = \
+  sheet-extractor.cc \
+  sheet-to-torg.cc \
+  sheet.cc
+
 # ----------------------------------------------------------------------
 
 SRC_DIR = $(abspath $(ACMACSD_ROOT)/sources)
@@ -60,7 +65,7 @@ $(DIST)/%: $(BUILD)/%.o | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 
-$(DIST)/whocc-xlsx-to-torg: $(BUILD)/whocc-xlsx-to-torg.o $(BUILD)/sheet-to-torg.o $(BUILD)/sheet.o | $(DIST)
+$(DIST)/whocc-xlsx-to-torg: $(BUILD)/whocc-xlsx-to-torg.o $(patsubst %.cc,$(BUILD)/%.o,$(SHEET_SOURCES)) | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 

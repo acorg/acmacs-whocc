@@ -4,6 +4,7 @@
 
 #include "acmacs-base/fmt.hh"
 #include "acmacs-base/date.hh"
+#include "acmacs-base/regex.hh"
 
 // ----------------------------------------------------------------------
 
