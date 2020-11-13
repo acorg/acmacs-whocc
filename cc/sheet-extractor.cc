@@ -1,4 +1,5 @@
 #include "acmacs-base/range-v3.hh"
+#include "acmacs-base/enumerate.hh"
 #include "acmacs-base/log.hh"
 #include "acmacs-base/string-compare.hh"
 #include "acmacs-whocc/sheet-extractor.hh"
@@ -14,6 +15,9 @@ static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::r
 
 static const std::regex re_crick_serum_name_1{"^[AB]/[A-Z '_-]+$", acmacs::regex::icase};
 static const std::regex re_crick_serum_name_2{"^[A-Z0-9-]+(/[0-9]+)?$", acmacs::regex::icase};
+
+static const std::regex re_crick_prn_2fold{"^2-fold$", acmacs::regex::icase};
+static const std::regex re_crick_prn_read{"^read$", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
@@ -117,9 +121,10 @@ void acmacs::sheet::v1::Extractor::find_titers()
         }
     }
 
-    titer_columns_ = common;
+    serum_columns_.resize(common.size());
+    ranges::copy(range_from_to(common), serum_columns_.begin());
     antigen_rows_.resize(rows.size());
-    std::transform(std::begin(rows), std::end(rows), std::begin(antigen_rows_), [](const auto& row) { return row.first; });
+    ranges::transform(rows, std::begin(antigen_rows_), [](const auto& row) { return row.first; });
 
 } // acmacs::sheet::v1::Extractor::find_titers
 
@@ -136,7 +141,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_name_column()
             return false;
     };
 
-    for (const auto col : range_from_0_to(titer_columns_.first)) { // to the left from titers
+    for (const auto col : range_from_0_to(serum_columns()[0])) { // to the left from titers
         if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_name](size_t row) { return is_name(row, col); })) > (antigen_rows_.size() / 2)) {
             antigen_name_column_ = col;
             break;
@@ -218,9 +223,19 @@ acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
 
 void acmacs::sheet::v1::ExtractorCrick::find_serum_rows()
 {
+    find_serum_name_rows();
+
+
+} // acmacs::sheet::v1::ExtractorCrick::find_serum_rows
+
+
+// ======================================================================
+
+void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows()
+{
     fmt::memory_buffer report;
     for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
-        if (const size_t matches = static_cast<size_t>(ranges::count_if(range_from_to(titer_columns()), [row, this](size_t col) { return sheet().matches(re_crick_serum_name_1, row, col); })); matches == titer_columns().size()) {
+        if (const size_t matches = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this](size_t col) { return sheet().matches(re_crick_serum_name_1, row, col); })); matches == number_of_sera()) {
             serum_name_1_row_ = row;
             break;
         }
@@ -231,22 +246,21 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_rows()
     if (serum_name_1_row_.has_value())
         AD_INFO("[Crick]: Serum name row 1: {}", *serum_name_1_row_);
     else
-        AD_WARNING("[Crick]: No serum name row 1 found (titer columns: {:c}:{:c} size:{})\n{}", titer_columns().first + 'A', titer_columns().second + 'A', titer_columns().size(), fmt::to_string(report));
+        AD_WARNING("[Crick]: No serum name row 1 found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
 
-    if (serum_name_1_row_.has_value() && static_cast<size_t>(ranges::count_if(range_from_to(titer_columns()), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })) == titer_columns().size())
+    if (serum_name_1_row_.has_value() && static_cast<size_t>(ranges::count_if(serum_columns(), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })) == number_of_sera())
             serum_name_2_row_ = *serum_name_1_row_ + 1;
     else
-        AD_DEBUG("re_crick_serum_name_2 {}: {}", *serum_name_1_row_ + 1, static_cast<size_t>(ranges::count_if(range_from_to(titer_columns()), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })));
+        AD_DEBUG("re_crick_serum_name_2 {}: {}", *serum_name_1_row_ + 1, static_cast<size_t>(ranges::count_if(serum_columns(), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })));
 
     if (serum_name_2_row_.has_value())
         AD_INFO("[Crick]: Serum name row 2: {}", *serum_name_2_row_);
     else
         AD_WARNING("[Crick]: No serum name row 2 found");
 
-} // acmacs::sheet::v1::ExtractorCrick::find_serum_rows
+} // acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows
 
-
-// ======================================================================
+// ----------------------------------------------------------------------
 
 acmacs::sheet::v1::ExtractorCrickPRN::ExtractorCrickPRN(const Sheet& a_sheet)
     : ExtractorCrick(a_sheet)
@@ -255,6 +269,36 @@ acmacs::sheet::v1::ExtractorCrickPRN::ExtractorCrickPRN(const Sheet& a_sheet)
     subtype("A(H3N2)");
 
 } // acmacs::sheet::v1::ExtractorCrick::ExtractorCrick
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCrickPRN::find_serum_rows()
+{
+    find_two_fold_read_row();
+    ExtractorCrick::find_serum_rows();
+
+} // acmacs::sheet::v1::ExtractorCrickPRN::find_serum_rows
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCrickPRN::find_two_fold_read_row()
+{
+    for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
+        const size_t two_fold_matches = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this](size_t col) { return sheet().matches(re_crick_prn_2fold, row, col); }));
+        const size_t read_matches = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this](size_t col) { return sheet().matches(re_crick_prn_read, row, col); }));
+        if (two_fold_matches == (serum_columns().size() / 2) && two_fold_matches == read_matches) {
+            two_fold_read_row_ = row;
+            break;
+        }
+    }
+
+    if (two_fold_read_row_.has_value()) {
+        size_t col_no{0};
+        ranges::actions::remove_if(serum_columns(), [&col_no](auto) { const auto remove = (col_no % 2) != 0; ++col_no; return remove; });
+        AD_INFO("[Crick PRN]: 2-fold read row: {}", *two_fold_read_row_);
+    }
+
+} // acmacs::sheet::v1::ExtractorCrickPRN::find_two_fold_read_row
 
 // ----------------------------------------------------------------------
 

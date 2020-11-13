@@ -28,7 +28,7 @@ namespace acmacs::sheet::inline v1
         std::string date() const { return date::display(date_); }
 
         size_t number_of_antigens() const { return antigen_rows().size(); }
-        size_t number_of_sera() const { return titer_columns().size(); }
+        size_t number_of_sera() const { return serum_columns().size(); }
 
         size_t longest_antigen_name() const { return longest_antigen_name_; }
         size_t longest_antigen_passage() const { return longest_antigen_passage_; }
@@ -57,8 +57,10 @@ namespace acmacs::sheet::inline v1
         std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }
         std::optional<size_t> antigen_passage_column() const { return antigen_passage_column_; }
-        const range& titer_columns() const { return titer_columns_; }
         const std::vector<size_t>& antigen_rows() const { return antigen_rows_; }
+        const std::vector<size_t>& serum_columns() const { return serum_columns_; }
+
+        std::vector<size_t>& serum_columns() { return serum_columns_; }
 
       private:
         const Sheet& sheet_;
@@ -71,8 +73,7 @@ namespace acmacs::sheet::inline v1
 
         std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_;
         size_t longest_antigen_name_{0}, longest_antigen_passage_{0};
-        range titer_columns_;
-        std::vector<size_t> antigen_rows_;
+        std::vector<size_t> antigen_rows_, serum_columns_;
     };
 
     std::unique_ptr<Extractor> extractor_factory(const Sheet& sheet);
@@ -86,6 +87,7 @@ namespace acmacs::sheet::inline v1
 
       protected:
         void find_serum_rows() override;
+        void find_serum_name_rows();
 
       private:
         std::optional<size_t> serum_name_1_row_, serum_name_2_row_, serum_passage_row_, serum_id_row_;
@@ -95,6 +97,14 @@ namespace acmacs::sheet::inline v1
     {
       public:
         ExtractorCrickPRN(const Sheet& a_sheet);
+
+      protected:
+        void find_serum_rows() override;
+
+    private:
+        std::optional<size_t> two_fold_read_row_;
+
+        void find_two_fold_read_row();
     };
 
 } // namespace acmacs::sheet::inline v1
