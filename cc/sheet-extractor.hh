@@ -94,6 +94,8 @@ namespace acmacs::sheet::inline v1
       public:
         ExtractorCrick(const Sheet& a_sheet);
 
+        std::string serum_name(size_t sr_no) const override;
+
       protected:
         void find_serum_rows() override;
         void find_serum_name_rows();

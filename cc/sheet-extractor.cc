@@ -96,7 +96,7 @@ std::string acmacs::sheet::v1::Extractor::antigen_passage(size_t ag_no) const
 
 // ----------------------------------------------------------------------
 
-std::string acmacs::sheet::v1::Extractor::serum_name(size_t sr_no) const
+std::string acmacs::sheet::v1::Extractor::serum_name(size_t /*sr_no*/) const
 {
     return {};
 
@@ -336,6 +336,16 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows()
         AD_WARNING("[Crick]: No serum name row 2 found");
 
 } // acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorCrick::serum_name(size_t sr_no) const
+{
+    if (!serum_name_1_row_ || !serum_name_2_row_)
+        return "*no serum_name_[12]_row_*";
+    return fmt::format("{}/{}", sheet().cell(*serum_name_1_row_, serum_columns().at(sr_no)), sheet().cell(*serum_name_2_row_, serum_columns().at(sr_no)));
+
+} // acmacs::sheet::v1::ExtractorCrick::serum_name
 
 // ----------------------------------------------------------------------
 
