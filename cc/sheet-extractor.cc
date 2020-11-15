@@ -96,14 +96,6 @@ std::string acmacs::sheet::v1::Extractor::antigen_passage(size_t ag_no) const
 
 // ----------------------------------------------------------------------
 
-std::string acmacs::sheet::v1::Extractor::serum_name(size_t /*sr_no*/) const
-{
-    return {};
-
-} // acmacs::sheet::v1::Extractor::serum_name
-
-// ----------------------------------------------------------------------
-
 std::string acmacs::sheet::v1::Extractor::serum_passage(size_t sr_no) const
 {
     if (serum_passage_row().has_value()) {
@@ -281,13 +273,6 @@ void acmacs::sheet::v1::Extractor::find_serum_id_row(const std::regex& re)
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::Extractor::find_serum_rows()
-{
-
-} // acmacs::sheet::v1::Extractor::find_serum_rows
-
-// ======================================================================
-
 acmacs::sheet::v1::ExtractorCrick::ExtractorCrick(const Sheet& a_sheet)
     : Extractor(a_sheet)
 {
@@ -349,6 +334,14 @@ std::string acmacs::sheet::v1::ExtractorCrick::serum_name(size_t sr_no) const
 
 // ----------------------------------------------------------------------
 
+std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no) const
+{
+    return {};
+
+} // acmacs::sheet::v1::ExtractorCrick::titer
+
+// ----------------------------------------------------------------------
+
 acmacs::sheet::v1::ExtractorCrickPRN::ExtractorCrickPRN(const Sheet& a_sheet)
     : ExtractorCrick(a_sheet)
 {
@@ -386,6 +379,22 @@ void acmacs::sheet::v1::ExtractorCrickPRN::find_two_fold_read_row()
     }
 
 } // acmacs::sheet::v1::ExtractorCrickPRN::find_two_fold_read_row
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorCrickPRN::titer_comment() const
+{
+    return "<hi-like-titer> / <PRN read titer>";
+
+} // acmacs::sheet::v1::ExtractorCrickPRN::titer_comment
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorCrickPRN::titer(size_t ag_no, size_t sr_no) const
+{
+    return "0 / 0";
+
+} // acmacs::sheet::v1::ExtractorCrickPRN::titer
 
 // ----------------------------------------------------------------------
 

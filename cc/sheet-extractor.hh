@@ -37,7 +37,7 @@ namespace acmacs::sheet::inline v1
         virtual std::string antigen_date(size_t ag_no) const;
         virtual std::string antigen_passage(size_t ag_no) const;
 
-        virtual std::string serum_name(size_t sr_no) const;
+        virtual std::string serum_name(size_t /*sr_no*/) const { return {}; }
         virtual std::string serum_passage(size_t sr_no) const;
         virtual std::string serum_id(size_t sr_no) const;
 
@@ -48,6 +48,8 @@ namespace acmacs::sheet::inline v1
         void rbc(std::string_view a_rbc) { rbc_ = a_rbc; }
         void date(const date::year_month_day& a_date) { date_ = a_date; }
 
+        virtual std::string titer_comment() const { return {}; }
+        virtual std::string titer(size_t /*ag_no*/, size_t /*sr_no*/) const { return {}; }
 
         void preprocess();
 
@@ -56,7 +58,7 @@ namespace acmacs::sheet::inline v1
         virtual void find_antigen_name_column();
         virtual void find_antigen_date_column();
         virtual void find_antigen_passage_column();
-        virtual void find_serum_rows();
+        virtual void find_serum_rows() {}
         virtual void find_serum_passage_row(const std::regex& re);
         virtual void find_serum_id_row(const std::regex& re);
 
@@ -95,6 +97,7 @@ namespace acmacs::sheet::inline v1
         ExtractorCrick(const Sheet& a_sheet);
 
         std::string serum_name(size_t sr_no) const override;
+        std::string titer(size_t ag_no, size_t sr_no) const override;
 
       protected:
         void find_serum_rows() override;
@@ -109,10 +112,13 @@ namespace acmacs::sheet::inline v1
       public:
         ExtractorCrickPRN(const Sheet& a_sheet);
 
+        std::string titer_comment() const override;
+        std::string titer(size_t ag_no, size_t sr_no) const override;
+
       protected:
         void find_serum_rows() override;
 
-    private:
+      private:
         std::optional<size_t> two_fold_read_row_;
 
         void find_two_fold_read_row();
