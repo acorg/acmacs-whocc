@@ -10,99 +10,45 @@ from pathlib import Path
 sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
 
+try:
+    from xlsx2csv import Xlsx2csv
+except:
+    print("pip3 install xlsx2csv\nhttps://github.com/dilshod/xlsx2csv", file=sys.stderr)
+    exit(1)
+
 # ======================================================================
 
 def main(args):
-    names = subprocess.check_output(["whocc-xlsx-to-torg", "-n", args.source[0]]).decode("utf-8").strip().split("\n")
-    output_dirs = frozenset(detect_dir(name) for name in names)
-    if len(output_dirs) != 1:
-        raise RuntimeError(f"None or multiple output dirs {output_dirs} inferred from {name}")
-    output_dir = next(iter(output_dirs))
-    copy_xlsx(args.source[0], output_dir.joinpath(make_xlsx_name(names)))
-    subprocess.check_call(["whocc-xlsx-to-torg", "-o", output_dir, args.source[0]])
-
-# ----------------------------------------------------------------------
-
-def detect_dir(name):
-    subtype, lab, assay, date = name.split("-")
-    try:
-        dir = Path("~/ac/tables-store").expanduser()
-        if subtype in ["b", "bvic", "byam"]:
-            dir = dir.joinpath("B")
-        elif subtype == "h1":
-            dir = dir.joinpath("H1PDM")
-        elif subtype == "h3":
-            dir = dir.joinpath("H3")
-        else:
-            raise Error(f"unknown subtype {subtype}")
-        if lab == "crick":
-            lab_dir = "NIMR"
-        elif lab == "vidrl":
-            lab_dir = "MELB"
-        else:
-            lab_dir = lab.upper()
-        dir = dir.joinpath(lab_dir)
-        if lab == "vidrl":
-            if subtype == "bvic":
-                dir  = dir.joinpath("victoria")
-            elif subtype == "byam":
-                dir  = dir.joinpath("yamagata")
-    except Exception as err:
-        dir = Path("/d")
-        module_logger.warning(f"cannot infer target dir, \"{dir}\" is used: {err}")
-    return dir
-
-# ----------------------------------------------------------------------
-
-def make_xlsx_name(names):
-    if len(names) == 1:
-        return f"{next(iter(names))}.xlsx"
-    else:
-        names_sorted = sorted(names)
-        return f"{names_sorted[0]}-{names_sorted[-1].split('-')[-1]}.xlsx"
-
-# ----------------------------------------------------------------------
-
-def copy_xlsx(source, xlsx_name):
-    if xlsx_name.exists():
-        subprocess.check_call(["ls", "-l", xlsx_name])
-        raise RuntimeError("output xlsx already exists")
-    module_logger.info(f"{source} -> {xlsx_name}")
-    shutil.copyfile(source, xlsx_name)
-
-# ----------------------------------------------------------------------
-
-# def main(args):
-#     writer = read_xlsx(args.source[0])
-#     writer.process()
-#     target_dir = writer.target_dir()
-#     target_prefix = writer.target_prefix()
-#     # if target_dir.joinpath(target_prefix + ".xlsx").exists() or target_dir.joinpath(target_prefix + ".xls").exists() or target_dir.joinpath(target_prefix + ".torg").exists() or target_dir.joinpath(target_prefix + ".ace").exists():
-#     #     subprocess.check_call(f"ls -l {target_dir.joinpath(target_prefix)}*", shell=True)
-#     #     raise RuntimeError("target already exists")
-#     shutil.copyfile(args.source[0], target_dir.joinpath(target_prefix + ".xlsx"))
-#     torg_filename = target_dir.joinpath(target_prefix + ".torg")
-#     with torg_filename.open("w") as torg:
-#         writer.generate_header(torg)
-#         writer.generate_body(torg)
-#     print("target:", target_dir, target_prefix)
-#     # subprocess.check_call(["emacsclient", "-n", str(torg_filename)])
-#     subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (forward-line 0) (save-buffer))"])
-#     if args.stop_on_torg:
-#         return
-#     # writer.generate_header()
-#     # pprint.pprint(writer.rows, width=200)
-#     signal.signal(signal.SIGHUP, sig_handler)
-#     while True:
-#         # print("wating for SIGHUP")
-#         try:
-#             time.sleep(60 * 60)
-#         except KeyboardInterrupt:
-#             break
-#         except Exception as err:
-#             # print(err)
-#             pass
-#         make_ace(torg_filename, target_dir.joinpath(target_prefix + ".ace"))
+    writer = read_xlsx(args.source[0])
+    writer.process()
+    target_dir = writer.target_dir()
+    target_prefix = writer.target_prefix()
+    # if target_dir.joinpath(target_prefix + ".xlsx").exists() or target_dir.joinpath(target_prefix + ".xls").exists() or target_dir.joinpath(target_prefix + ".torg").exists() or target_dir.joinpath(target_prefix + ".ace").exists():
+    #     subprocess.check_call(f"ls -l {target_dir.joinpath(target_prefix)}*", shell=True)
+    #     raise RuntimeError("target already exists")
+    shutil.copyfile(args.source[0], target_dir.joinpath(target_prefix + ".xlsx"))
+    torg_filename = target_dir.joinpath(target_prefix + ".torg")
+    with torg_filename.open("w") as torg:
+        writer.generate_header(torg)
+        writer.generate_body(torg)
+    print("target:", target_dir, target_prefix)
+    # subprocess.check_call(["emacsclient", "-n", str(torg_filename)])
+    subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (forward-line 0) (save-buffer))"])
+    if args.stop_on_torg:
+        return
+    # writer.generate_header()
+    # pprint.pprint(writer.rows, width=200)
+    signal.signal(signal.SIGHUP, sig_handler)
+    while True:
+        # print("wating for SIGHUP")
+        try:
+            time.sleep(60 * 60)
+        except KeyboardInterrupt:
+            break
+        except Exception as err:
+            # print(err)
+            pass
+        make_ace(torg_filename, target_dir.joinpath(target_prefix + ".ace"))
 
 # ----------------------------------------------------------------------
 
@@ -419,33 +365,33 @@ class TorgWriter:
 
 # ======================================================================
 
-# def read_xlsx(source):
-#     import csv
-#     kwargs = {
-#         'dateformat': "%Y-%m-%d",
-#         'delimiter': TorgWriter.field_delimiter,
-#         'escape_strings': False,
-#         'exclude_hidden_sheets': True,
-#         'exclude_sheet_pattern': '',
-#         'floatformat': None,
-#         'hyperlinks': False,
-#         'ignore_formats': [''],
-#         'include_sheet_pattern': '^.*$',
-#         'lineterminator': '\n',
-#         'merge_cells': False,
-#         'outputencoding': 'utf-8',
-#         'quoting': csv.QUOTE_NONE,
-#         'scifloat': False,
-#         'sheetdelimiter': "**************************************************",
-#         'skip_empty_lines': True,
-#         'skip_trailing_columns': False,
-#         'timeformat': None
-#     }
-#     xlsx2csv = Xlsx2csv(source, **kwargs)
-#     # xlsx2csv.convert(TorgWriter(Path(sys.argv[2])), 1)
-#     writer = TorgWriter()
-#     xlsx2csv.convert(writer, 1)
-#     return writer
+def read_xlsx(source):
+    import csv
+    kwargs = {
+        'dateformat': "%Y-%m-%d",
+        'delimiter': TorgWriter.field_delimiter,
+        'escape_strings': False,
+        'exclude_hidden_sheets': True,
+        'exclude_sheet_pattern': '',
+        'floatformat': None,
+        'hyperlinks': False,
+        'ignore_formats': [''],
+        'include_sheet_pattern': '^.*$',
+        'lineterminator': '\n',
+        'merge_cells': False,
+        'outputencoding': 'utf-8',
+        'quoting': csv.QUOTE_NONE,
+        'scifloat': False,
+        'sheetdelimiter': "**************************************************",
+        'skip_empty_lines': True,
+        'skip_trailing_columns': False,
+        'timeformat': None
+    }
+    xlsx2csv = Xlsx2csv(source, **kwargs)
+    # xlsx2csv.convert(TorgWriter(Path(sys.argv[2])), 1)
+    writer = TorgWriter()
+    xlsx2csv.convert(writer, 1)
+    return writer
 
 # ======================================================================
 
