@@ -339,7 +339,23 @@ std::string acmacs::sheet::v1::ExtractorCrick::serum_name(size_t sr_no) const
 
 std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no) const
 {
-    return fmt::format("{:5d}", 0);
+    const auto cell = sheet().cell(antigen_rows().at(ag_no), serum_columns().at(sr_no));
+    return std::visit(
+        [&cell]<typename Content>(const Content& cont) -> std::string {
+            if constexpr (std::is_same_v<Content, std::string>) {
+                if (cont == "ND" || cont == "*")
+                    return "  *  ";
+                else
+                    return fmt::format("{:>5s}", cont);
+            }
+            else if constexpr (std::is_same_v<Content, long>)
+                return fmt::format("{:5d}", cont);
+            else if constexpr (std::is_same_v<Content, double>)
+                return fmt::format("{:5d}", std::lround(cont));
+            else
+                return fmt::format("{}", cell);
+        },
+        cell);
 
 } // acmacs::sheet::v1::ExtractorCrick::titer
 
@@ -410,6 +426,8 @@ std::string acmacs::sheet::v1::ExtractorCrickPRN::titer(size_t ag_no, size_t sr_
                     if constexpr (std::is_same_v<Content, std::string>) {
                         if (cont == "<")
                             return fmt::format("{:>{}s}", "<10", width);
+                        else if (cont == "*")
+                            return fmt::format("{:^{}s}", cont, width);
                         else
                             return fmt::format("{:>{}s}", cont, width);
                     }

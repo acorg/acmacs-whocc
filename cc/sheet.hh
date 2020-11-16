@@ -92,7 +92,7 @@ template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs
         std::visit(
             [&ctx]<typename Content>(const Content& arg) {
                 if constexpr (std::is_same_v<Content, acmacs::sheet::cell::empty>)
-                    format_to(ctx.out(), "<empty>");
+                    ; // format_to(ctx.out(), "<empty>");
                 else if constexpr (std::is_same_v<Content, acmacs::sheet::cell::error>)
                     format_to(ctx.out(), "<error>");
                 else if constexpr (std::is_same_v<Content, bool>)
