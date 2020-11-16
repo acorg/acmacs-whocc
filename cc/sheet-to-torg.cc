@@ -31,14 +31,20 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     data[sr_passage_row][0] = "passage";
     data[sr_id_row][0] = "serum_id";
 
+    for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
+        const auto sr_col = sr_col_base + sr_no;
+        data[sr_name_row][sr_col] = extractor_->serum_name(sr_no);
+        data[sr_passage_row][sr_col] = extractor_->serum_passage(sr_no);
+        data[sr_id_row][sr_col] = extractor_->serum_id(sr_no);
+    }
+
     for (const auto ag_no : range_from_0_to(extractor_->number_of_antigens())) {
-        data[ag_row_base + ag_no][ag_name_col] = extractor_->antigen_name(ag_no);
-        data[ag_row_base + ag_no][ag_date_col] = extractor_->antigen_date(ag_no);
-        data[ag_row_base + ag_no][ag_passage_col] = extractor_->antigen_passage(ag_no);
+        const auto ag_row = ag_row_base + ag_no;
+        data[ag_row][ag_name_col] = extractor_->antigen_name(ag_no);
+        data[ag_row][ag_date_col] = extractor_->antigen_date(ag_no);
+        data[ag_row][ag_passage_col] = extractor_->antigen_passage(ag_no);
         for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
-            data[sr_name_row][sr_col_base + sr_no] = extractor_->serum_name(sr_no);
-            data[sr_passage_row][sr_col_base + sr_no] = extractor_->serum_passage(sr_no);
-            data[sr_id_row][sr_col_base + sr_no] = extractor_->serum_id(sr_no);
+            data[ag_row][sr_col_base + sr_no] = extractor_->titer(ag_no, sr_no);
         }
     }
 
@@ -62,6 +68,9 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     if (const auto lineage = extractor_->lineage(); !lineage.empty())
         fmt::format_to(result, "- Lineage: {}\n", lineage);
     fmt::format_to(result, "\n");
+
+    if (const auto titer_comment = extractor_->titer_comment(); !titer_comment.empty())
+        fmt::format_to(result, "titer value in the table: {}\n\n", titer_comment);
 
     for (const auto& row : data) {
         fmt::format_to(result, "|");

@@ -336,7 +336,7 @@ std::string acmacs::sheet::v1::ExtractorCrick::serum_name(size_t sr_no) const
 
 std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no) const
 {
-    return {};
+    return fmt::format("{:5d}", 0);
 
 } // acmacs::sheet::v1::ExtractorCrick::titer
 
@@ -384,7 +384,10 @@ void acmacs::sheet::v1::ExtractorCrickPRN::find_two_fold_read_row()
 
 std::string acmacs::sheet::v1::ExtractorCrickPRN::titer_comment() const
 {
-    return "<hi-like-titer> / <PRN read titer>";
+    if (two_fold_read_row_.has_value())
+        return "<hi-like-titer> / <PRN read titer>";
+    else
+        return {};
 
 } // acmacs::sheet::v1::ExtractorCrickPRN::titer_comment
 
@@ -392,7 +395,35 @@ std::string acmacs::sheet::v1::ExtractorCrickPRN::titer_comment() const
 
 std::string acmacs::sheet::v1::ExtractorCrickPRN::titer(size_t ag_no, size_t sr_no) const
 {
-    return "0 / 0";
+    using namespace std::string_view_literals;
+    if (two_fold_read_row_.has_value()) {
+        const auto left_col = serum_columns().at(sr_no);
+        const auto two_fold_col = sheet().matches(re_crick_prn_2fold, *two_fold_read_row_, left_col) ? left_col : (left_col + 1);
+        const auto read_col = two_fold_col == left_col ? (left_col + 1) : left_col;
+
+        const auto extract = [](const auto& cell, size_t width) {
+            return std::visit(
+                [&cell, width]<typename Content>(const Content& cont) {
+                    if constexpr (std::is_same_v<Content, std::string>) {
+                        if (cont == "<")
+                            return fmt::format("{:>{}s}", "<10", width);
+                        else
+                            return fmt::format("{:>{}s}", cont, width);
+                    }
+                    else if constexpr (std::is_same_v<Content, long>)
+                        return fmt::format("{:{}d}", cont, width);
+                    else if constexpr (std::is_same_v<Content, double>)
+                        return fmt::format("{:{}d}", std::lround(cont), width);
+                    else
+                        return fmt::format("{}", cell);
+                },
+                cell);
+        };
+
+        return fmt::format("{} / {}", extract(sheet().cell(antigen_rows().at(ag_no), two_fold_col), 5), extract(sheet().cell(antigen_rows().at(ag_no), read_col), 4));
+    }
+    else
+        return ExtractorCrick::titer(ag_no, sr_no);
 
 } // acmacs::sheet::v1::ExtractorCrickPRN::titer
 
