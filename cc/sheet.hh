@@ -109,6 +109,14 @@ template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs
     }
 };
 
+template <> struct fmt::formatter<acmacs::sheet::range> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(const acmacs::sheet::range& rng, FormatCtx& ctx)
+    {
+        return format_to(ctx.out(), "{}:{}", rng.first + 1, rng.second + 1);
+    }
+};
+
 // ----------------------------------------------------------------------
 /// Local Variables:
 /// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))

@@ -8,14 +8,14 @@
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?) viruses\s*-?\s*\(?(Plaque Reduction Neutralisation \(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
+static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
 static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
 static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCKCELL|EGG)", acmacs::regex::icase};
 
-static const std::regex re_crick_serum_name_1{"^[AB]/[A-Z '_-]+$", acmacs::regex::icase};
-static const std::regex re_crick_serum_name_2{"^[A-Z0-9-]+(/[0-9]+)?$", acmacs::regex::icase};
+static const std::regex re_crick_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
+static const std::regex re_crick_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
 static const std::regex re_crick_serum_id{"^F[0-9][0-9]/[0-2][0-9]$", acmacs::regex::icase};
 
 static const std::regex re_crick_prn_2fold{"^2-fold$", acmacs::regex::icase};
@@ -29,7 +29,7 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
 {
     std::unique_ptr<Extractor> extractor;
     std::smatch match;
-    if (sheet.matches(re_table_title_crick, match, 0, 0)) {
+    if (sheet.matches(re_table_title_crick, match, 0, 0) || sheet.matches(re_table_title_crick, match, 0, 1)) {
         if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
             extractor = std::make_unique<ExtractorCrickPRN>(sheet);
         }
@@ -141,18 +141,16 @@ void acmacs::sheet::v1::Extractor::preprocess()
 void acmacs::sheet::v1::Extractor::find_titers()
 {
     std::vector<std::pair<size_t, range>> rows;
-    range common;
     for (const auto row : range_from_0_to(sheet().number_of_rows())) {
-        if (auto titers = sheet().titer_range(row); !titers.empty() && titers.first > 0) {
-            // AD_DEBUG("row:{:2d} {:c}:{:c}", row + 1, titers.first + 'A', titers.second - 1 + 'A');
-            if (!common.valid())
-                common = titers;
-            else if (common != titers)
-                AD_WARNING("variable titer row ranges: {:c}:{:c} vs. {:c}:{:c}", titers.first + 'A', titers.second - 1 + 'A', common.first + 'A', common.second - 1 + 'A');
+        if (auto titers = sheet().titer_range(row); !titers.empty() && titers.first > 0)
             rows.emplace_back(row, std::move(titers));
-        }
     }
 
+    if (!ranges::all_of(rows, [&rows](const auto& en) { return en.second == rows[0].second; })) {
+        AD_WARNING("Variable titer row ranges:\n  {}", fmt::format(rows, "{}", "\n  "));
+    }
+
+    const auto common =  rows[0].second;
     serum_columns_.resize(common.size());
     ranges::copy(range_from_to(common), serum_columns_.begin());
     antigen_rows_.resize(rows.size());
@@ -328,7 +326,12 @@ std::string acmacs::sheet::v1::ExtractorCrick::serum_name(size_t sr_no) const
 {
     if (!serum_name_1_row_ || !serum_name_2_row_)
         return "*no serum_name_[12]_row_*";
-    return fmt::format("{}/{}", sheet().cell(*serum_name_1_row_, serum_columns().at(sr_no)), sheet().cell(*serum_name_2_row_, serum_columns().at(sr_no)));
+    const auto n1{fmt::format("{}", sheet().cell(*serum_name_1_row_, serum_columns().at(sr_no)))},
+        n2{fmt::format("{}", sheet().cell(*serum_name_2_row_, serum_columns().at(sr_no)))};
+    if (n1.size() > 2 && n1[1] == '/')
+        return fmt::format("{}/{}", n1, n2);
+    else
+        return fmt::format("{} {}", n1, n2);
 
 } // acmacs::sheet::v1::ExtractorCrick::serum_name
 
