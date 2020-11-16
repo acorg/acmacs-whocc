@@ -3,7 +3,7 @@
 
 // ----------------------------------------------------------------------
 
-bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, const cell_t& cell) const
+bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, const cell_t& cell)
 {
     return std::visit(
         [&re]<typename Content>(const Content& arg) {
@@ -18,7 +18,7 @@ bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, const cell_t& cell)
 
 // ----------------------------------------------------------------------
 
-bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, std::smatch& match, const cell_t& cell) const
+bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, std::smatch& match, const cell_t& cell)
 {
     return std::visit(
         [&re, &match]<typename Content>(const Content& arg) {

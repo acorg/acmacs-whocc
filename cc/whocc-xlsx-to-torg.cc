@@ -1,5 +1,6 @@
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/range-v3.hh"
+#include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/xlsx.hh"
 
@@ -12,6 +13,8 @@ struct Options : public argv
 
     option<str>  output_dir{*this, 'o'};
     option<bool> print_names{*this, 'n', desc{"print table names"}};
+    option<str_array> verbose{*this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
+
     argument<str_array> xlsx{*this, arg_name{"sheet"}, mandatory};
 };
 
@@ -20,13 +23,14 @@ int main(int argc, char* const argv[])
     int exit_code = 0;
     try {
         Options opt(argc, argv);
+        acmacs::log::enable(opt.verbose);
 
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
             for ([[maybe_unused]] auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
                 auto converter = acmacs::sheet::SheetToTorg{doc.sheet(sheet_no)};
-                // AD_INFO("Sheet {:2d} {}", sheet_no + 1, converter.name());
                 converter.preprocess();
+                // AD_LOG(acmacs::log::xlsx, "Sheet {:2d} {}", sheet_no + 1, converter.name());
                 if (opt.print_names) {
                     fmt::print("{}\n", converter.name());
                 }

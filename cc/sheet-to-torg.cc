@@ -89,10 +89,10 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
 std::string acmacs::sheet::v1::SheetToTorg::name() const
 {
     const auto rbc_assay = [this]() -> std::string {
-        if (const auto assay = extractor_->assay(); assay != "HINT")
-            return "hint";
-        else if (assay == "HI")
+        if (const auto assay = extractor_->assay(); assay == "HI")
             return std::string{extractor_->rbc()};
+        else if (assay == "HINT")
+            return "hint";
         else
             return "neut";
     };

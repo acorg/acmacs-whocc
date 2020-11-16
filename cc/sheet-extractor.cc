@@ -1,7 +1,7 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/enumerate.hh"
-#include "acmacs-base/log.hh"
 #include "acmacs-base/string-compare.hh"
+#include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/sheet-extractor.hh"
 
 // ----------------------------------------------------------------------
@@ -32,7 +32,7 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
 {
     std::unique_ptr<Extractor> extractor;
     std::smatch match;
-    if (sheet.matches(re_table_title_crick, match, 0, 0) || sheet.matches(re_table_title_crick, match, 0, 1)) {
+    if (const auto cell00 = sheet.cell(0, 0), cell01 = sheet.cell(0, 1); sheet.matches(re_table_title_crick, match, cell00) || sheet.matches(re_table_title_crick, match, cell01)) {
         if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
             extractor = std::make_unique<ExtractorCrickPRN>(sheet);
         }
@@ -201,7 +201,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_name_column()
     }
 
     if (antigen_name_column_.has_value()) {
-        AD_INFO("Antigen name column: {:c}", *antigen_name_column_ + 'A');
+        AD_LOG(acmacs::log::xlsx, "Antigen name column: {:c}", *antigen_name_column_ + 'A');
         // remote antigen rows that have no name
         ranges::actions::remove_if(antigen_rows_, [this, is_name](size_t row) { return !is_name(row, *antigen_name_column_); });
     }
@@ -222,7 +222,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column()
     }
 
     if (antigen_date_column_.has_value())
-        AD_INFO("Antigen date column: {:c}", *antigen_date_column_ + 'A');
+        AD_LOG(acmacs::log::xlsx, "Antigen date column: {:c}", *antigen_date_column_ + 'A');
     else
         AD_WARNING("Antigen date column not found");
 
@@ -249,7 +249,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column()
     }
 
     if (antigen_passage_column_.has_value())
-        AD_INFO("Antigen passage column: {:c}", *antigen_passage_column_ + 'A');
+        AD_LOG(acmacs::log::xlsx, "Antigen passage column: {:c}", *antigen_passage_column_ + 'A');
     else
         AD_WARNING("Antigen passage column not found");
 
@@ -267,7 +267,7 @@ void acmacs::sheet::v1::Extractor::find_serum_passage_row(const std::regex& re)
     }
 
     if (serum_passage_row_.has_value())
-        AD_INFO("[{}] Serum passage row: {}", lab(), *serum_passage_row_ + 1);
+        AD_LOG(acmacs::log::xlsx, "[{}] Serum passage row: {}", lab(), *serum_passage_row_ + 1);
     else
         AD_WARNING("[{}] Serum passage row not found", lab());
 
@@ -285,7 +285,7 @@ void acmacs::sheet::v1::Extractor::find_serum_id_row(const std::regex& re)
     }
 
     if (serum_id_row_.has_value())
-        AD_INFO("[{}] Serum id row: {}", lab(), *serum_id_row_ + 1);
+        AD_LOG(acmacs::log::xlsx, "[{}] Serum id row: {}", lab(), *serum_id_row_ + 1);
     else
         AD_WARNING("[{}] Serum id row not found", lab());
 
@@ -326,7 +326,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows()
     }
 
     if (serum_name_1_row_.has_value())
-        AD_INFO("[Crick]: Serum name row 1: {}", *serum_name_1_row_ + 1);
+        AD_LOG(acmacs::log::xlsx, "[Crick]: Serum name row 1: {}", *serum_name_1_row_ + 1);
     else
         AD_WARNING("[Crick]: No serum name row 1 found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
 
@@ -336,7 +336,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows()
         AD_DEBUG("re_crick_serum_name_2 {}: {}", *serum_name_1_row_ + 1, static_cast<size_t>(ranges::count_if(serum_columns(), [this](size_t col) { return sheet().matches(re_crick_serum_name_2, *serum_name_1_row_ + 1, col); })));
 
     if (serum_name_2_row_.has_value())
-        AD_INFO("[Crick]: Serum name row 2: {}", *serum_name_2_row_ + 1);
+        AD_LOG(acmacs::log::xlsx, "[Crick]: Serum name row 2: {}", *serum_name_2_row_ + 1);
     else
         AD_WARNING("[Crick]: No serum name row 2 found");
 
@@ -416,7 +416,7 @@ void acmacs::sheet::v1::ExtractorCrickPRN::find_two_fold_read_row()
     if (two_fold_read_row_.has_value()) {
         size_t col_no{0};
         ranges::actions::remove_if(serum_columns(), [&col_no](auto) { const auto remove = (col_no % 2) != 0; ++col_no; return remove; });
-        AD_INFO("[Crick PRN]: 2-fold read row: {}", *two_fold_read_row_);
+        AD_LOG(acmacs::log::xlsx, "[Crick PRN]: 2-fold read row: {}", *two_fold_read_row_);
     }
 
 } // acmacs::sheet::v1::ExtractorCrickPRN::find_two_fold_read_row

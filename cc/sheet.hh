@@ -68,10 +68,9 @@ namespace acmacs::sheet::inline v1
         virtual size_t number_of_columns() const = 0;
         virtual cell_t cell(size_t row, size_t col) const = 0; // row and col are zero based
 
-        bool matches(const std::regex& re, const cell_t& cell) const;
-        bool matches(const std::regex& re, std::smatch& match, const cell_t& cell) const;
+        static bool matches(const std::regex& re, const cell_t& cell);
+        static bool matches(const std::regex& re, std::smatch& match, const cell_t& cell);
         bool matches(const std::regex& re, size_t row, size_t col) const { return matches(re, cell(row, col)); }
-        bool matches(const std::regex& re, std::smatch& match, size_t row, size_t col) const { return matches(re, match, cell(row, col)); }
         bool is_date(size_t row, size_t col) const { return acmacs::sheet::is_date(cell(row, col)); }
         size_t size(const cell_t& cell) const;
         size_t size(size_t row, size_t col) const { return size(cell(row, col)); }
