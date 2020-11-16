@@ -118,6 +118,17 @@ std::string acmacs::sheet::v1::Extractor::antigen_passage(size_t ag_no) const
 
 // ----------------------------------------------------------------------
 
+std::string acmacs::sheet::v1::Extractor::antigen_lab_id(size_t ag_no) const
+{
+    if (antigen_lab_id_column().has_value())
+        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_lab_id_column()));
+    else
+        return {};
+
+} // acmacs::sheet::v1::Extractor::antigen_lab_id
+
+// ----------------------------------------------------------------------
+
 std::string acmacs::sheet::v1::Extractor::serum_passage(size_t sr_no) const
 {
     if (serum_passage_row().has_value()) {
@@ -154,6 +165,7 @@ void acmacs::sheet::v1::Extractor::preprocess()
     find_antigen_name_column();
     find_antigen_date_column();
     find_antigen_passage_column();
+    find_antigen_lab_id_column();
     find_serum_rows();
 
 } // acmacs::sheet::v1::Extractor::preprocess

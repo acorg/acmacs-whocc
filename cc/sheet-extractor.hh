@@ -37,6 +37,7 @@ namespace acmacs::sheet::inline v1
         virtual std::string antigen_name(size_t ag_no) const;
         virtual std::string antigen_date(size_t ag_no) const;
         virtual std::string antigen_passage(size_t ag_no) const;
+        virtual std::string antigen_lab_id(size_t ag_no) const;
 
         virtual std::string serum_name(size_t /*sr_no*/) const { return {}; }
         virtual std::string serum_passage(size_t sr_no) const;
@@ -59,6 +60,7 @@ namespace acmacs::sheet::inline v1
         virtual void find_antigen_name_column();
         virtual void find_antigen_date_column();
         virtual void find_antigen_passage_column();
+        virtual void find_antigen_lab_id_column() {}
         virtual void find_serum_rows() {}
         virtual void find_serum_passage_row(const std::regex& re);
         virtual void find_serum_id_row(const std::regex& re);
@@ -66,6 +68,7 @@ namespace acmacs::sheet::inline v1
         std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }
         std::optional<size_t> antigen_passage_column() const { return antigen_passage_column_; }
+        std::optional<size_t> antigen_lab_id_column() const { return antigen_lab_id_column_; }
         const std::vector<size_t>& antigen_rows() const { return antigen_rows_; }
         const std::vector<size_t>& serum_columns() const { return serum_columns_; }
 
@@ -83,7 +86,8 @@ namespace acmacs::sheet::inline v1
         std::string rbc_;
         date::year_month_day date_{date::invalid_date()};
 
-        std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_, serum_passage_row_, serum_id_row_;
+        std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_;
+        std::optional<size_t> serum_passage_row_, serum_id_row_;
         size_t longest_antigen_name_{0}, longest_antigen_passage_{0};
         std::vector<size_t> antigen_rows_, serum_columns_;
     };
