@@ -23,6 +23,9 @@ static const std::regex re_crick_prn_read{"^read$", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
+static const std::string_view LineageVictoria{"VICTORIA"};
+static const std::string_view LineageYamagata{"YAMAGATA"};
+
 // ----------------------------------------------------------------------
 
 std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(const Sheet& sheet)
@@ -41,11 +44,11 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
                 switch (match.str(2)[0]) {
                     case 'V':
                     case 'v':
-                        extractor->lineage("VICTORIA");
+                        extractor->lineage(LineageVictoria);
                         break;
                     case 'Y':
                     case 'y':
-                        extractor->lineage("YAMAGATA");
+                        extractor->lineage(LineageYamagata);
                         break;
                 }
             }
@@ -60,6 +63,25 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
     return extractor;
 
 } // acmacs::sheet::v1::extractor_factory
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::subtype_short() const
+{
+    if (subtype_ == "A(H1N1)")
+        return "h1";
+    if (subtype_ == "A(H3N2)")
+        return "h3";
+    if (subtype_ == "B") {
+        if (lineage_ == LineageVictoria)
+            return "bvic";
+        if (lineage_ == LineageYamagata)
+            return "byam";
+        return "b";
+    }
+    return subtype_;
+
+} // acmacs::sheet::v1::Extractor::subtype_short
 
 // ----------------------------------------------------------------------
 

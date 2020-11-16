@@ -10,8 +10,8 @@ struct Options : public argv
 {
     Options(int a_argc, const char* const a_argv[], on_error on_err = on_error::exit) : argv() { parse(a_argc, a_argv, on_err); }
 
-    option<str>       output_dir{*this, 'o'};
-
+    option<str>  output_dir{*this, 'o'};
+    option<bool> print_names{*this, 'n', desc{"print table names"}};
     argument<str_array> xlsx{*this, arg_name{"sheet"}, mandatory};
 };
 
@@ -25,10 +25,14 @@ int main(int argc, char* const argv[])
             auto doc = acmacs::xlsx::open(xlsx);
             for ([[maybe_unused]] auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
                 auto converter = acmacs::sheet::SheetToTorg{doc.sheet(sheet_no)};
-                AD_INFO("Sheet {:2d} {}", sheet_no + 1, converter.name());
+                // AD_INFO("Sheet {:2d} {}", sheet_no + 1, converter.name());
                 converter.preprocess();
-                fmt::print("\n{}\n\n", converter.torg());
-                // break;
+                if (opt.print_names) {
+                    fmt::print("{}\n", converter.name());
+                }
+                else {
+                    fmt::print("\n{}\n\n", converter.torg());
+                }
             }
         }
     }

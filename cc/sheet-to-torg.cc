@@ -1,5 +1,6 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/log.hh"
+#include "acmacs-base/string.hh"
 #include "acmacs-whocc/sheet-to-torg.hh"
 
 // ----------------------------------------------------------------------
@@ -82,6 +83,23 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     return fmt::to_string(result);
 
 } // acmacs::sheet::v1::SheetToTorg::torg
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::SheetToTorg::name() const
+{
+    const auto rbc_assay = [this]() -> std::string {
+        if (const auto assay = extractor_->assay(); assay != "HINT")
+            return "hint";
+        else if (assay == "HI")
+            return std::string{extractor_->rbc()};
+        else
+            return "neut";
+    };
+
+    return fmt::format("{}-{}-{}-{}", extractor_->subtype_short(), string::lower(extractor_->lab()), rbc_assay(), extractor_->date("%Y%m%d"));
+
+} // acmacs::sheet::v1::SheetToTorg::name
 
 // ----------------------------------------------------------------------
 

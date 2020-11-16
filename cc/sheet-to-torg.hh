@@ -14,9 +14,9 @@ namespace acmacs::sheet::inline v1
       public:
         SheetToTorg(std::unique_ptr<Sheet> a_sheet) : sheet_{std::move(a_sheet)} {}
 
-        std::string name() const { return sheet().name(); }
         void preprocess();
         std::string torg() const;
+        std::string name() const;
 
       private:
         std::unique_ptr<Sheet> sheet_;

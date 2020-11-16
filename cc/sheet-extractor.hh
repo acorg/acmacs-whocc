@@ -22,10 +22,11 @@ namespace acmacs::sheet::inline v1
 
         std::string_view lab() const { return lab_; }
         std::string_view subtype() const { return subtype_; }
+        std::string subtype_short() const;
         std::string_view lineage() const { return lineage_; }
         std::string_view assay() const { return assay_; }
         std::string_view rbc() const { return rbc_; }
-        std::string date() const { return date::display(date_); }
+        std::string date(const char* fmt = "%Y-%m-%d") const { return date::display(date_, fmt); }
 
         size_t number_of_antigens() const { return antigen_rows().size(); }
         size_t number_of_sera() const { return serum_columns().size(); }
