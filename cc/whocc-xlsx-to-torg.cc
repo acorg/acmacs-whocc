@@ -1,5 +1,6 @@
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/range-v3.hh"
+#include "acmacs-base/read-file.hh"
 #include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/xlsx.hh"
@@ -33,6 +34,11 @@ int main(int argc, char* const argv[])
                 // AD_LOG(acmacs::log::xlsx, "Sheet {:2d} {}", sheet_no + 1, converter.name());
                 if (opt.print_names) {
                     fmt::print("{}\n", converter.name());
+                }
+                else if (opt.output_dir) {
+                    const auto filename = fmt::format("{}/{}.torg", opt.output_dir, converter.name());
+                    AD_INFO("{}", filename);
+                    acmacs::file::write(filename, converter.torg());
                 }
                 else {
                     fmt::print("\n{}\n\n", converter.torg());
