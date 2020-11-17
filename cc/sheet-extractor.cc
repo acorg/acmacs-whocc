@@ -1,6 +1,7 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/enumerate.hh"
 #include "acmacs-base/string-compare.hh"
+#include "acmacs-virus/virus-name-normalize.hh"
 #include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/sheet-extractor.hh"
 
@@ -10,9 +11,8 @@
 
 static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\s*\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
-static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
-static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCKCELL|EGG)", acmacs::regex::icase};
+static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCK|CELL|EGG)", acmacs::regex::icase};
 
 static const std::regex re_crick_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_crick_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -202,7 +202,7 @@ void acmacs::sheet::v1::Extractor::find_titers()
 void acmacs::sheet::v1::Extractor::find_antigen_name_column()
 {
     const auto is_name = [this](size_t row, size_t col) {
-        if (sheet().matches(re_antigen_name, row, col)) {
+        if (acmacs::virus::name::is_good(fmt::format("{}", sheet().cell(row, col)))) {
             longest_antigen_name_ = std::max(longest_antigen_name_, sheet().size(row, col));
             return true;
         }
@@ -220,7 +220,12 @@ void acmacs::sheet::v1::Extractor::find_antigen_name_column()
     if (antigen_name_column_.has_value()) {
         AD_LOG(acmacs::log::xlsx, "Antigen name column: {:c}", *antigen_name_column_ + 'A');
         // remote antigen rows that have no name
-        ranges::actions::remove_if(antigen_rows_, [this, is_name](size_t row) { return !is_name(row, *antigen_name_column_); });
+        ranges::actions::remove_if(antigen_rows_, [this, is_name](size_t row) {
+            const auto no_name = !is_name(row, *antigen_name_column_);
+            if (no_name)
+                AD_WARNING("row {} has titers but no name: {}", row + 1, sheet().cell(row, *antigen_name_column_));
+            return no_name;
+        });
     }
     else
         AD_WARNING("Antigen name column not found");
