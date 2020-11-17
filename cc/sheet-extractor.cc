@@ -381,7 +381,7 @@ std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no)
     return std::visit(
         [&cell]<typename Content>(const Content& cont) -> std::string {
             if constexpr (std::is_same_v<Content, std::string>) {
-                if (cont == "ND" || cont == "*")
+                if (cont == "ND" || cont == "NA" || cont == "*")
                     return "  *  ";
                 else
                     return fmt::format("{:>5s}", cont);
@@ -464,8 +464,8 @@ std::string acmacs::sheet::v1::ExtractorCrickPRN::titer(size_t ag_no, size_t sr_
                     if constexpr (std::is_same_v<Content, std::string>) {
                         if (cont == "<")
                             return fmt::format("{:>{}s}", "<10", width);
-                        else if (cont == "*")
-                            return fmt::format("{:^{}s}", cont, width);
+                        else if (cont == "ND" || cont == "NA" || cont == "*")
+                            return fmt::format("{:^{}s}", "*", width);
                         else
                             return fmt::format("{:>{}s}", cont, width);
                     }
