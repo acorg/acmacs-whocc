@@ -81,7 +81,11 @@ def check_output_names(names, output_dir):
             return f"*** {path}"
         else:
             return f"    {path}"
-    msg = "\n".join(check(nam) for nam in [make_xlsx_name(names)] + [f"{nn}.torg" for nn in names] + [f"{nn}.ace" for nn in names])
+
+    files = [make_xlsx_name(names)] + [f"{nn}.torg" for nn in names] + [f"{nn}.ace" for nn in names]
+    if "h3-crick-neut-" in names[0]:
+        files += [f"{nn}.prn-read.ace" for nn in names]
+    msg = "\n".join(check(nam) for nam in files)
     if num_exist:
         raise Error(f"{num_exist} file(s) marked with *** already exist(s) (use -f to overwrite):\n{msg}")
 
@@ -115,49 +119,37 @@ def edit_torg_make_ace(name, output_dir, stop_on_torg):
 
 def make_all_ace(names, output_dir):
     for name in names:
-        torg_filename = output_dir.joinpath(name + ".torg")
-        ace_filename = output_dir.joinpath(name + ".ace")
-        make_ace(torg_filename, ace_filename)
+        source = output_dir.joinpath(name + ".torg")
+        ace_prn_read = None
+        if is_chart_prn_with_read_titers(source):
+            ace_prn_read = output_dir.joinpath(name + ".prn-read.ace")
+        make_ace(source, output_dir.joinpath(name + ".ace"), ace_prn_read)
 
 # ----------------------------------------------------------------------
 
-# def main(args):
-#     writer = read_xlsx(args.source[0])
-#     writer.process()
-#     target_dir = writer.target_dir()
-#     target_prefix = writer.target_prefix()
-#     # if target_dir.joinpath(target_prefix + ".xlsx").exists() or target_dir.joinpath(target_prefix + ".xls").exists() or target_dir.joinpath(target_prefix + ".torg").exists() or target_dir.joinpath(target_prefix + ".ace").exists():
-#     #     subprocess.check_call(f"ls -l {target_dir.joinpath(target_prefix)}*", shell=True)
-#     #     raise RuntimeError("target already exists")
-#     shutil.copyfile(args.source[0], target_dir.joinpath(target_prefix + ".xlsx"))
-#     torg_filename = target_dir.joinpath(target_prefix + ".torg")
-#     with torg_filename.open("w") as torg:
-#         writer.generate_header(torg)
-#         writer.generate_body(torg)
-#     print("target:", target_dir, target_prefix)
-#     # subprocess.check_call(["emacsclient", "-n", str(torg_filename)])
-#     subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (forward-line 0) (save-buffer))"])
-#     if args.stop_on_torg:
-#         return
-#     # writer.generate_header()
-#     # pprint.pprint(writer.rows, width=200)
-#     signal.signal(signal.SIGHUP, sig_handler)
-#     while True:
-#         # print("wating for SIGHUP")
-#         try:
-#             time.sleep(60 * 60)
-#         except KeyboardInterrupt:
-#             break
-#         except Exception as err:
-#             # print(err)
-#             pass
-#         make_ace(torg_filename, target_dir.joinpath(target_prefix + ".ace"))
+sRePrnRead = re.compile(r"(\s+\|\s+\d+\s+/\s+\d+\s+\|)")
+
+def is_chart_prn_with_read_titers(source):
+    assay_prn = False
+    for line in open(source):
+        if line:
+            if line.startswith("- Assay: PRN"):
+                assay_prn = True
+            elif assay_prn and line[0] == '|' and sRePrnRead.search(line):
+                # module_logger.warning(f"\"{sRePrnRead.search(line)!r}\" {line}")
+                return True
+    return False
 
 # ----------------------------------------------------------------------
 
-def make_ace(source, target):
-    print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{source}\n{target}\n\n")
-    subprocess.run(f"chart-org-table-to-ace '{source}' '{target}' && chart-fix-names-passages '{target}' '{target}' && chart-table '{target}'", shell=True)
+def make_ace(source, ace, ace_prn_read):
+    print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{source}\n{ace}\n{ace_prn_read or ''}\n\n")
+    subprocess.run(f"chart-org-table-to-ace '{source}' '{ace}' && chart-fix-names-passages '{ace}' '{ace}' && chart-table '{ace}'", shell=True)
+    if ace_prn_read:
+        print("\n\n")
+        subprocess.run(f"chart-org-table-to-ace --prn-read '{source}' '{ace_prn_read}' && chart-fix-names-passages '{ace_prn_read}' '{ace_prn_read}' && chart-table '{ace_prn_read}'", shell=True)
+
+# ----------------------------------------------------------------------
 
 def sig_handler(signo, stack):
     raise RuntimeError(f"SIG {signo}")
