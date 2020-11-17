@@ -33,6 +33,7 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
     std::unique_ptr<Extractor> extractor;
     std::smatch match;
     if (const auto cell00 = sheet.cell(0, 0), cell01 = sheet.cell(0, 1); sheet.matches(re_table_title_crick, match, cell00) || sheet.matches(re_table_title_crick, match, cell01)) {
+        // AD_DEBUG("Sheet: {}\ncell00: {}\ncell01: {}", sheet.name(), sheet.matches(re_table_title_crick, match, cell00), sheet.matches(re_table_title_crick, match, cell01));
         if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
             extractor = std::make_unique<ExtractorCrickPRN>(sheet);
         }
