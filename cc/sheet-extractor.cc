@@ -8,7 +8,7 @@
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
+static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\s*\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
 static const std::regex re_antigen_name{"^[AB]/[A-Z '_-]+/[^/]+/[0-9]+", acmacs::regex::icase};
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
@@ -175,13 +175,17 @@ void acmacs::sheet::v1::Extractor::preprocess()
 void acmacs::sheet::v1::Extractor::find_titers()
 {
     std::vector<std::pair<size_t, range>> rows;
+    // AD_DEBUG("Sheet {}", sheet().name());
     for (const auto row : range_from_0_to(sheet().number_of_rows())) {
         if (auto titers = sheet().titer_range(row); !titers.empty() && titers.first > 0)
             rows.emplace_back(row, std::move(titers));
     }
 
     if (!ranges::all_of(rows, [&rows](const auto& en) { return en.second == rows[0].second; })) {
-        AD_WARNING("Variable titer row ranges:\n  {}", fmt::format(rows, "{}", "\n  "));
+        fmt::memory_buffer report; // fmt::format(rows, "{}", "\n  "));
+        for (const auto& [row_no, rng] : rows)
+            fmt::format_to(report, "    {}: {:c}:{:c} ({})\n", row_no + 1, rng.first + 'A', rng.second - 1 + 'A', rng.second - rng.first);
+        AD_WARNING("sheet \"{}\": variable titer row ranges:\n{}", sheet().name(), fmt::to_string(report));
     }
 
     const auto common =  rows[0].second;

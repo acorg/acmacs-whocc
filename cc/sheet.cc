@@ -1,5 +1,6 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-whocc/sheet.hh"
+#include "acmacs-whocc/log.hh"
 
 // ----------------------------------------------------------------------
 
@@ -50,7 +51,7 @@ size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_titer{"^(<|[<>]?[0-9]+|ND|\\*)$", acmacs::regex::icase};
+static const std::regex re_titer{"^(<|[<>]?[0-9]+|N[DA]|\\*)$", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
@@ -79,6 +80,7 @@ acmacs::sheet::v1::range acmacs::sheet::v1::Sheet::titer_range(size_t row) const
         if (current.valid() && (!longest.valid() || longest.size() < current.size())) {
             longest = current;
             current = range{};
+            // AD_DEBUG("longest {}: {:c}:{:c}", row + 1, longest.first + 'A', longest.second - 1 + 'A');
         }
     };
 
@@ -88,6 +90,7 @@ acmacs::sheet::v1::range acmacs::sheet::v1::Sheet::titer_range(size_t row) const
             if (!current.valid())
                 current.first = col;
             current.second = col + 1;
+            // AD_DEBUG("titer {:c}{}: {} --> {:c}:{:c}", col + 'A', row + 1, cell(row, col), current.first + 'A', current.second - 1 + 'A');
         }
         else
             update();
