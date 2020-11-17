@@ -121,9 +121,10 @@ def make_all_ace(names, output_dir):
     for name in names:
         source = output_dir.joinpath(name + ".torg")
         ace_prn_read = None
-        if is_chart_prn_with_read_titers(source):
+        prn, prn_read_titers = is_chart_prn_with_read_titers(source)
+        if prn_read_titers:
             ace_prn_read = output_dir.joinpath(name + ".prn-read.ace")
-        make_ace(source, output_dir.joinpath(name + ".ace"), ace_prn_read)
+        make_ace(source, output_dir.joinpath(name + ".ace"), ace_prn_read=ace_prn_read, prn_remove_concentration=prn)
 
 # ----------------------------------------------------------------------
 
@@ -137,17 +138,18 @@ def is_chart_prn_with_read_titers(source):
                 assay_prn = True
             elif assay_prn and line[0] == '|' and sRePrnRead.search(line):
                 # module_logger.warning(f"\"{sRePrnRead.search(line)!r}\" {line}")
-                return True
-    return False
+                return assay_prn, True
+    return assay_prn, False
 
 # ----------------------------------------------------------------------
 
-def make_ace(source, ace, ace_prn_read):
+def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False):
     print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{source}\n{ace}\n{ace_prn_read or ''}\n\n")
-    subprocess.run(f"chart-org-table-to-ace '{source}' '{ace}' && chart-fix-names-passages '{ace}' '{ace}' && chart-table '{ace}'", shell=True)
+    prn_rem_conc = "--prn-remove-concentration" if prn_remove_concentration else ""
+    subprocess.run(f"chart-org-table-to-ace {prn_rem_conc} '{source}' '{ace}' && chart-fix-names-passages '{ace}' '{ace}' && chart-table '{ace}'", shell=True)
     if ace_prn_read:
         print("\n\n")
-        subprocess.run(f"chart-org-table-to-ace --prn-read '{source}' '{ace_prn_read}' && chart-fix-names-passages '{ace_prn_read}' '{ace_prn_read}' && chart-table '{ace_prn_read}'", shell=True)
+        subprocess.run(f"chart-org-table-to-ace --prn-read {prn_rem_conc} '{source}' '{ace_prn_read}' && chart-fix-names-passages '{ace_prn_read}' '{ace_prn_read}' && chart-table '{ace_prn_read}'", shell=True)
 
 # ----------------------------------------------------------------------
 
