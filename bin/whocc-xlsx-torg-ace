@@ -98,8 +98,12 @@ def copy_xlsx(source, xlsx_name):
 # ----------------------------------------------------------------------
 
 def edit_torg_make_ace(name, output_dir, stop_on_torg):
-    torg_filename = output_dir.joinpath(names[0] + ".torg")
-    ace_filename = output_dir.joinpath(names[0] + ".ace")
+    torg_filename = output_dir.joinpath(name + ".torg")
+    ace_filename = output_dir.joinpath(name + ".ace")
+    ace_prn_read = None
+    prn, prn_read_titers = is_chart_prn_with_read_titers(torg_filename)
+    if prn_read_titers:
+        ace_prn_read = output_dir.joinpath(name + ".prn-read.ace")
     # subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (forward-line 0) (save-buffer))"])
     subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10))"])
     if args.stop_on_torg:
@@ -113,7 +117,7 @@ def edit_torg_make_ace(name, output_dir, stop_on_torg):
         except Exception as err:
             # print(err)
             pass
-        make_ace(torg_filename, ace_filename)
+        make_ace(torg_filename, ace_filename, ace_prn_read=ace_prn_read, prn_remove_concentration=prn)
 
 # ----------------------------------------------------------------------
 
