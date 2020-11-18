@@ -149,7 +149,7 @@ def is_chart_prn_with_read_titers(source):
 
 def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False):
     print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{source}\n{ace}\n{ace_prn_read or ''}\n\n")
-    prn_rem_conc = "--prn-remove-concentration" if prn_remove_concentration else ""
+    prn_rem_conc = "" # leads to duplicates for A/Singapore/INFIMH-16-0019/2016 10-4 and 10-6: "--prn-remove-concentration" if prn_remove_concentration else ""
     subprocess_run(f"chart-org-table-to-ace {prn_rem_conc} '{source}' '{ace}' && chart-fix-names-passages '{ace}' '{ace}' && chart-table '{ace}'")
     if ace_prn_read:
         subprocess_run(f"chart-org-table-to-ace --prn-read {prn_rem_conc} '{source}' '{ace_prn_read}' && chart-fix-names-passages '{ace_prn_read}' '{ace_prn_read}' && chart-table '{ace_prn_read}'")
