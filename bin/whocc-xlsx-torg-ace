@@ -15,7 +15,9 @@ class Error (Exception): pass
 # ======================================================================
 
 def main(args):
-    names = subprocess.check_output(["whocc-xlsx-to-torg", "-n", args.source[0]]).decode("utf-8").strip().split("\n")
+    names = [name for name in subprocess.check_output(["whocc-xlsx-to-torg", "-n", args.source[0]]).decode("utf-8").split("\n") if name]
+    if not names:
+        raise Error("File provides no sheets with tables")
     output_dirs = frozenset(detect_dir(name) for name in names)
     if len(output_dirs) != 1:
         raise RuntimeError(f"None or multiple output dirs {output_dirs} inferred from {name}")

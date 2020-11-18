@@ -31,17 +31,19 @@ int main(int argc, char* const argv[])
             for ([[maybe_unused]] auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
                 auto converter = acmacs::sheet::SheetToTorg{doc.sheet(sheet_no)};
                 converter.preprocess();
-                // AD_LOG(acmacs::log::xlsx, "Sheet {:2d} {}", sheet_no + 1, converter.name());
-                if (opt.print_names) {
-                    fmt::print("{}\n", converter.name());
-                }
-                else if (opt.output_dir) {
-                    const auto filename = fmt::format("{}/{}.torg", opt.output_dir, converter.name());
-                    AD_INFO("{}", filename);
-                    acmacs::file::write(filename, converter.torg());
-                }
-                else {
-                    fmt::print("\n{}\n\n", converter.torg());
+                if (converter.valid()) {
+                    // AD_LOG(acmacs::log::xlsx, "Sheet {:2d} {}", sheet_no + 1, converter.name());
+                    if (opt.print_names) {
+                        fmt::print("{}\n", converter.name());
+                    }
+                    else if (opt.output_dir) {
+                        const auto filename = fmt::format("{}/{}.torg", opt.output_dir, converter.name());
+                        AD_INFO("{}", filename);
+                        acmacs::file::write(filename, converter.torg());
+                    }
+                    else {
+                        fmt::print("\n{}\n\n", converter.torg());
+                    }
                 }
             }
         }

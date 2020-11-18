@@ -9,6 +9,8 @@
 
 #include "acmacs-base/global-constructors-push.hh"
 
+static const std::regex re_ac_ignore_sheet{"^AC-IGNORE", acmacs::regex::icase};
+
 static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\s*\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
@@ -32,7 +34,11 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
 {
     std::unique_ptr<Extractor> extractor;
     std::smatch match;
-    if (const auto cell00 = sheet.cell(0, 0), cell01 = sheet.cell(0, 1); sheet.matches(re_table_title_crick, match, cell00) || sheet.matches(re_table_title_crick, match, cell01)) {
+    if (const auto cell00 = sheet.cell(0, 0), cell01 = sheet.cell(0, 1); sheet.matches(re_ac_ignore_sheet, cell00)) {
+        AD_INFO("Sheet \"{}\": ignored on request in cell A1", sheet.name());
+        return nullptr;
+    }
+    else if (sheet.matches(re_table_title_crick, match, cell00) || sheet.matches(re_table_title_crick, match, cell01)) {
         // AD_DEBUG("Sheet: {}\ncell00: {}\ncell01: {}", sheet.name(), sheet.matches(re_table_title_crick, match, cell00), sheet.matches(re_table_title_crick, match, cell01));
         if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
             extractor = std::make_unique<ExtractorCrickPRN>(sheet);
