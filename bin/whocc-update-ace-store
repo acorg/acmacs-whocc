@@ -5,7 +5,7 @@
 Updates ~/ac/ace-store from ~/ac/tables-store
 """
 
-import sys, subprocess, time, traceback
+import sys, subprocess, time, shutil, traceback
 if sys.version_info.major != 3: raise RuntimeError("Run script with python3")
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
@@ -38,16 +38,19 @@ def main(args):
         target_dir = sTargetDir.joinpath(infix)
         # target_dir.mkdir(mode=0o755, parents=True, exist_ok=True)
         for source in sSourceDir.joinpath(infix).glob("*.ac*"):
-            stem = source.stem
-            if stem[-5:] == ".acd1":
-                stem = stem[:-5]
-            target = target_dir.joinpath(stem + ".ace")
-            if not target.exists() or target.stat().st_mtime < source.stat().st_mtime:
-                print(time.ctime(target.stat().st_mtime) if target.exists() else "                        ", '<', time.ctime(source.stat().st_mtime), target)
-                if source.name.endswith("acd1.bz2") or source.name.endswith("acd1.xz"):
-                    subprocess.run("$HOME/AD/bin/chart-convert '{source}' '{target}'".format(source=source, target=target), shell=True, stdout=subprocess.DEVNULL, check=True)
-                else:
-                    subprocess.run("{acmacs_env} python3 $HOME/ac/acmacs/bin/convert.py -q '{source}' '{target}'".format(acmacs_env=acmacs_env(), source=source, target=target), shell=True, check=True)
+            if not source.name.endswith(".prn-read.ace"):
+                stem = source.stem
+                if stem[-5:] == ".acd1":
+                    stem = stem[:-5]
+                target = target_dir.joinpath(stem + ".ace")
+                if not target.exists() or target.stat().st_mtime < source.stat().st_mtime:
+                    print(time.ctime(target.stat().st_mtime) if target.exists() else "                        ", '<', time.ctime(source.stat().st_mtime), target)
+                    if source.name.endswith(".ace"):
+                        shutil.copyfile(source, target)
+                    elif source.name.endswith("acd1.bz2") or source.name.endswith("acd1.xz"):
+                        subprocess.run("$HOME/AD/bin/chart-convert '{source}' '{target}'".format(source=source, target=target), shell=True, stdout=subprocess.DEVNULL, check=True)
+                    else:
+                        subprocess.run("{acmacs_env} python3 $HOME/ac/acmacs/bin/convert.py -q '{source}' '{target}'".format(acmacs_env=acmacs_env(), source=source, target=target), shell=True, check=True)
 
 # ----------------------------------------------------------------------
 
