@@ -76,20 +76,24 @@ function make_page(data)
     for (let row_entry of (data.page || [])) {
         const li = make_element("li", {append_to: ol});
         li.append(make_element("span", {content: row_entry.title, klass: "section-title"}));
+        if (row_entry.text) {
+            for (let line of row_entry.text)
+                li.append(make_element("p", {content: line}));
+        }
         li.append(make_element("div", {klass: "section-title-separator"}));
         if (row_entry.columns?.length) {
             const max_columns = Math.max(... row_entry.columns.map(col => col.length))
             const div_grid = make_element("div", {append_to: li, klass: ["grid", `grid-${max_columns}`]});
             for (let column_entry of row_entry.columns) {
                 for (let row of column_entry) {
-                switch (row.T) {
-                case "title":
-                    make_element("div", {append_to: div_grid, content: row.text, klass: "title"});
-                    break;
-                case "pdf":
-                    make_pdf({append_to: div_grid, src: row.file});
-                    break;
-                }
+                    switch (row.T) {
+                    case "title":
+                        make_element("div", {append_to: div_grid, content: row.text, klass: "title"});
+                        break;
+                    case "pdf":
+                        make_pdf({append_to: div_grid, src: row.file});
+                        break;
+                    }
                 }
             }
         }
