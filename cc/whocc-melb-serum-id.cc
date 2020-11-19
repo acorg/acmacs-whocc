@@ -209,10 +209,10 @@ class FixSerumIds
 
     bool fix_in_chart(acmacs::chart::ChartModify& chart)
     {
-        auto sera = chart.sera_modify();
+        auto& sera = chart.sera_modify();
         bool modified = false;
-        for (size_t serum_no = 0; serum_no < sera->size(); ++ serum_no) {
-            auto& serum = sera->at(serum_no);
+        for (size_t serum_no = 0; serum_no < sera.size(); ++ serum_no) {
+            auto& serum = sera.at(serum_no);
             const auto sid = serum.serum_id();
             for (const auto& fix : data_) {
                 if (sid == acmacs::chart::SerumId{fix.first}) {

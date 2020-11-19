@@ -52,10 +52,10 @@ int main(int argc, char* const argv[])
         };
 
         for (auto& chart : charts) {
-            chart.projections_modify()->remove_all();
+            chart.projections_modify().remove_all();
             chart.relax(acmacs::chart::number_of_optimizations_t{*opt.number_of_optimizations}, acmacs::chart::MinimumColumnBasis{opt.minimum_column_basis},
                         acmacs::number_of_dimensions_t{*opt.number_of_dimensions}, acmacs::chart::use_dimension_annealing::no, acmacs::chart::optimization_options{precision});
-            chart.projections_modify()->sort();
+            chart.projections_modify().sort();
             AD_DEBUG("{}  {:9.4f}", chart_name(chart), chart.projections()->best()->stress());
         }
 
