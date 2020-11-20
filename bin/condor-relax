@@ -4,7 +4,7 @@
 Relaxes a chart using htcondor
 """
 
-import sys, os, logging, datetime
+import sys, os, logging, datetime, time
 from pathlib import Path
 
 now = datetime.datetime.now().strftime("%Y-%m%d-%H%M%S")
@@ -85,7 +85,6 @@ def combine_results(source, working_dir, minimum_column_basis, keep_projections)
 
 def backup_file(filename):
     if Path(filename).exists():
-        import timegit
         name, ext = os.path.splitext(filename)
         infix = time.strftime("%Y-%m%d-%H%M%S", time.localtime(os.stat(filename).st_mtime))
         try:
@@ -96,7 +95,6 @@ def backup_file(filename):
 # ----------------------------------------------------------------------
 
 def make_working_dir(args):
-    import time
     global now
     working_dir = Path(real_cwd, f"output.{Path(args.source[0]).stem}.{now}")
     if working_dir.exists():
