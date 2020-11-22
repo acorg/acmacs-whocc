@@ -55,7 +55,7 @@ sMergesToGet = set([
     # NIMR Neut custom
     "CDC  BV             HI",
     "MELB BV             HI",
-    # custom "NIID BV             HI",
+    "NIID BV             HI",
     # custom "NIMR BV             HI",
     "CDC  BY             HI",
     "MELB BY             HI",
