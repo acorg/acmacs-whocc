@@ -7,7 +7,7 @@ Converts xlsx to torg, waits for torg editing, converts it to ace
 
 import sys, os, pprint, subprocess, re, shutil, time, signal, datetime, collections
 from pathlib import Path
-sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
+# sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
 import logging; module_logger = logging.getLogger(__name__)
 
 class Error (Exception): pass
@@ -15,7 +15,7 @@ class Error (Exception): pass
 # ======================================================================
 
 def main(args):
-    names = [name for name in subprocess.check_output(["whocc-xlsx-to-torg", "-n", "{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}", args.source[0]]).decode("utf-8").split("\n") if name]
+    names = [split_name(name) for name in subprocess.check_output(["whocc-xlsx-to-torg", "-n", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", args.source[0]]).decode("utf-8").split("\n") if name]
     if not names:
         raise Error("File provides no sheets with tables")
     output_dirs = frozenset(detect_dir(name) for name in names)
@@ -24,8 +24,8 @@ def main(args):
     output_dir = next(iter(output_dirs))
     if not args.overwrite:
         check_output_names(names, output_dir=output_dir)
-    copy_xlsx(args.source[0], output_dir.joinpath(make_xlsx_name(names)))
-    subprocess.check_call(["whocc-xlsx-to-torg", "-o", output_dir, args.source[0]])
+    copy_xlsx(args.source[0], output_dir.joinpath("xlsx", make_xlsx_name(names)))
+    subprocess.check_call(["whocc-xlsx-to-torg", "-o", output_dir.joinpath("torg"), args.source[0]])
     if len(names) == 1 and args.edit_torg:
         edit_torg_make_ace(names[0], output_dir=output_dir, stop_on_torg=args.stop_on_torg)
     elif not args.stop_on_torg:
@@ -33,43 +33,38 @@ def main(args):
 
 # ----------------------------------------------------------------------
 
+class Name: pass
+
+def split_name(name):
+    result = Name()
+    result.subtype, assay_rbc, result.lab, result.date = name.split(" ")
+    if "-" in assay_rbc:
+        result.assay, result.rbc = assay_rbc.split("-")
+        result.stem = f"{result.subtype}-{result.assay}-{result.rbc}-{result.lab}-{result.date}"
+    else:
+        result.assay, result.rbc = assay_rbc, None
+        result.stem = f"{result.subtype}-{result.assay}-{result.lab}-{result.date}"
+    return result
+
+# ----------------------------------------------------------------------
+
 def detect_dir(name):
-    subtype, lab, assay, date = name.split("-")
-    try:
-        dir = Path("~/ac/tables-store").expanduser()
-        if subtype in ["b", "bvic", "byam"]:
-            dir = dir.joinpath("B")
-        elif subtype == "h1":
-            dir = dir.joinpath("H1PDM")
-        elif subtype == "h3":
-            dir = dir.joinpath("H3")
-        else:
-            raise Error(f"unknown subtype {subtype}")
-        if lab == "crick":
-            lab_dir = "NIMR"
-        elif lab == "vidrl":
-            lab_dir = "MELB"
-        else:
-            lab_dir = lab.upper()
-        dir = dir.joinpath(lab_dir)
-        if lab == "vidrl":
-            if subtype == "bvic":
-                dir  = dir.joinpath("victoria")
-            elif subtype == "byam":
-                dir  = dir.joinpath("yamagata")
-    except Exception as err:
-        dir = Path("/d")
-        module_logger.warning(f"cannot infer target dir, \"{dir}\" is used: {err}")
-    return dir
+    whocc_tables_dir = Path("~/ac/whocc-tables").expanduser()
+    cmd = [whocc_tables_dir.joinpath("bin", "output-dir"), "--subtype", name.subtype, "--assay", name.assay, "--lab", name.lab]
+    if name.rbc:
+        cmd.extend(["--rbc", name.rbc])
+    output_dir = subprocess.check_output(cmd)
+    output_dir = Path(output_dir.decode("utf-8").strip())
+    return output_dir
 
 # ----------------------------------------------------------------------
 
 def make_xlsx_name(names):
     if len(names) == 1:
-        return f"{next(iter(names))}.xlsx"
+        return f"{next(iter(names)).stem}.xlsx"
     else:
-        names_sorted = sorted(names)
-        return f"{names_sorted[0]}-{names_sorted[-1].split('-')[-1]}.xlsx"
+        names_sorted = sorted(names, key=lambda n: n.date)
+        return f"{names_sorted[0].stem}-{names_sorted[-1].date}.xlsx"
 
 # ----------------------------------------------------------------------
 
@@ -84,9 +79,9 @@ def check_output_names(names, output_dir):
         else:
             return f"    {path}"
 
-    files = [make_xlsx_name(names)] + [f"{nn}.torg" for nn in names] + [f"{nn}.ace" for nn in names]
-    if "h3-crick-neut-" in names[0]:
-        files += [f"{nn}.prn-read.ace" for nn in names]
+    files = [output_dir.joinpath("xlsx", make_xlsx_name(names))] + [output_dir.joinpath("torg", f"{nn.stem}.torg") for nn in names] + [output_dir.joinpath(f"{nn.stem}.ace") for nn in names]
+    if "h3-neut-crick-" in names[0].stem:
+        files += [output_dir.joinpath("prn-read", f"{nn.stem}.ace") for nn in names]
     msg = "\n".join(check(nam) for nam in files)
     if num_exist:
         raise Error(f"{num_exist} file(s) marked with *** already exist(s) (use -f to overwrite):\n{msg}")
@@ -94,18 +89,19 @@ def check_output_names(names, output_dir):
 # ----------------------------------------------------------------------
 
 def copy_xlsx(source, xlsx_name):
+    subprocess.check_call(["/usr/bin/xattr", "-c", source])
     module_logger.info(f"{source} -> {xlsx_name}")
     shutil.copyfile(source, xlsx_name)
 
 # ----------------------------------------------------------------------
 
 def edit_torg_make_ace(name, output_dir, stop_on_torg):
-    torg_filename = output_dir.joinpath(name + ".torg")
-    ace_filename = output_dir.joinpath(name + ".ace")
+    torg_filename = output_dir.joinpath("torg", name.stem + ".torg")
+    ace_filename = output_dir.joinpath(name.stem + ".ace")
     ace_prn_read = None
     prn, prn_read_titers = is_chart_prn_with_read_titers(torg_filename)
     if prn_read_titers:
-        ace_prn_read = output_dir.joinpath(name + ".prn-read.ace")
+        ace_prn_read = output_dir.joinpath(name.stem + ".prn-read.ace")
     # subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (forward-line 0) (save-buffer))"])
     subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10))"])
     if args.stop_on_torg:
@@ -125,12 +121,12 @@ def edit_torg_make_ace(name, output_dir, stop_on_torg):
 
 def make_all_ace(names, output_dir):
     for name in names:
-        source = output_dir.joinpath(name + ".torg")
+        source = output_dir.joinpath("torg", name.stem + ".torg")
         ace_prn_read = None
         prn, prn_read_titers = is_chart_prn_with_read_titers(source)
         if prn_read_titers:
-            ace_prn_read = output_dir.joinpath(name + ".prn-read.ace")
-        make_ace(source, output_dir.joinpath(name + ".ace"), ace_prn_read=ace_prn_read, prn_remove_concentration=prn)
+            ace_prn_read = output_dir.joinpath("prn_read", name.stem + ".ace")
+        make_ace(source, output_dir.joinpath(name.stem + ".ace"), ace_prn_read=ace_prn_read, prn_remove_concentration=prn)
 
 # ----------------------------------------------------------------------
 
