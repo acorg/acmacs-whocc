@@ -13,7 +13,9 @@ struct Options : public argv
     Options(int a_argc, const char* const a_argv[], on_error on_err = on_error::exit) : argv() { parse(a_argc, a_argv, on_err); }
 
     option<str>       output_dir{ *this, 'o',            desc{"output-dir"}};
-    option<str>       assay_data_format{*this, 'n',            desc{"print assay information fields: {virus_type} {lineage} {virus_type_lineage} {virus_type_lineage_subset_short_low} {assay_full} {assay_low} {lab} {lab_low} {rbc} {table_date}"}};
+    option<str> assay_data_format{*this, 'n',
+                                  desc{"print assay information fields: {virus_type} {lineage} {virus_type_lineage} {virus_type_lineage_subset_short_low} {assay_full} {assay_low} "
+                                       "{assay_low_rbc} {lab} {lab_low} {rbc} {table_date}"}};
     option<str_array> verbose{    *this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
 
     argument<str_array> xlsx{*this, arg_name{".xlsx"}, mandatory};

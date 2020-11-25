@@ -104,6 +104,16 @@ std::string acmacs::sheet::v1::SheetToTorg::name() const
 std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view format) const
 {
     using namespace fmt::literals;
+
+    const auto assay_rbc = [this]() -> std::string {
+        if (const auto assay = extractor_->assay(); assay == "HI")
+            return fmt::format("hi-{}", string::lower(extractor_->rbc()));
+        else if (assay == "HINT")
+            return "hint";
+        else
+            return "neut";
+    };
+
     return fmt::format(format,                                               //
                        "virus_type"_a = extractor_->subtype(),               //
                        "lineage"_a = extractor_->lineage(),                  //
@@ -113,6 +123,7 @@ std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view f
                        "assay_full"_a = extractor_->assay(),                                  //
                        "assay"_a = extractor_->assay(),                                       //
                        "assay_low"_a = string::lower(extractor_->assay()),                    //
+                       "assay_low_rbc"_a = assay_rbc(),                                       //
                        "lab"_a = extractor_->lab(),                                           //
                        "lab_low"_a = string::lower(extractor_->lab()),                        //
                        "rbc"_a = extractor_->rbc(),                                           //
