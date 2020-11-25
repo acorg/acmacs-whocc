@@ -18,6 +18,7 @@ namespace acmacs::sheet::inline v1
         void preprocess();
         std::string torg() const;
         std::string name() const;
+        std::string format_assay_data(std::string_view format) const;
 
       private:
         std::unique_ptr<Sheet> sheet_;

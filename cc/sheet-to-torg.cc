@@ -101,6 +101,28 @@ std::string acmacs::sheet::v1::SheetToTorg::name() const
 
 // ----------------------------------------------------------------------
 
+std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view format) const
+{
+    using namespace fmt::literals;
+    return fmt::format(format,                                               //
+                       "virus_type"_a = extractor_->subtype(),               //
+                       "lineage"_a = extractor_->lineage(),                  //
+                       "virus_type_lineage"_a = extractor_->subtype_short(), //
+                       // "subset"_a = ,
+                       "virus_type_lineage_subset_short_low"_a = extractor_->subtype_short(), //
+                       "assay_full"_a = extractor_->assay(),                                  //
+                       "assay"_a = extractor_->assay(),                                       //
+                       "assay_low"_a = string::lower(extractor_->assay()),                    //
+                       "lab"_a = extractor_->lab(),                                           //
+                       "lab_low"_a = string::lower(extractor_->lab()),                        //
+                       "rbc"_a = extractor_->rbc(),                                           //
+                       "table_date"_a = extractor_->date("%Y%m%d")                            //
+    );
+
+} // acmacs::sheet::v1::SheetToTorg::format_assay_data
+
+// ----------------------------------------------------------------------
+
 
 // ----------------------------------------------------------------------
 /// Local Variables:
