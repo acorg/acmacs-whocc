@@ -84,23 +84,6 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
 
 // ----------------------------------------------------------------------
 
-std::string acmacs::sheet::v1::SheetToTorg::name() const
-{
-    const auto rbc_assay = [this]() -> std::string {
-        if (const auto assay = extractor_->assay(); assay == "HI")
-            return std::string{extractor_->rbc()};
-        else if (assay == "HINT")
-            return "hint";
-        else
-            return "neut";
-    };
-
-    return fmt::format("{}-{}-{}-{}", extractor_->subtype_short(), string::lower(extractor_->lab()), rbc_assay(), extractor_->date("%Y%m%d"));
-
-} // acmacs::sheet::v1::SheetToTorg::name
-
-// ----------------------------------------------------------------------
-
 std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view format) const
 {
     using namespace fmt::literals;

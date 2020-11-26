@@ -12,11 +12,12 @@ struct Options : public argv
 {
     Options(int a_argc, const char* const a_argv[], on_error on_err = on_error::exit) : argv() { parse(a_argc, a_argv, on_err); }
 
-    option<str>       output_dir{ *this, 'o',            desc{"output-dir"}};
-    option<str> assay_data_format{*this, 'n',
-                                  desc{"print assay information fields: {virus_type} {lineage} {virus_type_lineage} {virus_type_lineage_subset_short_low} {assay_full} {assay_low} "
-                                       "{assay_low_rbc} {lab} {lab_low} {rbc} {table_date}"}};
-    option<str_array> verbose{    *this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
+    option<str> output_dir{*this, 'o', desc{"output-dir"}};
+    option<str> format{*this, 'f', "format", dflt{"{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}"},
+                       desc{"print assay information fields: {virus_type} {lineage} {virus_type_lineage} {virus_type_lineage_subset_short_low} {assay_full} {assay_low} "
+                            "{assay_low_rbc} {lab} {lab_low} {rbc} {table_date}"}};
+    option<bool> assay_information{*this, 'n', desc{"print assay information fields according to format (-f or --format)"}};
+    option<str_array> verbose{*this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
 
     argument<str_array> xlsx{*this, arg_name{".xlsx"}, mandatory};
 };
@@ -35,11 +36,11 @@ int main(int argc, char* const argv[])
                 converter.preprocess();
                 if (converter.valid()) {
                     // AD_LOG(acmacs::log::xlsx, "Sheet {:2d} {}", sheet_no + 1, converter.name());
-                    if (opt.assay_data_format) {
-                        fmt::print("{}\n", converter.format_assay_data(opt.assay_data_format));
+                    if (opt.assay_information) {
+                        fmt::print("{}\n", converter.format_assay_data(opt.format));
                     }
                     else if (opt.output_dir) {
-                        const auto filename = fmt::format("{}/{}.torg", opt.output_dir, converter.name());
+                        const auto filename = fmt::format("{}/{}.torg", opt.output_dir, converter.format_assay_data(opt.format));
                         AD_INFO("{}", filename);
                         acmacs::file::write(filename, converter.torg());
                     }

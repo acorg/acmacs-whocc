@@ -17,8 +17,8 @@ namespace acmacs::sheet::inline v1
         bool valid() const { return bool{extractor_}; }
         void preprocess();
         std::string torg() const;
-        std::string name() const;
         std::string format_assay_data(std::string_view format) const;
+        std::string name() const { return format_assay_data("{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}"); }
 
       private:
         std::unique_ptr<Sheet> sheet_;
