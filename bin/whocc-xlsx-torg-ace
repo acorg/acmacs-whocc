@@ -101,7 +101,7 @@ def edit_torg_make_ace(name, output_dir, stop_on_torg):
     ace_prn_read = None
     prn, prn_read_titers = is_chart_prn_with_read_titers(torg_filename)
     if prn_read_titers:
-        ace_prn_read = output_dir.joinpath(name.stem + ".prn-read.ace")
+        ace_prn_read = output_dir.joinpath("prn-read", name.stem + ".ace")
     # subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10) (org-cycle) (forward-line 0) (save-buffer))"])
     subprocess.check_call(["emacsclient", "-q", "-e", f"(progn (find-file \"{torg_filename}\") (forward-line 10))"])
     if args.stop_on_torg:
@@ -125,7 +125,7 @@ def make_all_ace(names, output_dir):
         ace_prn_read = None
         prn, prn_read_titers = is_chart_prn_with_read_titers(source)
         if prn_read_titers:
-            ace_prn_read = output_dir.joinpath("prn_read", name.stem + ".ace")
+            ace_prn_read = output_dir.joinpath("prn-read", name.stem + ".ace")
         make_ace(source, output_dir.joinpath(name.stem + ".ace"), ace_prn_read=ace_prn_read, prn_remove_concentration=prn)
 
 # ----------------------------------------------------------------------
