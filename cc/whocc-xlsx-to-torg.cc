@@ -48,19 +48,53 @@ namespace guile
         return result;
     }
 
+    // https://devblogs.microsoft.com/oldnewthing/20200713-00/?p=103978
+    template <typename F> struct FunctionTraits;
+    template <typename R, typename... Args> struct FunctionTraits<R (*)(Args...)>
+    {
+        using Pointer = R (*)(Args...);
+        using RetType = R;
+        using ArgTypes = std::tuple<Args...>;
+        static constexpr std::size_t ArgCount = sizeof...(Args);
+        // template <std::size_t N> using NthArg = std::tuple_element_t<N, ArgTypes>;
+    };
+
+    template <typename Arg> inline SCM to_scm(Arg arg)
+    {
+        static_assert(std::is_same_v<std::decay<Arg>, int>, "no to_scm specialization defined");
+        return scm_from_signed_integer(arg);
+    }
+
+    template <> inline SCM to_scm<double>(double arg) { return scm_from_double(arg); }
+    inline SCM to_scm() { return VOID; }
+
+    template <typename Value> inline Value from_scm(SCM arg)
+    {
+        static_assert(std::is_same_v<std::decay<Value>, int>, "no from_scm specialization defined");
+        return scm_to_int(arg);
+    }
+
+    template <> inline double from_scm<double>(SCM arg) { return scm_to_double(arg); }
+    template <> inline std::string from_scm<std::string>(SCM arg) { return to_string(arg); }
+
     template <typename Func> void define(std::string_view name, Func func)
     {
-        int num_args{0};
-        if constexpr (std::is_invocable_v<Func>)
-            num_args = 0;
-        if constexpr (std::is_invocable_v<Func, SCM>)
-            num_args = 1;
-        else if constexpr (std::is_invocable_v<Func, SCM, SCM>)
-            num_args = 2;
-        else
-            static_assert(std::is_invocable_v<Func, void>, "guile::define: unsupported function");
-        scm_c_define_gsubr(name.data(), num_args, 0, 0, guile::subr(func));
+        scm_c_define_gsubr(name.data(), FunctionTraits<Func>::ArgCount, 0, 0, guile::subr(func));
     }
+
+    // template <typename Func> void define_scm(std::string_view name, Func func)
+    // {
+    //     int num_args{0};
+    //     if constexpr (std::is_invocable_v<Func>)
+    //         num_args = 0;
+    //     if constexpr (std::is_invocable_v<Func, SCM>)
+    //         num_args = 1;
+    //     else if constexpr (std::is_invocable_v<Func, SCM, SCM>)
+    //         num_args = 2;
+    //     else
+    //         static_assert(std::is_invocable_v<Func, void>, "guile::define: unsupported function");
+    //     scm_c_define_gsubr(name.data(), num_args, 0, 0, guile::subr(func));
+    // }
 
     // initialize guile and call passed function to define functions
     template <typename Func> inline void init(Func func)
@@ -110,6 +144,7 @@ static SCM name_antigen_serum_fix(SCM arg, SCM to);
 
 int main(int argc, char* const argv[])
 {
+    using namespace std::string_view_literals;
     int exit_code = 0;
     try {
         Options opt(argc, argv);
@@ -117,7 +152,7 @@ int main(int argc, char* const argv[])
 
         guile::init(opt.scripts, [&] {
             using namespace guile;
-            define("name-antigen-serum-fix", name_antigen_serum_fix);
+            define("name-antigen-serum-fix"sv, name_antigen_serum_fix);
         });
 
         for (auto& xlsx : opt.xlsx) {
@@ -153,7 +188,7 @@ int main(int argc, char* const argv[])
 
 SCM name_antigen_serum_fix(SCM from, SCM to)
 {
-    fmt::print("name_antigen_serum_fix \"{}\" -> \"{}\"\n", guile::to_string(from), guile::to_string(to));
+    fmt::print("name_antigen_serum_fix \"{}\" -> \"{}\"\n", guile::from_scm<std::string>(from), guile::from_scm<std::string>(to));
     return guile::VOID;
 
 } // name_antigen_serum_fix
