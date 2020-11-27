@@ -1,3 +1,67 @@
+#include "acmacs-base/fmt.hh"
+
+#pragma GCC diagnostic push
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
+#pragma GCC diagnostic ignored "-Wdeprecated-volatile"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wreserved-id-macro"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wextra-semi-stmt"
+// #pragma GCC diagnostic ignored ""
+// #pragma GCC diagnostic ignored ""
+// #pragma GCC diagnostic ignored ""
+// #pragma GCC diagnostic ignored ""
+#endif
+
+#ifdef __GNUG__
+#endif
+
+#include <libguile.h>
+
+namespace guile
+{
+    struct Error : public std::runtime_error
+    {
+        using std::runtime_error::runtime_error;
+    };
+
+    const inline auto VOID = SCM_UNSPECIFIED;
+
+    template <typename Func> constexpr inline auto subr(Func func) { return reinterpret_cast<scm_t_subr>(func); }
+
+    inline void load(std::string_view filename) { scm_c_primitive_load(filename.data()); }
+
+    inline std::string to_string(SCM src)
+    {
+        // if (!scm_is_string(src))
+        //     throw Error{fmt::format("expected string but passed {}", "?")};
+        std::string result(scm_c_string_length(src), '?');
+        scm_to_locale_stringbuf(src, result.data(), result.size());
+        return result;
+    }
+
+    template <typename Func> void define(std::string_view name, Func func)
+    {
+        int num_args{0};
+        if constexpr (std::is_invocable_v<Func>)
+            num_args = 0;
+        if constexpr (std::is_invocable_v<Func, SCM>)
+            num_args = 1;
+        else if constexpr (std::is_invocable_v<Func, SCM, SCM>)
+            num_args = 2;
+        else
+            static_assert(std::is_invocable_v<Func, void>, "guile::define: unsupported function");
+        scm_c_define_gsubr(name.data(), num_args, 0, 0, guile::subr(func));
+    }
+
+} // namespace guile
+
+#pragma GCC diagnostic pop
+
+// ----------------------------------------------------------------------
+
 #include "acmacs-base/argv.hh"
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/read-file.hh"
@@ -17,17 +81,26 @@ struct Options : public argv
                        desc{"print assay information fields: {virus_type} {lineage} {virus_type_lineage} {virus_type_lineage_subset_short_low} {assay_full} {assay_low} "
                             "{assay_low_rbc} {lab} {lab_low} {rbc} {table_date}"}};
     option<bool> assay_information{*this, 'n', desc{"print assay information fields according to format (-f or --format)"}};
+    option<str_array> scripts{*this, 's', desc{"run scheme script (multiple switches allowed) before processing files"}};
     option<str_array> verbose{*this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
 
     argument<str_array> xlsx{*this, arg_name{".xlsx"}, mandatory};
 };
 
+static void guile_init();
+
 int main(int argc, char* const argv[])
 {
     int exit_code = 0;
     try {
+        guile_init();
+
         Options opt(argc, argv);
         acmacs::log::enable(opt.verbose);
+
+        for (auto script : opt.scripts)
+            guile::load(script);
+        exit(1);
 
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
@@ -57,6 +130,29 @@ int main(int argc, char* const argv[])
     }
     return exit_code;
 }
+
+// ----------------------------------------------------------------------
+
+static SCM name_antigen_serum_fix(SCM arg, SCM to);
+
+SCM name_antigen_serum_fix(SCM from, SCM to)
+{
+    fmt::print("name_antigen_serum_fix \"{}\" -> \"{}\"\n", guile::to_string(from), guile::to_string(to));
+    return guile::VOID;
+
+} // name_antigen_serum_fix
+
+// ----------------------------------------------------------------------
+
+
+void guile_init()
+{
+    scm_init_guile();
+
+    guile::define("name-antigen-serum-fix", name_antigen_serum_fix);
+
+} // guile_init
+
 
 // ----------------------------------------------------------------------
 /// Local Variables:
