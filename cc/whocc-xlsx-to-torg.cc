@@ -33,6 +33,12 @@ namespace guile
 
     inline void load(std::string_view filename) { scm_c_primitive_load(filename.data()); }
 
+    inline void load(const std::vector<std::string_view>& filenames)
+    {
+        for (const auto& filename : filenames)
+            scm_c_primitive_load(filename.data());
+    }
+
     inline std::string to_string(SCM src)
     {
         // if (!scm_is_string(src))
@@ -54,6 +60,19 @@ namespace guile
         else
             static_assert(std::is_invocable_v<Func, void>, "guile::define: unsupported function");
         scm_c_define_gsubr(name.data(), num_args, 0, 0, guile::subr(func));
+    }
+
+    // initialize guile and call passed function to define functions
+    template <typename Func> inline void init(Func func)
+    {
+        scm_init_guile();
+        func();
+    }
+
+    template <typename Func> inline void init(const std::vector<std::string_view>& filenames_to_load, Func func)
+    {
+        init(func);
+        load(filenames_to_load);
     }
 
 } // namespace guile
@@ -87,20 +106,19 @@ struct Options : public argv
     argument<str_array> xlsx{*this, arg_name{".xlsx"}, mandatory};
 };
 
-static void guile_init();
+static SCM name_antigen_serum_fix(SCM arg, SCM to);
 
 int main(int argc, char* const argv[])
 {
     int exit_code = 0;
     try {
-        guile_init();
-
         Options opt(argc, argv);
         acmacs::log::enable(opt.verbose);
 
-        for (auto script : opt.scripts)
-            guile::load(script);
-        exit(1);
+        guile::init(opt.scripts, [&] {
+            using namespace guile;
+            define("name-antigen-serum-fix", name_antigen_serum_fix);
+        });
 
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
@@ -133,26 +151,12 @@ int main(int argc, char* const argv[])
 
 // ----------------------------------------------------------------------
 
-static SCM name_antigen_serum_fix(SCM arg, SCM to);
-
 SCM name_antigen_serum_fix(SCM from, SCM to)
 {
     fmt::print("name_antigen_serum_fix \"{}\" -> \"{}\"\n", guile::to_string(from), guile::to_string(to));
     return guile::VOID;
 
 } // name_antigen_serum_fix
-
-// ----------------------------------------------------------------------
-
-
-void guile_init()
-{
-    scm_init_guile();
-
-    guile::define("name-antigen-serum-fix", name_antigen_serum_fix);
-
-} // guile_init
-
 
 // ----------------------------------------------------------------------
 /// Local Variables:
