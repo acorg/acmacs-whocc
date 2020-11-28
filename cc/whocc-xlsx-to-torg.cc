@@ -5,6 +5,7 @@
 #include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/xlsx.hh"
+#include "acmacs-whocc/data-fix.hh"
 
 // ----------------------------------------------------------------------
 
@@ -24,7 +25,6 @@ struct Options : public argv
     argument<str_array> xlsx{*this, arg_name{".xlsx"}, mandatory};
 };
 
-static SCM name_antigen_serum_fix(SCM arg, SCM to);
 
 int main(int argc, char* const argv[])
 {
@@ -33,11 +33,7 @@ int main(int argc, char* const argv[])
     try {
         Options opt(argc, argv);
         acmacs::log::enable(opt.verbose);
-
-        guile::init(opt.scripts, [&] {
-            using namespace guile;
-            define("name-antigen-serum-fix"sv, name_antigen_serum_fix);
-        });
+        guile::init(opt.scripts, acmacs::data_fix::guile_defines);
 
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
@@ -67,15 +63,6 @@ int main(int argc, char* const argv[])
     }
     return exit_code;
 }
-
-// ----------------------------------------------------------------------
-
-SCM name_antigen_serum_fix(SCM from, SCM to)
-{
-    fmt::print("name_antigen_serum_fix \"{}\" -> \"{}\"\n", guile::from_scm<std::string>(from), guile::from_scm<std::string>(to));
-    return guile::VOID;
-
-} // name_antigen_serum_fix
 
 // ----------------------------------------------------------------------
 /// Local Variables:

@@ -20,6 +20,9 @@ namespace acmacs::sheet::inline v1
         std::string format_assay_data(std::string_view format) const;
         std::string name() const { return format_assay_data("{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}"); }
 
+        std::string antigen_name(size_t ag_no) const;
+        std::string serum_name(size_t sr_no) const;
+
       private:
         std::unique_ptr<Sheet> sheet_;
         std::unique_ptr<Extractor> extractor_;

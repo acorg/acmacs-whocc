@@ -17,7 +17,8 @@ TARGETS = \
 SHEET_SOURCES = \
   sheet-extractor.cc \
   sheet-to-torg.cc \
-  sheet.cc
+  sheet.cc \
+  data-fix.cc
 
 # ----------------------------------------------------------------------
 
