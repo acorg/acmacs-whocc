@@ -1,5 +1,6 @@
 #include "acmacs-base/regex.hh"
 #include "acmacs-base/guile.hh"
+#include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/data-fix.hh"
 
 // ----------------------------------------------------------------------
@@ -78,6 +79,7 @@ void acmacs::data_fix::guile_defines()
 
 SCM name_antigen_serum_fix(SCM from, SCM to)
 {
+    // AD_DEBUG("name-antigen-serum-fix \"{}\" \"{}\"", guile::from_scm<std::string>(from), guile::from_scm<std::string>(to));
     acmacs::data_fix::Set::update().add(std::make_unique<acmacs::data_fix::AntigenSerumName>(guile::from_scm<std::string>(from), guile::from_scm<std::string>(to)));
     return guile::VOID;
 
