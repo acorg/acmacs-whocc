@@ -50,6 +50,15 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen)
         }
     }
 
+    for (const auto& en : data) {
+        const auto orig_name = antigen.name;
+        const auto orig_passage = antigen.passage;
+        if (const auto res = en->antigen_passage(antigen.passage, antigen.name); res) {
+            AD_INFO("AG passage \"{}\" <-- \"{}\"   name \"{}\" <-- \"{}\"", antigen.passage, orig_passage, antigen.name, orig_name);
+            break;
+        }
+    }
+
 } // acmacs::data_fix::v1::Set::fix
 
 // ----------------------------------------------------------------------
@@ -64,6 +73,15 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum)
         const auto orig = serum.name;
         if (const auto res = en->serum_name(serum.name); res) {
             AD_INFO("SR name \"{}\" <-- \"{}\"", serum.name, orig);
+            break;
+        }
+    }
+
+    for (const auto& en : data) {
+        const auto orig_name = serum.name;
+        const auto orig_passage = serum.passage;
+        if (const auto res = en->serum_passage(serum.passage, serum.name); res) {
+            AD_INFO("SR passage \"{}\" <-- \"{}\"   name \"{}\" <-- \"{}\"", serum.passage, orig_passage, serum.name, orig_name);
             break;
         }
     }
@@ -108,11 +126,11 @@ namespace acmacs::data_fix::inline v1
         bool antigen_passage(std::string& src, std::string& name) const override
         {
             if (std::smatch match; std::regex_search(src, match, from_)) {
-                src = match.format(to_);
-                if (!name_append_.empty()) {
-                    if (const auto to_append = match.format(name_append_); !to_append.empty())
-                        name += " " + to_append;
-                }
+                const auto new_passage = match.format(to_); // do not overwrite src yet, otherwise next match.format gives nonsense (match.format copies from src)
+                const auto name_append = match.format(name_append_);
+                src = new_passage;
+                if (!name_append.empty())
+                    name += " " + name_append;
                 return true;
             }
             return Base::antigen_passage(src, name);
