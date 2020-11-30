@@ -1,6 +1,7 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/log.hh"
 #include "acmacs-base/string.hh"
+#include "acmacs-base/string-split.hh"
 #include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/data-fix.hh"
 
@@ -51,7 +52,15 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
         for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
             auto titer = extractor_->titer(ag_no, sr_no);
             acmacs::data_fix::Set::fix_titer(titer, ag_no, sr_no);
-            data[ag_row][st(ag_col::base) + sr_no] = titer;
+            switch (const auto fields = acmacs::string::split(titer, "/"); fields.size()) {
+                case 2:
+                    data[ag_row][st(ag_col::base) + sr_no] = fmt::format("{:>5s} / {:>5s}", fields[0], fields[1]);
+                    break;
+                case 1:
+                default:
+                    data[ag_row][st(ag_col::base) + sr_no] = fmt::format("{:>5s}", titer);
+                    break;
+            }
         }
     }
 
@@ -98,7 +107,7 @@ std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view f
 
     const auto assay_rbc = [this]() -> std::string {
         if (const auto assay = extractor_->assay(); assay == "HI")
-            return fmt::format("hi-{}", string::lower(extractor_->rbc()));
+            return fmt::format("hi-{}", ::string::lower(extractor_->rbc()));
         else if (assay == "HINT")
             return "hint";
         else
@@ -113,10 +122,10 @@ std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view f
                        "virus_type_lineage_subset_short_low"_a = extractor_->subtype_short(), //
                        "assay_full"_a = extractor_->assay(),                                  //
                        "assay"_a = extractor_->assay(),                                       //
-                       "assay_low"_a = string::lower(extractor_->assay()),                    //
+                       "assay_low"_a = ::string::lower(extractor_->assay()),                    //
                        "assay_low_rbc"_a = assay_rbc(),                                       //
                        "lab"_a = extractor_->lab(),                                           //
-                       "lab_low"_a = string::lower(extractor_->lab()),                        //
+                       "lab_low"_a = ::string::lower(extractor_->lab()),                        //
                        "rbc"_a = extractor_->rbc(),                                           //
                        "table_date"_a = extractor_->date("%Y%m%d")                            //
     );
