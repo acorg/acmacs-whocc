@@ -2,6 +2,7 @@
 #include "acmacs-base/guile.hh"
 #include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/data-fix.hh"
+#include "acmacs-whocc/sheet-extractor.hh"
 
 // ----------------------------------------------------------------------
 
@@ -34,6 +35,41 @@ acmacs::data_fix::v1::Set& acmacs::data_fix::v1::Set::update()
 } // acmacs::data_fix::v1::Set::update
 
 // ----------------------------------------------------------------------
+
+void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen)
+{
+    using namespace std::string_view_literals;
+
+    auto& data = get().data_;
+
+    for (const auto& en : data) {
+        if (const auto res = en->antigen_name(antigen.name); res.has_value()) {
+            AD_INFO("AG name \"{}\" <-- \"{}\"", *res, antigen.name);
+            antigen.name = *res;
+        }
+    }
+
+} // acmacs::data_fix::v1::Set::fix
+
+// ----------------------------------------------------------------------
+
+void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum)
+{
+    using namespace std::string_view_literals;
+
+    auto& data = get().data_;
+
+    for (const auto& en : data) {
+        if (const auto res = en->serum_name(serum.name); res.has_value()) {
+            AD_INFO("SR name \"{}\" <-- \"{}\"", *res, serum.name);
+            serum.name = *res;
+        }
+    }
+
+} // acmacs::data_fix::v1::Set::fix
+
+// ----------------------------------------------------------------------
+
 
 // ======================================================================
 

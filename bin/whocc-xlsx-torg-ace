@@ -146,7 +146,7 @@ def is_chart_prn_with_read_titers(source):
 # ----------------------------------------------------------------------
 
 def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False):
-    print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n>>> {source}:1\n>>> {ace}:1")
+    print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n>>> {source}:11\n>>> {ace}:1")
     if ace_prn_read:
         print(f">>> {ace_prn_read}:1")
     print()

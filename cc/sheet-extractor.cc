@@ -92,77 +92,44 @@ std::string acmacs::sheet::v1::Extractor::subtype_short() const
 
 // ----------------------------------------------------------------------
 
-std::string acmacs::sheet::v1::Extractor::antigen_name(size_t ag_no) const
+acmacs::sheet::v1::antigen_fields_t acmacs::sheet::v1::Extractor::antigen(size_t ag_no) const
 {
-    if (antigen_name_column().has_value())
-        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_name_column()));
-    else
+    const auto make = [this, row = antigen_rows().at(ag_no)](std::optional<size_t> col) -> std::string {
+        if (col.has_value()) {
+            if (const auto cell = sheet().cell(row, *col); !is_empty(cell))
+                return fmt::format("{}", cell);
+        }
         return {};
+    };
 
-} // acmacs::sheet::v1::Extractor::antigen_name
+    return antigen_fields_t{
+        .name = make(antigen_name_column()),       //
+        .date = make(antigen_date_column()),       //
+        .passage = make(antigen_passage_column()), //
+        .lab_id = make(antigen_lab_id_column())    //
+    };
+
+} // acmacs::sheet::v1::Extractor::antigen
 
 // ----------------------------------------------------------------------
 
-std::string acmacs::sheet::v1::Extractor::antigen_date(size_t ag_no) const
+acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::Extractor::serum(size_t sr_no) const
 {
-    if (antigen_date_column().has_value())
-        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_date_column()));
-    else
+    const auto make = [this, col = serum_columns().at(sr_no)](std::optional<size_t> row) -> std::string {
+        if (row.has_value()) {
+            if (const auto cell = sheet().cell(*row, col); !is_empty(cell))
+                return fmt::format("{}", cell);
+        }
         return {};
+    };
 
-} // acmacs::sheet::v1::Extractor::antigen_date
+    return serum_fields_t{
+        // .serum_name is set by lab specific extractor
+        .passage = make(serum_passage_row()), //
+        .serum_id = make(serum_id_row())      //
+    };
 
-// ----------------------------------------------------------------------
-
-std::string acmacs::sheet::v1::Extractor::antigen_passage(size_t ag_no) const
-{
-    if (antigen_passage_column().has_value())
-        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_passage_column()));
-    else
-        return {};
-
-} // acmacs::sheet::v1::Extractor::antigen_passage
-
-// ----------------------------------------------------------------------
-
-std::string acmacs::sheet::v1::Extractor::antigen_lab_id(size_t ag_no) const
-{
-    if (antigen_lab_id_column().has_value())
-        return fmt::format("{}", sheet().cell(antigen_rows().at(ag_no), *antigen_lab_id_column()));
-    else
-        return {};
-
-} // acmacs::sheet::v1::Extractor::antigen_lab_id
-
-// ----------------------------------------------------------------------
-
-std::string acmacs::sheet::v1::Extractor::serum_passage(size_t sr_no) const
-{
-    if (serum_passage_row().has_value()) {
-        if (const auto cell = sheet().cell(*serum_passage_row(), serum_columns().at(sr_no)); !is_empty(cell))
-            return fmt::format("{}", cell);
-        else
-            return {};
-    }
-    else
-        return {};
-
-} // acmacs::sheet::v1::Extractor::serum_passage
-
-// ----------------------------------------------------------------------
-
-std::string acmacs::sheet::v1::Extractor::serum_id(size_t sr_no) const
-{
-    if (serum_id_row().has_value()) {
-        if (const auto cell = sheet().cell(*serum_id_row(), serum_columns().at(sr_no)); !is_empty(cell))
-            return fmt::format("{}", cell);
-        else
-            return {};
-    }
-    else
-        return {};
-
-} // acmacs::sheet::v1::Extractor::serum_id
+} // acmacs::sheet::v1::Extractor::serum
 
 // ----------------------------------------------------------------------
 
@@ -208,14 +175,7 @@ void acmacs::sheet::v1::Extractor::find_titers(warn_if_not_found winf)
 
 void acmacs::sheet::v1::Extractor::find_antigen_name_column(warn_if_not_found winf)
 {
-    const auto is_name = [this](size_t row, size_t col) {
-        if (acmacs::virus::name::is_good(fmt::format("{}", sheet().cell(row, col)))) {
-            longest_antigen_name_ = std::max(longest_antigen_name_, sheet().size(row, col));
-            return true;
-        }
-        else
-            return false;
-    };
+    const auto is_name = [this](size_t row, size_t col) { return acmacs::virus::name::is_good(fmt::format("{}", sheet().cell(row, col))); };
 
     for (const auto col : range_from_0_to(serum_columns()[0])) { // to the left from titers
         if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_name](size_t row) { return is_name(row, col); })) > (antigen_rows_.size() / 2)) {
@@ -262,12 +222,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found wi
 void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found winf)
 {
     const auto is_passage = [this](size_t row, size_t col) {
-        if (sheet().matches(re_antigen_passage, row, col)) {
-            longest_antigen_passage_ = std::max(longest_antigen_passage_, sheet().size(row, col));
-            return true;
-        }
-        else
-            return false;
+        return sheet().matches(re_antigen_passage, row, col);
     };
 
     for (const auto col : range_from_0_to(sheet().number_of_columns())) {
@@ -373,18 +328,21 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows(warn_if_not_found w
 
 // ----------------------------------------------------------------------
 
-std::string acmacs::sheet::v1::ExtractorCrick::serum_name(size_t sr_no) const
+acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCrick::serum(size_t sr_no) const
 {
-    if (!serum_name_1_row_ || !serum_name_2_row_)
-        return "*no serum_name_[12]_row_*";
-    const auto n1{fmt::format("{}", sheet().cell(*serum_name_1_row_, serum_columns().at(sr_no)))},
-        n2{fmt::format("{}", sheet().cell(*serum_name_2_row_, serum_columns().at(sr_no)))};
-    if (n1.size() > 2 && n1[1] == '/')
-        return fmt::format("{}/{}", n1, n2);
+    auto serum = Extractor::serum(sr_no);
+    if (serum_name_1_row_ && serum_name_2_row_) {
+        const auto n1{fmt::format("{}", sheet().cell(*serum_name_1_row_, serum_columns().at(sr_no)))}, n2{fmt::format("{}", sheet().cell(*serum_name_2_row_, serum_columns().at(sr_no)))};
+        if (n1.size() > 2 && n1[1] == '/')
+            serum.name = fmt::format("{}/{}", n1, n2);
+        else
+            serum.name = fmt::format("{} {}", n1, n2);
+    }
     else
-        return fmt::format("{} {}", n1, n2);
+        serum.name = "*no serum_name_[12]_row_*";
+    return serum;
 
-} // acmacs::sheet::v1::ExtractorCrick::serum_name
+} // acmacs::sheet::v1::ExtractorCrick::serum
 
 // ----------------------------------------------------------------------
 

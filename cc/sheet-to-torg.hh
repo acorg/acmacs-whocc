@@ -20,24 +20,11 @@ namespace acmacs::sheet::inline v1
         std::string format_assay_data(std::string_view format) const;
         std::string name() const { return format_assay_data("{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}"); }
 
-        std::string antigen_name(size_t ag_no) const;
-        std::string serum_name(size_t sr_no) const;
-
       private:
         std::unique_ptr<Sheet> sheet_;
         std::unique_ptr<Extractor> extractor_;
 
-        // std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_;
-        // size_t longest_antigen_name_{0}, longest_antigen_passage_{0};
-        // range titer_columns_;
-        // std::vector<size_t> antigen_rows_;
-
         const Sheet& sheet() const { return *sheet_; }
-
-        // void find_titers();
-        // void find_antigen_name_column();
-        // void find_antigen_date_column();
-        // void find_antigen_passage_column();
     };
 
 } // namespace acmacs::xlsx::inline v1

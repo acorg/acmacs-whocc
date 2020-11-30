@@ -14,24 +14,6 @@ void acmacs::sheet::v1::SheetToTorg::preprocess(Extractor::warn_if_not_found win
 
 // ----------------------------------------------------------------------
 
-std::string acmacs::sheet::v1::SheetToTorg::antigen_name(size_t ag_no) const
-{
-    auto antigen_name = extractor_->antigen_name(ag_no);
-    return acmacs::data_fix::Set::apply(antigen_name, [&antigen_name](const auto& fix) { return fix.antigen_name(antigen_name); });
-
-} // acmacs::sheet::v1::SheetToTorg::antigen_name
-
-// ----------------------------------------------------------------------
-
-std::string acmacs::sheet::v1::SheetToTorg::serum_name(size_t sr_no) const
-{
-    auto serum_name = extractor_->serum_name(sr_no);
-    return acmacs::data_fix::Set::apply(serum_name, [&serum_name](const auto& fix) { return fix.serum_name(serum_name); });
-
-} // acmacs::sheet::v1::SheetToTorg::serum_name
-
-// ----------------------------------------------------------------------
-
 std::string acmacs::sheet::v1::SheetToTorg::torg() const
 {
     const auto st = [](auto src) { return static_cast<size_t>(src); };
@@ -50,17 +32,22 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
 
     for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
         const auto sr_col = st(ag_col::base) + sr_no;
-        data[st(sr_row::name)][sr_col] = serum_name(sr_no);
-        data[st(sr_row::passage)][sr_col] = extractor_->serum_passage(sr_no);
-        data[st(sr_row::serum_id)][sr_col] = extractor_->serum_id(sr_no);
+        auto serum = extractor_->serum(sr_no);
+        acmacs::data_fix::Set::fix(serum);
+        data[st(sr_row::name)][sr_col] = serum.name;
+        data[st(sr_row::passage)][sr_col] = serum.passage;
+        data[st(sr_row::serum_id)][sr_col] = serum.serum_id;
     }
 
     for (const auto ag_no : range_from_0_to(extractor_->number_of_antigens())) {
         const auto ag_row = st(sr_row::base) + ag_no;
-        data[ag_row][st(ag_col::name)] = antigen_name(ag_no);
-        data[ag_row][st(ag_col::date)] = extractor_->antigen_date(ag_no);
-        data[ag_row][st(ag_col::passage)] = extractor_->antigen_passage(ag_no);
-        data[ag_row][st(ag_col::lab_id)] = extractor_->antigen_lab_id(ag_no);
+        auto antigen = extractor_->antigen(ag_no);
+        acmacs::data_fix::Set::fix(antigen);
+        data[ag_row][st(ag_col::name)] = antigen.name;
+        data[ag_row][st(ag_col::date)] = antigen.date;
+        data[ag_row][st(ag_col::passage)] = antigen.passage;
+        data[ag_row][st(ag_col::lab_id)] = antigen.lab_id;
+
         for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
             data[ag_row][st(ag_col::base) + sr_no] = extractor_->titer(ag_no, sr_no);
         }

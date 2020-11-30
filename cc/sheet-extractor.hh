@@ -12,6 +12,25 @@ namespace acmacs::sheet::inline v1
 
     class Sheet;
 
+    // ----------------------------------------------------------------------
+
+    struct antigen_fields_t
+    {
+        std::string name{};
+        std::string date{};
+        std::string passage{};
+        std::string lab_id{};
+    };
+
+    struct serum_fields_t
+    {
+        std::string name{};
+        std::string passage{};
+        std::string serum_id{};
+    };
+
+    // ----------------------------------------------------------------------
+
     class Extractor
     {
       public:
@@ -31,17 +50,11 @@ namespace acmacs::sheet::inline v1
         size_t number_of_antigens() const { return antigen_rows().size(); }
         size_t number_of_sera() const { return serum_columns().size(); }
 
-        size_t longest_antigen_name() const { return longest_antigen_name_; }
-        size_t longest_antigen_passage() const { return longest_antigen_passage_; }
+        virtual antigen_fields_t antigen(size_t ag_no) const;
+        virtual serum_fields_t serum(size_t sr_no) const;
 
-        virtual std::string antigen_name(size_t ag_no) const;
-        virtual std::string antigen_date(size_t ag_no) const;
-        virtual std::string antigen_passage(size_t ag_no) const;
-        virtual std::string antigen_lab_id(size_t ag_no) const;
-
-        virtual std::string serum_name(size_t /*sr_no*/) const { return {}; }
-        virtual std::string serum_passage(size_t sr_no) const;
-        virtual std::string serum_id(size_t sr_no) const;
+        virtual std::string titer_comment() const { return {}; }
+        virtual std::string titer(size_t /*ag_no*/, size_t /*sr_no*/) const { return {}; }
 
         void lab(std::string_view a_lab) { lab_ = a_lab; }
         void subtype(std::string_view a_subtype) { subtype_ = a_subtype; }
@@ -49,9 +62,6 @@ namespace acmacs::sheet::inline v1
         void assay(std::string_view a_assay) { assay_ = a_assay; }
         void rbc(std::string_view a_rbc) { rbc_ = a_rbc; }
         void date(const date::year_month_day& a_date) { date_ = a_date; }
-
-        virtual std::string titer_comment() const { return {}; }
-        virtual std::string titer(size_t /*ag_no*/, size_t /*sr_no*/) const { return {}; }
 
         enum class warn_if_not_found { no, yes };
         void preprocess(warn_if_not_found winf);
@@ -89,7 +99,6 @@ namespace acmacs::sheet::inline v1
 
         std::optional<size_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_;
         std::optional<size_t> serum_passage_row_, serum_id_row_;
-        size_t longest_antigen_name_{0}, longest_antigen_passage_{0};
         std::vector<size_t> antigen_rows_, serum_columns_;
     };
 
@@ -102,7 +111,7 @@ namespace acmacs::sheet::inline v1
       public:
         ExtractorCrick(const Sheet& a_sheet);
 
-        std::string serum_name(size_t sr_no) const override;
+        serum_fields_t serum(size_t sr_no) const override;
         std::string titer(size_t ag_no, size_t sr_no) const override;
 
       protected:
