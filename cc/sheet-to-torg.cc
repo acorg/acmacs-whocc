@@ -33,7 +33,7 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
         const auto sr_col = st(ag_col::base) + sr_no;
         auto serum = extractor_->serum(sr_no);
-        acmacs::data_fix::Set::fix(serum);
+        acmacs::data_fix::Set::fix(serum, sr_no);
         data[st(sr_row::name)][sr_col] = serum.name;
         data[st(sr_row::passage)][sr_col] = serum.passage;
         data[st(sr_row::serum_id)][sr_col] = serum.serum_id;
@@ -42,7 +42,7 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     for (const auto ag_no : range_from_0_to(extractor_->number_of_antigens())) {
         const auto ag_row = st(sr_row::base) + ag_no;
         auto antigen = extractor_->antigen(ag_no);
-        acmacs::data_fix::Set::fix(antigen);
+        acmacs::data_fix::Set::fix(antigen, ag_no);
         data[ag_row][st(ag_col::name)] = antigen.name;
         data[ag_row][st(ag_col::date)] = antigen.date;
         data[ag_row][st(ag_col::passage)] = antigen.passage;

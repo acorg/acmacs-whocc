@@ -36,7 +36,7 @@ acmacs::data_fix::v1::Set& acmacs::data_fix::v1::Set::update()
 
 // ----------------------------------------------------------------------
 
-void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen)
+void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen, size_t antigen_no)
 {
     using namespace std::string_view_literals;
 
@@ -45,7 +45,7 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen)
     for (const auto& en : data) {
         const auto orig = antigen.name;
         if (const auto res = en->antigen_name(antigen.name); res) {
-            AD_INFO("AG name \"{}\" <-- \"{}\"", antigen.name, orig);
+            AD_INFO("AG {:4d} name \"{}\" <-- \"{}\"", antigen_no, antigen.name, orig);
             break;
         }
     }
@@ -54,7 +54,7 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen)
         const auto orig_name = antigen.name;
         const auto orig_passage = antigen.passage;
         if (const auto res = en->antigen_passage(antigen.passage, antigen.name); res) {
-            AD_INFO("AG passage \"{}\" <-- \"{}\"   name \"{}\" <-- \"{}\"", antigen.passage, orig_passage, antigen.name, orig_name);
+            AD_INFO("AG {:4d} passage \"{}\" <-- \"{}\"   name \"{}\" <-- \"{}\"", antigen_no, antigen.passage, orig_passage, antigen.name, orig_name);
             break;
         }
     }
@@ -63,7 +63,7 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen)
 
 // ----------------------------------------------------------------------
 
-void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum)
+void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum, size_t serum_no)
 {
     using namespace std::string_view_literals;
 
@@ -72,7 +72,7 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum)
     for (const auto& en : data) {
         const auto orig = serum.name;
         if (const auto res = en->serum_name(serum.name); res) {
-            AD_INFO("SR name \"{}\" <-- \"{}\"", serum.name, orig);
+            AD_INFO("SR {:4d} name \"{}\" <-- \"{}\"", serum_no, serum.name, orig);
             break;
         }
     }
@@ -81,7 +81,7 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum)
         const auto orig_name = serum.name;
         const auto orig_passage = serum.passage;
         if (const auto res = en->serum_passage(serum.passage, serum.name); res) {
-            AD_INFO("SR passage \"{}\" <-- \"{}\"   name \"{}\" <-- \"{}\"", serum.passage, orig_passage, serum.name, orig_name);
+            AD_INFO("SR {:4d} passage \"{}\" <-- \"{}\"   name \"{}\" <-- \"{}\"", serum_no, serum.passage, orig_passage, serum.name, orig_name);
             break;
         }
     }

@@ -36,8 +36,8 @@ namespace acmacs::data_fix::inline v1
         static Set& update();
 
         void add(std::unique_ptr<Base>&& entry) { data_.push_back(std::move(entry)); }
-        static void fix(acmacs::sheet::antigen_fields_t& antigen);
-        static void fix(acmacs::sheet::serum_fields_t& serum);
+        static void fix(acmacs::sheet::antigen_fields_t& antigen, size_t antigen_no);
+        static void fix(acmacs::sheet::serum_fields_t& serum, size_t serum_no);
 
       private:
         Set() = default; // singleton, use get() and update() to access
