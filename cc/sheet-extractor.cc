@@ -351,17 +351,12 @@ std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no)
     const auto cell = sheet().cell(antigen_rows().at(ag_no), serum_columns().at(sr_no));
     return std::visit(
         [&cell]<typename Content>(const Content& cont) -> std::string {
-            if constexpr (std::is_same_v<Content, std::string>) {
+            if constexpr (std::is_same_v<Content, std::string>)
                 return cont;
-                // if (cont == "*")
-                //     return cont;
-                // else
-                //     return fmt::format("{:>5s}", cont);
-            }
             else if constexpr (std::is_same_v<Content, long>)
-                return fmt::format("{:5d}", cont);
+                return fmt::format("{}", cont);
             else if constexpr (std::is_same_v<Content, double>)
-                return fmt::format("{:5d}", std::lround(cont));
+                return fmt::format("{}", std::lround(cont));
             else
                 return fmt::format("{}", cell);
         },
@@ -434,29 +429,22 @@ std::string acmacs::sheet::v1::ExtractorCrickPRN::titer(size_t ag_no, size_t sr_
         // clear, we just put < into togr and then converting it to
         // <10, <20, <40 when converting torg to ace
 
-        const auto extract = [](const auto& cell, size_t width) {
+        const auto extract = [](const auto& cell) {
             return std::visit(
-                [&cell, width]<typename Content>(const Content& cont) {
-                    if constexpr (std::is_same_v<Content, std::string>) {
+                [&cell]<typename Content>(const Content& cont) {
+                    if constexpr (std::is_same_v<Content, std::string>)
                         return cont;
-                        // if (cont == "<" )
-                        //     return fmt::format("{:^{}s}", "<", width); // see comment above // return fmt::format("{:>{}s}", "<10", width);
-                        // else if (cont == "*")
-                        //     return cont;
-                        // else
-                        //     return fmt::format("{:>{}s}", cont, width);
-                    }
                     else if constexpr (std::is_same_v<Content, long>)
-                        return fmt::format("{:{}d}", cont, width);
+                        return fmt::format("{}", cont);
                     else if constexpr (std::is_same_v<Content, double>)
-                        return fmt::format("{:{}d}", std::lround(cont), width);
+                        return fmt::format("{}", std::lround(cont));
                     else
                         return fmt::format("{}", cell);
                 },
                 cell);
         };
 
-        return fmt::format("{} / {}", extract(sheet().cell(antigen_rows().at(ag_no), two_fold_col), 5), extract(sheet().cell(antigen_rows().at(ag_no), read_col), 4));
+        return fmt::format("{}/{}", extract(sheet().cell(antigen_rows().at(ag_no), two_fold_col)), extract(sheet().cell(antigen_rows().at(ag_no), read_col)));
     }
     else
         return ExtractorCrick::titer(ag_no, sr_no);
