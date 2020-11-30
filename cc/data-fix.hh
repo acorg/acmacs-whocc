@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <optional>
 
 // ----------------------------------------------------------------------
 
@@ -16,18 +15,17 @@ namespace acmacs::sheet::inline v1
 
 namespace acmacs::data_fix::inline v1
 {
-    using apply_result_t = std::optional<std::string>;
-
     class Base
     {
       public:
         virtual ~Base() = default;
 
-        virtual apply_result_t antigen_name(const std::string& /*src*/) const { return std::nullopt; }
-        virtual apply_result_t antigen_passage(const std::string& /*src*/) const { return std::nullopt; }
-        virtual apply_result_t serum_name(const std::string& /*src*/) const { return std::nullopt; }
-        virtual apply_result_t serum_passage(const std::string& /*src*/) const { return std::nullopt; }
-        virtual apply_result_t titer(const std::string& /*src*/) const { return std::nullopt; }
+        // functions return if src was modified
+        virtual bool antigen_name(std::string& /*src*/) const { return false; }
+        virtual bool antigen_passage(std::string& /*src*/, std::string& /*name*/) const { return false; }
+        virtual bool serum_name(std::string& /*src*/) const { return false; }
+        virtual bool serum_passage(std::string& /*src*/, std::string& /*name*/) const { return false; }
+        virtual bool titer(std::string& /*src*/) const { return false; }
     };
 
     // ----------------------------------------------------------------------
