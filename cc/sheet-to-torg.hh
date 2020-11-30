@@ -15,7 +15,7 @@ namespace acmacs::sheet::inline v1
         SheetToTorg(std::unique_ptr<Sheet> a_sheet) : sheet_{std::move(a_sheet)} {}
 
         bool valid() const { return bool{extractor_}; }
-        void preprocess();
+        void preprocess(Extractor::warn_if_not_found winf);
         std::string torg() const;
         std::string format_assay_data(std::string_view format) const;
         std::string name() const { return format_assay_data("{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}"); }

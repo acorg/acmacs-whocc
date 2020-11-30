@@ -53,17 +53,18 @@ namespace acmacs::sheet::inline v1
         virtual std::string titer_comment() const { return {}; }
         virtual std::string titer(size_t /*ag_no*/, size_t /*sr_no*/) const { return {}; }
 
-        void preprocess();
+        enum class warn_if_not_found { no, yes };
+        void preprocess(warn_if_not_found winf);
 
       protected:
-        virtual void find_titers();
-        virtual void find_antigen_name_column();
-        virtual void find_antigen_date_column();
-        virtual void find_antigen_passage_column();
-        virtual void find_antigen_lab_id_column() {}
-        virtual void find_serum_rows() {}
-        virtual void find_serum_passage_row(const std::regex& re);
-        virtual void find_serum_id_row(const std::regex& re);
+        virtual void find_titers(warn_if_not_found winf);
+        virtual void find_antigen_name_column(warn_if_not_found winf);
+        virtual void find_antigen_date_column(warn_if_not_found winf);
+        virtual void find_antigen_passage_column(warn_if_not_found winf);
+        virtual void find_antigen_lab_id_column(warn_if_not_found) {}
+        virtual void find_serum_rows(warn_if_not_found) {}
+        virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf);
+        virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf);
 
         std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }
@@ -92,7 +93,7 @@ namespace acmacs::sheet::inline v1
         std::vector<size_t> antigen_rows_, serum_columns_;
     };
 
-    std::unique_ptr<Extractor> extractor_factory(const Sheet& sheet);
+    std::unique_ptr<Extractor> extractor_factory(const Sheet& sheet, Extractor::warn_if_not_found winf);
 
     // ----------------------------------------------------------------------
 
@@ -105,8 +106,8 @@ namespace acmacs::sheet::inline v1
         std::string titer(size_t ag_no, size_t sr_no) const override;
 
       protected:
-        void find_serum_rows() override;
-        void find_serum_name_rows();
+        void find_serum_rows(warn_if_not_found winf) override;
+        void find_serum_name_rows(warn_if_not_found winf);
 
       private:
         std::optional<size_t> serum_name_1_row_, serum_name_2_row_, serum_id_row_;
@@ -121,7 +122,7 @@ namespace acmacs::sheet::inline v1
         std::string titer(size_t ag_no, size_t sr_no) const override;
 
       protected:
-        void find_serum_rows() override;
+        void find_serum_rows(warn_if_not_found winf) override;
 
       private:
         std::optional<size_t> two_fold_read_row_;

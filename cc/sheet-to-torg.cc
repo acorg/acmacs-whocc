@@ -6,9 +6,9 @@
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::SheetToTorg::preprocess()
+void acmacs::sheet::v1::SheetToTorg::preprocess(Extractor::warn_if_not_found winf)
 {
-    extractor_ = extractor_factory(sheet());
+    extractor_ = extractor_factory(sheet(), winf);
 
 } // acmacs::sheet::v1::SheetToTorg::preprocess
 
