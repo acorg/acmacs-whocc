@@ -65,8 +65,6 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen, si
 
 void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum, size_t serum_no)
 {
-    using namespace std::string_view_literals;
-
     auto& data = get().data_;
 
     for (const auto& en : data) {
@@ -90,6 +88,18 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum, size_t
 
 // ----------------------------------------------------------------------
 
+void acmacs::data_fix::v1::Set::fix_titer(std::string& titer, size_t antigen_no, size_t serum_no)
+{
+    for (const auto& en : get().data_) {
+        const auto orig = titer;
+        if (const auto res = en->titer(titer); res) {
+            AD_INFO("AG {:4d} SR {:4d} titer \"{}\" <-- \"{}\" ", antigen_no, serum_no, titer, orig);
+            break;
+        }
+    }
+
+
+} // acmacs::data_fix::v1::Set::fix_titer
 
 // ======================================================================
 
@@ -144,12 +154,34 @@ namespace acmacs::data_fix::inline v1
         std::string name_append_;
     };
 
+    // ----------------------------------------------------------------------
+
+    class Titer : public Base
+    {
+      public:
+        Titer(std::string&& from, std::string&& to) : from_{from, acmacs::regex::icase}, to_{std::move(to)} {}
+
+        bool titer(std::string& src) const override
+        {
+            if (std::smatch match; std::regex_search(src, match, from_)) {
+                src = match.format(to_);
+                return true;
+            }
+            return Base::titer(src);
+        }
+
+      private:
+        std::regex from_;
+        std::string to_;
+    };
+
 } // namespace acmacs::data_fix::inline v1
 
 // ======================================================================
 
 static SCM name_antigen_serum_fix(SCM from, SCM to);
 static SCM passage_antigen_serum_fix(SCM from, SCM to, SCM name_append);
+static SCM titer_fix(SCM from, SCM to);
 
 // ----------------------------------------------------------------------
 
@@ -160,6 +192,7 @@ void acmacs::data_fix::guile_defines()
 
     define("name-antigen-serum-fix"sv, name_antigen_serum_fix);
     define("passage-antigen-serum-fix"sv, passage_antigen_serum_fix);
+    define("titer-fix"sv, titer_fix);
 
 } // acmacs::data_fix::guile_defines
 
@@ -181,6 +214,15 @@ SCM passage_antigen_serum_fix(SCM from, SCM to, SCM name_append)
     return guile::VOID;
 
 } // passage_antigen_serum_fix
+
+// ----------------------------------------------------------------------
+
+SCM titer_fix(SCM from, SCM to)
+{
+    acmacs::data_fix::Set::update().add(std::make_unique<acmacs::data_fix::Titer>(guile::from_scm<std::string>(from), guile::from_scm<std::string>(to)));
+    return guile::VOID;
+
+} // titer_fix
 
 // ----------------------------------------------------------------------
 /// Local Variables:

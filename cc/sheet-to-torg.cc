@@ -49,7 +49,9 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
         data[ag_row][st(ag_col::lab_id)] = antigen.lab_id;
 
         for (const auto sr_no : range_from_0_to(extractor_->number_of_sera())) {
-            data[ag_row][st(ag_col::base) + sr_no] = extractor_->titer(ag_no, sr_no);
+            auto titer = extractor_->titer(ag_no, sr_no);
+            acmacs::data_fix::Set::fix_titer(titer, ag_no, sr_no);
+            data[ag_row][st(ag_col::base) + sr_no] = titer;
         }
     }
 
