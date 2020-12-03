@@ -37,31 +37,34 @@ int main(int argc, char* const argv[])
 
 // ----------------------------------------------------------------------
 
+namespace guile
+{
+    namespace foreign_object
+    {
+        template <typename Class> inline void finalize(SCM obj) { delete static_cast<Class*>(scm_foreign_object_ref(obj, 0)); }
+        template <typename Class> inline SCM make_type(const char* name) { return scm_make_foreign_object_type(symbol(name), scm_list_1(symbol("ptr")), finalize<Class>); }
+        template <typename Class, typename... Arg> inline SCM make(SCM type, Arg&&... arg) { return scm_make_foreign_object_1(type, new Class(std::forward<Arg>(arg)...)); }
+
+        template <typename Class> inline Class* get(SCM type, SCM obj) { scm_assert_foreign_object_type(type, obj); return static_cast<Class*>(scm_foreign_object_ref(obj, 0)); }
+
+    } // namespace foreign_object
+} // namespace guile
+
+// ----------------------------------------------------------------------
+
 static SCM load_chart(SCM filename);
 static SCM chart_name(SCM chart);
 static SCM chart_type;
 
-struct Sample
-{
-    Sample(int a_i, std::string_view a_name) : i(a_i), name(a_name) { AD_DEBUG("Sample({}, {})", i, name); }
-    ~Sample() { AD_DEBUG("~Sample[{}, {}]", i, name); }
-    int i;
-    std::string name;
-
-    static inline void finalize(SCM sample_obj) { delete static_cast<Sample*>(scm_foreign_object_ref(sample_obj, 0)); }
-};
-
 void guile_defines()
 {
     using namespace guile;
+    using namespace guile::foreign_object;
     using namespace std::string_view_literals;
 
-    // scm_c_eval_string("(use-modules (oop goops))");
-
-    chart_type = scm_make_foreign_object_type(scm_from_utf8_symbol("<Chart>"), scm_list_1(scm_from_utf8_symbol("data")), Sample::finalize);
+    chart_type = make_type<acmacs::chart::ChartModify>("<Chart>");
     define("load-chart"sv, load_chart);
     define("chart-name"sv, chart_name);
-    // scm_c_define_gsubr("load-chart", 0, 0, 1, guile::subr(load_chart));
 
 } // guile_defines
 
@@ -69,13 +72,7 @@ void guile_defines()
 
 SCM load_chart(SCM filename)
 {
-    // auto chart = new acmacs::chart::ChartModify(acmacs::chart::import_from_file(guile::from_scm<std::string>(filename)));
-    // fmt::print("loaded: {}\n", chart->make_name());
-    // return scm_make_foreign_object_1(chart_type, chart);
-
-    static int i{0};
-    auto chart = new Sample{++i, guile::from_scm<std::string>(filename)};
-    return scm_make_foreign_object_1(chart_type, chart);
+    return guile::foreign_object::make<acmacs::chart::ChartModify>(chart_type, acmacs::chart::import_from_file(guile::from_scm<std::string>(filename)));
 
 } // load_chart
 
@@ -83,9 +80,7 @@ SCM load_chart(SCM filename)
 
 SCM chart_name(SCM chart_obj)
 {
-    scm_assert_foreign_object_type(chart_type, chart_obj);
-    auto* chart = static_cast<Sample*>(scm_foreign_object_ref(chart_obj, 0));
-    return guile::to_scm(chart->name);
+    return guile::to_scm(guile::foreign_object::get<acmacs::chart::ChartModify>(chart_type, chart_obj)->make_name());
 
 } // chart_name
 
