@@ -33,7 +33,7 @@ int main(int argc, char* const argv[])
     try {
         Options opt(argc, argv);
         acmacs::log::enable(opt.verbose);
-        guile::init(opt.scripts, acmacs::data_fix::guile_defines);
+        guile::init(acmacs::data_fix::guile_defines, *opt.scripts);
 
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
