@@ -60,6 +60,16 @@ namespace guile
             return static_cast<Class*>(scm_foreign_object_ref(obj, 0));
         }
 
+        template <typename Class> class Base
+        {
+          public:
+            static void init(const char* name) { type_ = make_type<Class>(name); }
+            Base() = default;
+
+          private:
+            static SCM type_; // {UNDEFINED};
+        };
+
     } // namespace foreign_object
 } // namespace guile
 
