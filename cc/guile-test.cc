@@ -43,8 +43,9 @@ static SCM chart_type;
 
 struct Sample
 {
-    Sample(std::string_view a_name) : name(a_name) { AD_DEBUG("Sample({})", name); }
-    ~Sample() { AD_DEBUG("~Sample[{}]", name); }
+    Sample(int a_i, std::string_view a_name) : i(a_i), name(a_name) { AD_DEBUG("Sample({}, {})", i, name); }
+    ~Sample() { AD_DEBUG("~Sample[{}, {}]", i, name); }
+    int i;
     std::string name;
 
     static inline void finalize(SCM sample_obj) { delete static_cast<Sample*>(scm_foreign_object_ref(sample_obj, 0)); }
@@ -72,7 +73,8 @@ SCM load_chart(SCM filename)
     // fmt::print("loaded: {}\n", chart->make_name());
     // return scm_make_foreign_object_1(chart_type, chart);
 
-    auto chart = new Sample {guile::from_scm<std::string>(filename)};
+    static int i{0};
+    auto chart = new Sample{++i, guile::from_scm<std::string>(filename)};
     return scm_make_foreign_object_1(chart_type, chart);
 
 } // load_chart
