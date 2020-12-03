@@ -12,7 +12,8 @@ TARGETS = \
   $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines \
   $(DIST)/chart-table-compare \
-  $(DIST)/chart-table-map-compare
+  $(DIST)/chart-table-map-compare \
+  $(DIST)/guile-test
 
 SHEET_SOURCES = \
   sheet-extractor.cc \
