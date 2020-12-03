@@ -42,10 +42,23 @@ namespace guile
     namespace foreign_object
     {
         template <typename Class> inline void finalize(SCM obj) { delete static_cast<Class*>(scm_foreign_object_ref(obj, 0)); }
-        template <typename Class> inline SCM make_type(const char* name) { return scm_make_foreign_object_type(symbol(name), scm_list_1(symbol("ptr")), finalize<Class>); }
-        template <typename Class, typename... Arg> inline SCM make(SCM type, Arg&&... arg) { return scm_make_foreign_object_1(type, new Class(std::forward<Arg>(arg)...)); }
 
-        template <typename Class> inline Class* get(SCM type, SCM obj) { scm_assert_foreign_object_type(type, obj); return static_cast<Class*>(scm_foreign_object_ref(obj, 0)); }
+        template <typename Class> struct type_info
+        {
+            constexpr type_info() = default;
+            type_info(SCM&& typ) : type{std::move(typ)} {}
+            SCM type{UNDEFINED};
+        };
+
+        template <typename Class> inline type_info<Class> make_type(const char* name) { return scm_make_foreign_object_type(symbol(name), scm_list_1(symbol("ptr")), finalize<Class>); }
+
+        template <typename Class, typename... Arg> inline SCM make(type_info<Class> type, Arg&&... arg) { return scm_make_foreign_object_1(type.type, new Class(std::forward<Arg>(arg)...)); }
+
+        template <typename Class> inline Class* get(type_info<Class> type, SCM obj)
+        {
+            scm_assert_foreign_object_type(type.type, obj);
+            return static_cast<Class*>(scm_foreign_object_ref(obj, 0));
+        }
 
     } // namespace foreign_object
 } // namespace guile
@@ -54,7 +67,7 @@ namespace guile
 
 static SCM load_chart(SCM filename);
 static SCM chart_name(SCM chart);
-static SCM chart_type;
+static guile::foreign_object::type_info<acmacs::chart::ChartModify> chart_type;
 
 void guile_defines()
 {
@@ -72,7 +85,7 @@ void guile_defines()
 
 SCM load_chart(SCM filename)
 {
-    return guile::foreign_object::make<acmacs::chart::ChartModify>(chart_type, acmacs::chart::import_from_file(guile::from_scm<std::string>(filename)));
+    return guile::foreign_object::make(chart_type, acmacs::chart::import_from_file(guile::from_scm<std::string>(filename)));
 
 } // load_chart
 
@@ -80,7 +93,7 @@ SCM load_chart(SCM filename)
 
 SCM chart_name(SCM chart_obj)
 {
-    return guile::to_scm(guile::foreign_object::get<acmacs::chart::ChartModify>(chart_type, chart_obj)->make_name());
+    return guile::to_scm(guile::foreign_object::get(chart_type, chart_obj)->make_name());
 
 } // chart_name
 
