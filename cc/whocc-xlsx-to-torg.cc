@@ -5,7 +5,14 @@
 #include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/xlsx.hh"
 #include "acmacs-whocc/data-fix.hh"
+
+#define ACMACS_USE_PY
+
+#if defined(ACMACS_USE_GUILE)
 #include "acmacs-whocc/data-fix-guile.hh"
+#elif defined(ACMACS_USE_PY)
+#include "acmacs-whocc/data-fix-py.hh"
+#endif
 
 // ----------------------------------------------------------------------
 
@@ -33,7 +40,13 @@ int main(int argc, char* const argv[])
     try {
         Options opt(argc, argv);
         acmacs::log::enable(opt.verbose);
+
+#if defined(ACMACS_USE_GUILE)
         guile::init(acmacs::data_fix::guile_defines, *opt.scripts);
+#elif defined(ACMACS_USE_PY)
+        py::scoped_interpreter guard{};
+        acmacs::data_fix::py_init(*opt.scripts);
+#endif
 
         for (auto& xlsx : opt.xlsx) {
             auto doc = acmacs::xlsx::open(xlsx);
