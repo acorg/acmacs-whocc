@@ -1,4 +1,3 @@
-#include "acmacs-base/guile.hh"
 #include "acmacs-whocc/data-fix.hh"
 #include "acmacs-whocc/data-fix-guile.hh"
 

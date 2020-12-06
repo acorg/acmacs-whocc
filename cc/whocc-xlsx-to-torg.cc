@@ -1,5 +1,4 @@
 #include "acmacs-base/argv.hh"
-#include "acmacs-base/guile.hh"
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/read-file.hh"
 #include "acmacs-whocc/log.hh"

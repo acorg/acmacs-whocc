@@ -1,5 +1,7 @@
 #pragma once
 
+#include "acmacs-base/guile.hh"
+
 // ----------------------------------------------------------------------
 
 namespace acmacs::data_fix::inline v1
