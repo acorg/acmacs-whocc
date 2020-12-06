@@ -1,5 +1,6 @@
 #include "acmacs-base/log.hh"
 #include "acmacs-whocc/data-fix-py.hh"
+#include "acmacs-whocc/data-fix.hh"
 
 // ----------------------------------------------------------------------
 
@@ -9,11 +10,33 @@
 #pragma GCC diagnostic ignored "-Wmissing-variable-declarations" // 2.6.1 2020-12-06
 #endif
 
+using namespace pybind11::literals;
+
 PYBIND11_EMBEDDED_MODULE(data_fix_module, mdl)
 {
-    mdl.def("name_antigen_serum_fix", [](std::string_view rex, std::string_view repl) { AD_DEBUG("name_antigen_serum_fix \"{}\" \"{}\"", rex, repl); });
-    mdl.def("passage_antigen_serum_fix", [](std::string_view rex, std::string_view repl) { AD_DEBUG("passage_antigen_serum_fix \"{}\" \"{}\"", rex, repl); });
-    mdl.def("titer_fix", [](std::string_view rex, std::string_view repl) { AD_DEBUG("titer_fix \"{}\" \"{}\"", rex, repl); });
+    mdl.def(
+        "name_antigen_serum_fix",
+        [](std::string& rex, std::string& replacement) {
+            // AD_DEBUG("name_antigen_serum_fix \"{}\" \"{}\"", rex, replacement);
+            acmacs::data_fix::Set::update().add(std::make_unique<acmacs::data_fix::AntigenSerumName>(std::move(rex), std::move(replacement)));
+        },
+        "rex"_a, "replacement"_a);
+
+    mdl.def(
+        "passage_antigen_serum_fix",
+        [](std::string& rex, std::string& replacement, std::string& name_append) {
+            // AD_DEBUG("passage_antigen_serum_fix \"{}\" \"{}\"", rex, replacement);
+            acmacs::data_fix::Set::update().add(std::make_unique<acmacs::data_fix::AntigenSerumPassage>(std::move(rex), std::move(replacement), std::move(name_append)));
+        },
+        "rex"_a, "replacement"_a, "name_append"_a);
+
+    mdl.def(
+        "titer_fix",
+        [](std::string& rex, std::string& replacement) {
+            // AD_DEBUG("titer_fix \"{}\" \"{}\"", rex, repl);
+            acmacs::data_fix::Set::update().add(std::make_unique<acmacs::data_fix::Titer>(std::move(rex), std::move(replacement)));
+        },
+        "rex"_a, "replacement"_a);
 }
 
 #pragma GCC diagnostic pop
