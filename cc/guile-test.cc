@@ -41,10 +41,10 @@ namespace guile
 {
     template <typename Class> struct foreign_type
     {
-        foreign_type(const char* a_name) : name{a_name} {}
+        // foreign_type(const char* a_name) : name{a_name} {}
 
-        std::string name{};
-        SCM type{UNDEFINED};
+        // std::string name{};
+        // SCM type{UNDEFINED};
 
         static inline void finalize(SCM obj)
         {
@@ -55,18 +55,68 @@ namespace guile
         // template <typename... Arg> static inline SCM constructor(Arg&&... arg) { return scm_make_foreign_object_1(get().type, new Class(std::forward<Arg>(arg)...)); }
     };
 
+    template <typename Method> struct MethodRef
+    {
+        Method method;
+    };
+
+    template <typename Method> MethodRef(Method) -> MethodRef<Method>;
+    constexpr MethodRef mm {&acmacs::chart::ChartModify::make_name};
+
     class Chart : public foreign_type<acmacs::chart::ChartModify>
     {
       public:
-        Chart() : foreign_type("Chart")
+        using Class = acmacs::chart::ChartModify;
+
+        template <auto Method, size_t index> static SCM method(SCM obj, SCM rest) { return guile::to_scm(fmt::format("method-{}", index)); }
+
+        // template <auto Method, size_t index> static SCM method_ptr() { return guile::subr(method<Method, index>); }
+
+        static inline SCM symbol() { return guile::symbol("Chart"); }
+        static inline SCM type() { return scm_primitive_eval(symbol()); }
+
+        static inline auto lm = [](SCM obj) {
+            return guile::to_scm("lm");
+                    // scm_assert_foreign_object_type(type(), obj);
+                    // auto* chart = static_cast<Class*>(scm_foreign_object_ref(obj, 0));
+                    // return guile::to_scm(chart->make_name());
+                };
+
+        Chart() // : foreign_type("Chart")
         {
-            type = scm_make_foreign_object_type(symbol(name), scm_list_1(symbol("ptr")), finalize);
-            scm_define(symbol(name), type);
-            // std::string constructor_name = fmt::format("{}/new\0x00", name);
+            auto type = scm_make_foreign_object_type(symbol(), scm_list_2(guile::symbol("ptr"), guile::symbol("methods")), finalize);
+            scm_define(symbol(), type);
             scm_c_define_gsubr("Chart/new", 1, 0, 0, guile::subr(constructor));
+
+            auto methods = scm_list_n(scm_c_define_gsubr("Chart/name", 1, 0, 1, reinterpret_cast<scm_t_subr>(&lm)), // guile::subr(&method<&Class::make_name, 1>))
+                                            guile::UNDEFINED);
+
+            // std::array methods{
+            //     {
+            //     "Chart/name", Class::make_name
+            //     },
+            //     {
+            //         "Chart/number-of-antigens",
+            //     },
+            //     {
+            //         "Chart/number-of-sera",
+            //     },
+            // };
+
+            // scm_c_define_gsubr("Chart/name", 1, 0, 1, guile::subr(method));
         }
 
-        static inline SCM constructor(SCM filename) { return scm_make_foreign_object_1(scm_primitive_eval(symbol("Chart")), new acmacs::chart::ChartModify(acmacs::chart::import_from_file(guile::from_scm<std::string>(filename)))); }
+        static inline SCM constructor(SCM filename)
+        {
+            return scm_make_foreign_object_1(type(), new acmacs::chart::ChartModify(acmacs::chart::import_from_file(guile::from_scm<std::string>(filename))));
+        }
+
+        // static inline SCM method(SCM obj, SCM rest) {
+        //     scm_assert_foreign_object_type(type(), obj);
+        //     auto* chart = static_cast<Class*>(scm_foreign_object_ref(obj, 0));
+        //     return guile::to_scm(chart->make_name());
+        // }
+
     };
 } // namespace guile
 

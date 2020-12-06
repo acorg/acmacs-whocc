@@ -1,8 +1,6 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <memory>
+#include "acmacs-base/regex.hh"
 
 // ----------------------------------------------------------------------
 
@@ -50,8 +48,75 @@ namespace acmacs::data_fix::inline v1
 
     // ----------------------------------------------------------------------
 
-    // pass pointer to this function to guile::init()
-    void guile_defines();
+    class AntigenSerumName : public Base
+    {
+      public:
+        AntigenSerumName(std::string&& from, std::string&& to) : from_{from, acmacs::regex::icase}, to_{std::move(to)} {}
+
+        bool antigen_name(std::string& src) const override
+        {
+            if (std::smatch match; std::regex_search(src, match, from_)) {
+                src = match.format(to_);
+                return true;
+            }
+            return Base::antigen_name(src);
+        }
+
+        bool serum_name(std::string& src) const override { return antigen_name(src); }
+
+      private:
+        std::regex from_;
+        std::string to_;
+    };
+
+    // ----------------------------------------------------------------------
+
+    class AntigenSerumPassage : public Base
+    {
+      public:
+        AntigenSerumPassage(std::string&& from, std::string&& to, std::string&& name_append) : from_{from, acmacs::regex::icase}, to_{std::move(to)}, name_append_{std::move(name_append)} {}
+
+        bool antigen_passage(std::string& src, std::string& name) const override
+        {
+            if (std::smatch match; std::regex_search(src, match, from_)) {
+                const auto new_passage = match.format(to_); // do not overwrite src yet, otherwise next match.format gives nonsense (match.format copies from src)
+                const auto name_append = match.format(name_append_);
+                src = new_passage;
+                if (!name_append.empty())
+                    name += " " + name_append;
+                return true;
+            }
+            return Base::antigen_passage(src, name);
+        }
+
+        bool serum_passage(std::string& src, std::string& name) const override { return antigen_passage(src, name); }
+
+      private:
+        std::regex from_;
+        std::string to_;
+        std::string name_append_;
+    };
+
+    // ----------------------------------------------------------------------
+
+    class Titer : public Base
+    {
+      public:
+        Titer(std::string&& from, std::string&& to) : from_{from, acmacs::regex::icase}, to_{std::move(to)} {}
+
+        bool titer(std::string& src) const override
+        {
+            if (std::smatch match; std::regex_search(src, match, from_)) {
+                src = match.format(to_);
+                return true;
+            }
+            return Base::titer(src);
+        }
+
+      private:
+        std::regex from_;
+        std::string to_;
+    };
 
 } // namespace acmacs::data_fix::inline v1
 

@@ -19,7 +19,8 @@ SHEET_SOURCES = \
   sheet-extractor.cc \
   sheet-to-torg.cc \
   sheet.cc \
-  data-fix.cc
+  data-fix.cc \
+  data-fix-guile.cc
 
 # ----------------------------------------------------------------------
 
@@ -29,6 +30,7 @@ all: install
 
 CONFIGURE_CAIRO = 1
 CONFIGURE_GUILE = 1
+CONFIGURE_PYTHON = 1
 include $(ACMACSD_ROOT)/share/Makefile.config
 
 LDLIBS = \

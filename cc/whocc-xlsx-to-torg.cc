@@ -6,6 +6,7 @@
 #include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/xlsx.hh"
 #include "acmacs-whocc/data-fix.hh"
+#include "acmacs-whocc/data-fix-guile.hh"
 
 // ----------------------------------------------------------------------
 
