@@ -2,6 +2,7 @@
 # ----------------------------------------------------------------------
 
 TARGETS = \
+  $(ACMACS_PY_LIB) \
   $(DIST)/whocc-reference-panel-plots \
   $(DIST)/whocc-scan-titers \
   $(DIST)/whocc-histogram-of-titers \
@@ -12,8 +13,9 @@ TARGETS = \
   $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines \
   $(DIST)/chart-table-compare \
-  $(DIST)/chart-table-map-compare \
-  $(DIST)/guile-test
+  $(DIST)/chart-table-map-compare
+
+# $(DIST)/guile-test
 
 SHEET_SOURCES = \
   sheet-extractor.cc \
@@ -24,6 +26,14 @@ SHEET_SOURCES = \
 
 # data-fix-guile.cc
 
+ACMACS_PY_SOURCES = \
+  py.cc
+
+ACMACS_PY_LIB_MAJOR = 1
+ACMACS_PY_LIB_MINOR = 0
+ACMACS_PY_LIB_NAME = acmacs
+ACMACS_PY_LIB = $(DIST)/$(ACMACS_PY_LIB_NAME)$(PYTHON_MODULE_SUFFIX)
+
 # ----------------------------------------------------------------------
 
 SRC_DIR = $(abspath $(ACMACSD_ROOT)/sources)
@@ -31,7 +41,7 @@ SRC_DIR = $(abspath $(ACMACSD_ROOT)/sources)
 all: install
 
 CONFIGURE_CAIRO = 1
-CONFIGURE_GUILE = 1
+# CONFIGURE_GUILE = 1
 CONFIGURE_PYTHON = 1
 include $(ACMACSD_ROOT)/share/Makefile.config
 
@@ -44,13 +54,16 @@ LDLIBS = \
   $(AD_LIB)/$(call shared_lib_name,libhidb,5,0) \
   $(AD_LIB)/$(call shared_lib_name,libseqdb,3,0) \
   $(AD_LIB)/$(call shared_lib_name,libacmacsdraw,1,0) \
-  $(CAIRO_LIBS) $(GUILE_LIBS) $(XZ_LIBS) $(CXX_LIBS)
+  $(CAIRO_LIBS) $(XZ_LIBS) $(CXX_LIBS)
+
+# $(GUILE_LIBS)
 
 XLSX_LIBS = $(XLNT_LIBS)
 
 # ----------------------------------------------------------------------
 
 install: make-installation-dirs $(TARGETS)
+	$(call install_py_lib,$(ACMACS_PY_LIB))
 	ln -sf $(DIST)/* $(AD_BIN)
 	ln -sf $(abspath bin)/* $(AD_BIN)
 	$(call symbolic_link,$(abspath py)/acmacs_whocc,$(AD_PY)/acmacs_whocc)
@@ -63,6 +76,10 @@ test: install
 .PHONY: test
 
 # ----------------------------------------------------------------------
+
+$(ACMACS_PY_LIB): $(patsubst %.cc,$(BUILD)/%.o,$(ACMACS_PY_SOURCES)) | $(DIST)
+	$(call echo_shared_lib,$@)
+	$(call make_shared_lib,$(ACMACS_PY_LIB_NAME),$(ACMACS_PY_LIB_MAJOR),$(ACMACS_PY_LIB_MINOR)) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(PYTHON_LIBS)
 
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
 	$(call echo_link_exe,$@)
