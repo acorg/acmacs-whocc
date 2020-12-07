@@ -15,6 +15,7 @@ inline void chart_relax(acmacs::chart::ChartModify& chart, size_t number_of_dime
         number_of_optimizations = 100;
     chart.relax(number_of_optimizations_t{number_of_optimizations}, MinimumColumnBasis{minimum_column_basis}, acmacs::number_of_dimensions_t{number_of_dimensions},
                 use_dimension_annealing_from_bool(dimension_annealing), optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
+    chart.projections_modify().sort();
 }
 
 // ----------------------------------------------------------------------
@@ -33,6 +34,7 @@ inline void py_chart(py::module_& mdl)
             "make_name", [](const ChartModify& chart, size_t projection_no) { return chart.make_name(projection_no); }, "projection_no"_a, //
             py::doc("returns name of the chart with the stress of the passed projection"))
         .def("description", &Chart::description, py::doc("returns chart one line description"))
+        .def("make_info", &Chart::make_info, "max_number_of_projections_to_show"_a=20, "flags"_a = 3, py::doc("returns detailed chart description"))
         .def("number_of_antigens", &Chart::number_of_antigens)
         .def("number_of_sera", &Chart::number_of_sera)
         .def("number_of_projections", &Chart::number_of_projections)
