@@ -7,8 +7,14 @@
 
 // ======================================================================
 
-inline void chart_relax(acmacs::chart::ChartModify& chart, size_t number_of_optimizations, const std::string& minimum_column_basis, size_t number_of_dimensions, bool dimension_annealing, bool rough)
+inline void chart_relax(acmacs::chart::ChartModify& chart, size_t number_of_dimensions, size_t number_of_optimizations, const std::string& minimum_column_basis, bool dimension_annealing, bool rough,
+                        size_t number_of_best_distinct_projections_to_keep)
 {
+    using namespace acmacs::chart;
+    if (number_of_optimizations == 0)
+        number_of_optimizations = 100;
+    chart.relax(number_of_optimizations_t{number_of_optimizations}, MinimumColumnBasis{minimum_column_basis}, acmacs::number_of_dimensions_t{number_of_dimensions},
+                use_dimension_annealing_from_bool(dimension_annealing), optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}});
 }
 
 // ----------------------------------------------------------------------
@@ -30,9 +36,10 @@ inline void py_chart(py::module_& mdl)
         .def("number_of_antigens", &Chart::number_of_antigens)
         .def("number_of_sera", &Chart::number_of_sera)
         .def("number_of_projections", &Chart::number_of_projections)
-        .def("lineage", [](const ChartModify& chart) { return *chart.lineage(); }, py::doc("returns chart lineage: VICTORIA, YAMAGATA"))
-        .def("relax", &chart_relax, "number_of_dimensions"_a = 2, "number_of_optimizations"_a = 1, "minimum_column_basis"_a = "none", "dimension_annealing"_a = false, "rough"_a = false)
-        ;
+        .def(
+            "lineage", [](const ChartModify& chart) { return *chart.lineage(); }, py::doc("returns chart lineage: VICTORIA, YAMAGATA"))
+        .def("relax", &chart_relax, "number_of_dimensions"_a = 2, "number_of_optimizations"_a = 0, "minimum_column_basis"_a = "none", "dimension_annealing"_a = false, "rough"_a = false,
+             "number_of_best_distinct_projections_to_keep"_a = 5, py::doc{"makes one or more antigenic maps from random starting layouts, adds new projections, projections are sorted by stress"});
 }
 
 // ----------------------------------------------------------------------
