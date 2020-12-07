@@ -18,6 +18,16 @@ inline void chart_relax(acmacs::chart::ChartModify& chart, size_t number_of_dime
     chart.projections_modify().sort();
 }
 
+inline std::string chart_info(const acmacs::chart::ChartModify& chart, size_t max_number_of_projections_to_show, bool column_bases, bool tables, bool tables_for_sera, bool antigen_dates)
+{
+    using namespace acmacs::chart;
+    const unsigned inf{(column_bases ? info_data::column_bases : 0)         //
+                       | (tables ? info_data::tables : 0)                   //
+                       | (tables_for_sera ? info_data::tables_for_sera : 0) //
+                       | (antigen_dates ? info_data::dates : 0)};
+    return chart.make_info(max_number_of_projections_to_show, inf);
+}
+
 // ----------------------------------------------------------------------
 
 inline void py_chart(py::module_& mdl)
@@ -34,7 +44,8 @@ inline void py_chart(py::module_& mdl)
             "make_name", [](const ChartModify& chart, size_t projection_no) { return chart.make_name(projection_no); }, "projection_no"_a, //
             py::doc("returns name of the chart with the stress of the passed projection"))
         .def("description", &Chart::description, py::doc("returns chart one line description"))
-        .def("make_info", &Chart::make_info, "max_number_of_projections_to_show"_a=20, "flags"_a = 3, py::doc("returns detailed chart description"))
+        .def("make_info", &chart_info, "max_number_of_projections_to_show"_a = 20, "column_bases"_a = true, "tables"_a = false, "tables_for_sera"_a = false, "antigen_dates"_a = false,
+             py::doc("returns detailed chart description"))
         .def("number_of_antigens", &Chart::number_of_antigens)
         .def("number_of_sera", &Chart::number_of_sera)
         .def("number_of_projections", &Chart::number_of_projections)
