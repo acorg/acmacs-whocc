@@ -38,8 +38,7 @@ def relax(chart, step, args):
     chart.relax(number_of_dimensions=args.number_of_dimensions, number_of_optimizations=args.number_of_optimizations, minimum_column_basis=args.minimum_column_basis)
     chart.keep_projections(10)
     print(f"{step:3d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
-    if args.output_dir:
-        chart.export(os.path.join(args.output_dir, f"{step:03d}.s.ace"), sys.argv[0])
+    export(chart, step=step, type="s", args=args)
 
 # ----------------------------------------------------------------------
 
@@ -48,8 +47,13 @@ def relax_incremental(chart, step, args):
     chart.relax_incremental(number_of_optimizations=args.number_of_optimizations)
     chart.keep_projections(10)
     print(f"{step:3d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    export(chart, step=step, type="i", args=args)
+
+# ----------------------------------------------------------------------
+
+def export(chart, step, type, args):
     if args.output_dir:
-        chart.export(os.path.join(args.output_dir, f"{step:03d}.i.ace"), sys.argv[0])
+        chart.export(os.path.join(args.output_dir, f"{step:03d}.{type}.{chart.lab().lower()}-{chart.subtype_short().lower()}-{chart.assay_hi_or_neut()}-{chart.date()}.ace"), sys.argv[0])
 
 # ----------------------------------------------------------------------
 

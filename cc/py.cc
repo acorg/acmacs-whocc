@@ -63,6 +63,17 @@ inline void py_chart(py::module_& mdl)
             "projection_no"_a,                                                                             //
             py::doc("returns name of the chart with the stress of the passed projection"))                 //
 
+        .def("subtype", [](const ChartModify& chart) { return *chart.info()->virus_type(); })                            //
+        .def("subtype_short", [](const ChartModify& chart) { return std::string{chart.info()->virus_type().h_or_b()}; }) //
+        .def("subset", [](const ChartModify& chart) { return chart.info()->subset(); })                                  //
+        .def("assay", [](const ChartModify& chart) { return *chart.info()->assay(); })                                   //
+        .def("assay_hi_or_neut", [](const ChartModify& chart) { return chart.info()->assay().hi_or_neut(); })            //
+        .def("lab", [](const ChartModify& chart) { return *chart.info()->lab(); })                                       //
+        .def("rbc", [](const ChartModify& chart) { return *chart.info()->rbc_species(); })                               //
+        .def("date", [](const ChartModify& chart) { return *chart.info()->date(Info::Compute::Yes); })                   //
+        .def(
+            "lineage", [](const ChartModify& chart) { return *chart.lineage(); }, py::doc("returns chart lineage: VICTORIA, YAMAGATA")) //
+
         .def("description",                                 //
              &Chart::description,                           //
              py::doc("returns chart one line description")) //
@@ -78,10 +89,6 @@ inline void py_chart(py::module_& mdl)
         .def("number_of_antigens", &Chart::number_of_antigens)
         .def("number_of_sera", &Chart::number_of_sera)
         .def("number_of_projections", &Chart::number_of_projections)
-        .def(
-            "lineage",                                                 //
-            [](const ChartModify& chart) { return *chart.lineage(); }, //
-            py::doc("returns chart lineage: VICTORIA, YAMAGATA"))      //
 
         .def(
             "relax", //
