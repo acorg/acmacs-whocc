@@ -47,10 +47,10 @@ inline void py_chart(py::module_& mdl)
         .def(py::init([](const std::string& filename) { return std::make_shared<ChartModify>(import_from_file(filename)); }), py::doc("imports chart from a file"))
 
         .def(
-            "clone",                                                                                                           //
+            "clone",                                                                                                                                           //
             [](ChartModify& chart, const std::string& type) -> std::shared_ptr<ChartModify> { return std::make_shared<ChartClone>(chart, clone_type(type)); }, //
-            "type"_a = "titers",                                                                                               //
-            py::doc(R"(type: "titers", "projections", "plot_spec", "projections_plot_spec")"))                                 //
+            "type"_a = "titers",                                                                                                                               //
+            py::doc(R"(type: "titers", "projections", "plot_spec", "projections_plot_spec")"))                                                                 //
 
         .def(
             "make_name",                                                            //
@@ -115,13 +115,18 @@ inline void py_chart(py::module_& mdl)
             [](ChartModify& chart, size_t projection_no) { return chart.projection_modify(projection_no); }, //
             "projection_no"_a = 0)                                                                           //
 
-        .def("remove_all_projections",                                                                       //
-             [](ChartModify& chart) { return chart.projections_modify().remove_all(); })                     //
+        .def("remove_all_projections",                                                   //
+             [](ChartModify& chart) { return chart.projections_modify().remove_all(); }) //
 
-        .def("export",                                                                       //
-             [](ChartModify& chart, const std::string& filename, const std::string& program_name) {
-                 acmacs::chart::export_factory(chart, filename, program_name); },                     //
-             "filename"_a, "program_name"_a) //
+        .def(
+            "keep_projections",                                                                               //
+            [](ChartModify& chart, size_t to_keep) { return chart.projections_modify().keep_just(to_keep); }, //
+            "keep"_a)                                                                                         //
+
+        .def(
+            "export",                                                                                                                                               //
+            [](ChartModify& chart, const std::string& filename, const std::string& program_name) { acmacs::chart::export_factory(chart, filename, program_name); }, //
+            "filename"_a, "program_name"_a)                                                                                                                         //
         ;
 
     // ----------------------------------------------------------------------

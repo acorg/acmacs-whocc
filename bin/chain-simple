@@ -36,6 +36,7 @@ def main(args):
 def relax(chart, step, args):
     start = datetime.datetime.now()
     chart.relax(number_of_dimensions=args.number_of_dimensions, number_of_optimizations=args.number_of_optimizations, minimum_column_basis=args.minimum_column_basis)
+    chart.keep_projections(10)
     print(f"{step:3d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
     if args.output_dir:
         chart.export(os.path.join(args.output_dir, f"{step:03d}.s.ace"), sys.argv[0])
@@ -45,6 +46,7 @@ def relax(chart, step, args):
 def relax_incremental(chart, step, args):
     start = datetime.datetime.now()
     chart.relax_incremental(number_of_optimizations=args.number_of_optimizations)
+    chart.keep_projections(10)
     print(f"{step:3d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
     if args.output_dir:
         chart.export(os.path.join(args.output_dir, f"{step:03d}.i.ace"), sys.argv[0])
