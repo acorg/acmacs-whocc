@@ -26,7 +26,7 @@ def main(args):
 def relax(chart, step, args):
     start = datetime.datetime.now()
     chart.relax(number_of_dimensions=args.number_of_dimensions, number_of_optimizations=args.number_of_optimizations, minimum_column_basis=args.minimum_column_basis)
-    print(f"Step {step:2d}: {chart.projection().stress():.4f} {chart.make_name()} [{datetime.datetime.now() - start}]")
+    print(f"Step {step:2d}: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
 
 # ----------------------------------------------------------------------
 
