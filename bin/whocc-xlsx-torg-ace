@@ -15,7 +15,7 @@ class Error (Exception): pass
 # ======================================================================
 
 def main(args):
-    names = [split_name(name) for name in subprocess.check_output(["whocc-xlsx-to-torg", "-n", "-f", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", args.source[0]]).decode("utf-8").split("\n") if name]
+    names = [split_name(name) for name in name_from_xlsx(args.source[0]).split("\n") if name]
     if not names:
         raise Error("File provides no sheets with tables")
     output_dirs = frozenset(detect_dir(name) for name in names)
@@ -30,6 +30,11 @@ def main(args):
         edit_torg_make_ace(names[0], output_dir=output_dir, stop_on_torg=args.stop_on_torg)
     elif not args.stop_on_torg:
         make_all_ace(names, output_dir=output_dir)
+
+# ----------------------------------------------------------------------
+
+def name_from_xlsx(xlsx_filename):
+    return subprocess.check_output(["whocc-xlsx-to-torg", "-n", "-f", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", xlsx_filename]).decode("utf-8")
 
 # ----------------------------------------------------------------------
 

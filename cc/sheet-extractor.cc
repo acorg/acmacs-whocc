@@ -63,8 +63,9 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(c
         extractor->date(date::from_string(match.str(3), date::allow_incomplete::no, date::throw_on_error::no));
     }
     else {
-        AD_WARNING("Sheet \"{}\": no specific extractor found", sheet.name());
-        extractor = std::make_unique<Extractor>(sheet);
+        throw std::runtime_error{fmt::format("Sheet \"{}\": no specific extractor found", sheet.name())};
+        // AD_WARNING("Sheet \"{}\": no specific extractor found", sheet.name());
+        // extractor = std::make_unique<Extractor>(sheet);
     }
     extractor->preprocess(winf);
     return extractor;
