@@ -17,6 +17,10 @@ except:
 def main(args):
     if args.output_dir:
         os.makedirs(args.output_dir, exist_ok=True)
+        lh = logging.FileHandler(os.path.join(args.output_dir, f"log.{datetime.datetime.now().strftime('%Y-%m%d-%H%M')}.log"))
+        lh.setLevel(args.loglevel)
+        lh.setFormatter(logging.Formatter(args.logformat))
+        logging.getLogger().addHandler(lh)
     mrg = acmacs.Chart(args.charts[0])
     relax(mrg, 0, args)
     for step, c1_name in enumerate(args.charts[1:], start=1):
@@ -26,10 +30,10 @@ def main(args):
         relax(mrg_scratch, step, args)
         if mrg_incremental.projection().stress() < mrg_scratch.projection().stress():
             mrg = mrg_incremental
-            print(f"{step:3d}: --> incremental {mrg.projection().stress():9.4f}")
+            module_logger.info(f"{step:3d}: --> incremental {mrg.projection().stress():9.4f}")
         else:
             mrg = mrg_scratch
-            print(f"{step:3d}: --> scratch {mrg.projection().stress():9.4f}")
+            module_logger.info(f"{step:3d}: --> scratch {mrg.projection().stress():9.4f}")
 
 # ----------------------------------------------------------------------
 
@@ -37,7 +41,7 @@ def relax(chart, step, args):
     start = datetime.datetime.now()
     chart.relax(number_of_dimensions=args.number_of_dimensions, number_of_optimizations=args.number_of_optimizations, minimum_column_basis=args.minimum_column_basis)
     chart.keep_projections(10)
-    print(f"{step:3d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    module_logger.info(f"{step:3d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
     export(chart, step=step, type="s", args=args)
 
 # ----------------------------------------------------------------------
@@ -46,7 +50,7 @@ def relax_incremental(chart, step, args):
     start = datetime.datetime.now()
     chart.relax_incremental(number_of_optimizations=args.number_of_optimizations)
     chart.keep_projections(10)
-    print(f"{step:3d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    module_logger.info(f"{step:3d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
     export(chart, step=step, type="i", args=args)
 
 # ----------------------------------------------------------------------
@@ -62,6 +66,7 @@ import argparse, traceback
 try:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    parser.add_argument('--log-format', dest='logformat', default="%(levelname)s %(asctime)s: %(message)s")
     parser.add_argument('-n', dest="number_of_optimizations", type=int, default=100)
     parser.add_argument('-d', dest="number_of_dimensions", type=int, default=2)
     parser.add_argument('-m', dest="minimum_column_basis", default="none")
@@ -69,7 +74,7 @@ try:
     parser.add_argument("charts", nargs="+")
 
     args = parser.parse_args()
-    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    logging.basicConfig(level=args.loglevel, format=args.logformat)
     exit_code = main(args)
 except Exception as err:
     logging.error('{}\n{}'.format(err, traceback.format_exc()))
