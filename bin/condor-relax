@@ -168,3 +168,8 @@ def condor_submit(executable, arguments, output_prefix, threads, number_of_copie
 # ======================================================================
 
 exit(main())
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
