@@ -10,7 +10,7 @@
 
 // ======================================================================
 
-inline unsigned make_info_data(size_t max_number_of_projections_to_show, bool column_bases, bool tables, bool tables_for_sera, bool antigen_dates)
+inline unsigned make_info_data(bool column_bases, bool tables, bool tables_for_sera, bool antigen_dates)
 {
     using namespace acmacs::chart;
     return (column_bases ? info_data::column_bases : 0)         //
@@ -70,7 +70,7 @@ inline void py_chart(py::module_& mdl)
         .def(
             "make_info", //
             [](const ChartModify& chart, size_t max_number_of_projections_to_show, bool column_bases, bool tables, bool tables_for_sera, bool antigen_dates) {
-                return chart.make_info(max_number_of_projections_to_show, make_info_data(max_number_of_projections_to_show, column_bases, tables, tables_for_sera, antigen_dates));
+                return chart.make_info(max_number_of_projections_to_show, make_info_data(column_bases, tables, tables_for_sera, antigen_dates));
             },                                                                                                                                               //
             "max_number_of_projections_to_show"_a = 20, "column_bases"_a = true, "tables"_a = false, "tables_for_sera"_a = false, "antigen_dates"_a = false, //
             py::doc("returns detailed chart description"))                                                                                                   //
@@ -96,6 +96,19 @@ inline void py_chart(py::module_& mdl)
             "number_of_dimensions"_a = 2, "number_of_optimizations"_a = 0, "minimum_column_basis"_a = "none", "dimension_annealing"_a = false, "rough"_a = false,
             "number_of_best_distinct_projections_to_keep"_a = 5,                                                                              //
             py::doc{"makes one or more antigenic maps from random starting layouts, adds new projections, projections are sorted by stress"}) //
+
+        .def(
+            "relax_incremental", //
+            [](ChartModify& chart, size_t number_of_optimizations, bool rough, size_t number_of_best_distinct_projections_to_keep, bool remove_source_projection, bool unmovable_non_nan_points) {
+                if (number_of_optimizations == 0)
+                    number_of_optimizations = 100;
+                chart.relax_incremental(0, number_of_optimizations_t{number_of_optimizations},
+                                        optimization_options{optimization_precision{rough ? optimization_precision::rough : optimization_precision::fine}},
+                                        acmacs::chart::remove_source_projection{remove_source_projection ? acmacs::chart::remove_source_projection::yes : acmacs::chart::remove_source_projection::no},
+                                        acmacs::chart::unmovable_non_nan_points{unmovable_non_nan_points ? acmacs::chart::unmovable_non_nan_points::yes : acmacs::chart::unmovable_non_nan_points::no});
+                chart.projections_modify().sort();
+            },                                                                                                                                                                                  //
+            "number_of_optimizations"_a = 0, "rough"_a = false, "number_of_best_distinct_projections_to_keep"_a = 5, "remove_source_projection"_a = true, "unmovable_non_nan_points"_a = false) //
 
         .def(
             "projection",                                                                                    //
