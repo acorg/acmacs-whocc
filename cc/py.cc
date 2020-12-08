@@ -38,7 +38,7 @@ inline void py_chart(py::module_& mdl)
     using namespace pybind11::literals;
     using namespace acmacs::chart;
 
-    py::class_<ChartModify, std::shared_ptr<ChartModify>>(mdl, "Chart")
+    py::class_<ChartModify, std::shared_ptr<ChartModify>>(mdl, "Chart") //
         .def(py::init([](const std::string& filename) { return std::make_shared<ChartModify>(import_from_file(filename)); }), py::doc("imports chart from a file"))
         .def(
             "make_name", [](const ChartModify& chart) { return chart.make_name(std::nullopt); }, py::doc("returns name of the chart"))
@@ -54,10 +54,17 @@ inline void py_chart(py::module_& mdl)
         .def(
             "lineage", [](const ChartModify& chart) { return *chart.lineage(); }, py::doc("returns chart lineage: VICTORIA, YAMAGATA"))
         .def("relax", &chart_relax, "number_of_dimensions"_a = 2, "number_of_optimizations"_a = 0, "minimum_column_basis"_a = "none", "dimension_annealing"_a = false, "rough"_a = false,
-             "number_of_best_distinct_projections_to_keep"_a = 5, py::doc{"makes one or more antigenic maps from random starting layouts, adds new projections, projections are sorted by stress"});
+             "number_of_best_distinct_projections_to_keep"_a = 5, py::doc{"makes one or more antigenic maps from random starting layouts, adds new projections, projections are sorted by stress"})
+        .def(
+            "projection", [](ChartModify& chart, size_t projection_no) { return chart.projection_modify(projection_no); }, "projection_no"_a = 0) //
+        ;
+
+    py::class_<ProjectionModify, std::shared_ptr<ProjectionModify>>(mdl, "Projection") //
+        .def("stress", [](const ProjectionModify& projection, bool recalculate) { return projection.stress(recalculate ? RecalculateStress::if_necessary : RecalculateStress::no); }, "recalculate"_a = false) //
+        ;
 }
 
-// ----------------------------------------------------------------------
+// ======================================================================
 
 inline void py_merge(py::module_& mdl)
 {
