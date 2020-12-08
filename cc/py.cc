@@ -114,8 +114,14 @@ inline void py_chart(py::module_& mdl)
             "projection",                                                                                    //
             [](ChartModify& chart, size_t projection_no) { return chart.projection_modify(projection_no); }, //
             "projection_no"_a = 0)                                                                           //
+
         .def("remove_all_projections",                                                                       //
              [](ChartModify& chart) { return chart.projections_modify().remove_all(); })                     //
+
+        .def("export",                                                                       //
+             [](ChartModify& chart, const std::string& filename, const std::string& program_name) {
+                 acmacs::chart::export_factory(chart, filename, program_name); },                     //
+             "filename"_a, "program_name"_a) //
         ;
 
     // ----------------------------------------------------------------------

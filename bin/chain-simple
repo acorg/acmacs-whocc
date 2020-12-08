@@ -15,6 +15,8 @@ except:
 # ======================================================================
 
 def main(args):
+    if args.output_dir:
+        os.makedirs(args.output_dir, exist_ok=True)
     mrg = acmacs.Chart(args.charts[0])
     relax(mrg, 0, args)
     for step, c1_name in enumerate(args.charts[1:], start=1):
@@ -24,24 +26,28 @@ def main(args):
         relax(mrg_scratch, step, args)
         if mrg_incremental.projection().stress() < mrg_scratch.projection().stress():
             mrg = mrg_incremental
-            print(f"Step {step:2d}: --> incremental {mrg.projection().stress():9.4f}")
+            print(f"{step:3d}: --> incremental {mrg.projection().stress():9.4f}")
         else:
             mrg = mrg_scratch
-            print(f"Step {step:2d}: --> scratch {mrg.projection().stress():9.4f}")
-            
+            print(f"{step:3d}: --> scratch {mrg.projection().stress():9.4f}")
+
 # ----------------------------------------------------------------------
 
 def relax(chart, step, args):
     start = datetime.datetime.now()
     chart.relax(number_of_dimensions=args.number_of_dimensions, number_of_optimizations=args.number_of_optimizations, minimum_column_basis=args.minimum_column_basis)
-    print(f"Step {step:2d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    print(f"{step:3d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    if args.output_dir:
+        chart.export(os.path.join(args.output_dir, f"{step:03d}.s.ace"), sys.argv[0])
 
 # ----------------------------------------------------------------------
 
 def relax_incremental(chart, step, args):
     start = datetime.datetime.now()
     chart.relax_incremental(number_of_optimizations=args.number_of_optimizations)
-    print(f"Step {step:2d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    print(f"{step:3d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    if args.output_dir:
+        chart.export(os.path.join(args.output_dir, f"{step:03d}.i.ace"), sys.argv[0])
 
 # ----------------------------------------------------------------------
 
@@ -53,6 +59,7 @@ try:
     parser.add_argument('-n', dest="number_of_optimizations", type=int, default=100)
     parser.add_argument('-d', dest="number_of_dimensions", type=int, default=2)
     parser.add_argument('-m', dest="minimum_column_basis", default="none")
+    parser.add_argument('-o', dest="output_dir", default=None)
     parser.add_argument("charts", nargs="+")
 
     args = parser.parse_args()
