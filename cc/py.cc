@@ -48,7 +48,7 @@ inline void py_chart(py::module_& mdl)
 
         .def(
             "clone",                                                                                                           //
-            [](ChartModify& chart, const std::string& type) { return std::make_shared<ChartClone>(chart, clone_type(type)); }, //
+            [](ChartModify& chart, const std::string& type) -> std::shared_ptr<ChartModify> { return std::make_shared<ChartClone>(chart, clone_type(type)); }, //
             "type"_a = "titers",                                                                                               //
             py::doc(R"(type: "titers", "projections", "plot_spec", "projections_plot_spec")"))                                 //
 

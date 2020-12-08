@@ -18,15 +18,30 @@ def main(args):
     mrg = acmacs.Chart(args.charts[0])
     relax(mrg, 0, args)
     for step, c1_name in enumerate(args.charts[1:], start=1):
-        mrg, report = acmacs.merge(mrg, acmacs.Chart(c1_name), type="incremental")
-        relax(mrg, step, args)
-
+        mrg_incremental, report = acmacs.merge(mrg, acmacs.Chart(c1_name), type="incremental")
+        mrg_scratch = mrg_incremental.clone("plot_spec")
+        relax_incremental(mrg_incremental, step, args)
+        relax(mrg_scratch, step, args)
+        if mrg_incremental.projection().stress() < mrg_scratch.projection().stress():
+            mrg = mrg_incremental
+            print(f"Step {step:2d}: --> incremental {mrg.projection().stress():9.4f}")
+        else:
+            mrg = mrg_scratch
+            print(f"Step {step:2d}: --> scratch {mrg.projection().stress():9.4f}")
+            
 # ----------------------------------------------------------------------
 
 def relax(chart, step, args):
     start = datetime.datetime.now()
     chart.relax(number_of_dimensions=args.number_of_dimensions, number_of_optimizations=args.number_of_optimizations, minimum_column_basis=args.minimum_column_basis)
-    print(f"Step {step:2d}: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+    print(f"Step {step:2d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
+
+# ----------------------------------------------------------------------
+
+def relax_incremental(chart, step, args):
+    start = datetime.datetime.now()
+    chart.relax_incremental(number_of_optimizations=args.number_of_optimizations)
+    print(f"Step {step:2d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
 
 # ----------------------------------------------------------------------
 
