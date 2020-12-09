@@ -45,11 +45,15 @@ PYBIND11_EMBEDDED_MODULE(data_fix_builtin_module, mdl)
 PYBIND11_EMBEDDED_MODULE(xlsx_access_builtin_module, mdl)
 {
     using namespace pybind11::literals;
+    using namespace acmacs::sheet;
 
-    py::class_<acmacs::sheet::Sheet, std::shared_ptr<acmacs::sheet::Sheet>>(mdl, "Sheet") //
-        .def("name", &acmacs::sheet::Sheet::name)
-        .def("number_of_rows", &acmacs::sheet::Sheet::number_of_rows)
-        .def("number_of_columns", &acmacs::sheet::Sheet::number_of_columns)
+    py::class_<Sheet, std::shared_ptr<Sheet>>(mdl, "Sheet")  //
+        .def("name", &Sheet::name)                           //
+        .def("number_of_rows", &Sheet::number_of_rows)       //
+        .def("number_of_columns", &Sheet::number_of_columns) //
+
+        .def(
+            "cell_as_str", [](const Sheet& sheet, size_t row, size_t column) { return fmt::format("{}", sheet.cell(row, column)); }, "row"_a, "column"_a) //
         ;
 }
 
@@ -81,6 +85,8 @@ acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(
             result.assay = detected[key].cast<std::string>();
         else if (key_s == "subtype")
             result.subtype = detected[key].cast<std::string>();
+        else if (key_s == "ignore")
+            result.ignore = detected[key].cast<bool>();
         else
             AD_WARNING("py function detect returned unrecognized key/value: \"{}\": {}", key_s, static_cast<std::string>(py::str(detected[key])));
     }

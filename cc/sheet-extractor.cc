@@ -34,7 +34,7 @@ static const std::string_view LineageYamagata{"YAMAGATA"};
 std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(std::shared_ptr<Sheet> sheet, Extractor::warn_if_not_found winf)
 {
     const auto detected = acmacs::whocc_xlsx::v1::py_sheet_detect(sheet);
-    AD_DEBUG("detected lab:\"{}\" assay:\"{}\" subtype:\"{}\"", detected.lab, detected.assay, detected.subtype);
+    AD_DEBUG("detected ignore:{} lab:\"{}\" assay:\"{}\" subtype:\"{}\" lineage:\"{}\"", detected.ignore, detected.lab, detected.assay, detected.subtype, detected.lineage);
 
     std::unique_ptr<Extractor> extractor;
     std::smatch match;

@@ -15,9 +15,11 @@ namespace acmacs::whocc_xlsx::inline v1
 
     struct detect_result_t
     {
+        bool ignore{false};
         std::string lab{};
         std::string assay{};
         std::string subtype{};
+        std::string lineage{};
     };
 
     detect_result_t py_sheet_detect(std::shared_ptr<acmacs::sheet::Sheet> sheet);
