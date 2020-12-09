@@ -1,6 +1,7 @@
 #pragma once
 
 #include <variant>
+#include <limits>
 
 #include "acmacs-base/fmt.hh"
 #include "acmacs-base/date.hh"
@@ -49,11 +50,27 @@ namespace acmacs::sheet::inline v1
 
     // ----------------------------------------------------------------------
 
+    constexpr const auto max_row_col = std::numeric_limits<size_t>::max();
+
+    struct cell_addr_t
+    {
+        size_t row{max_row_col};
+        size_t col{max_row_col};
+    };
+
+    struct cell_match_t
+    {
+        size_t row{max_row_col};
+        size_t col{max_row_col};
+        std::vector<std::string> matches{}; // match groups starting with 0
+    };
+
+
     struct range : public std::pair<size_t, size_t>
     {
-        range() : std::pair<size_t, size_t>{static_cast<size_t>(-1), static_cast<size_t>(-1)} {}
+        range() : std::pair<size_t, size_t>{max_row_col, max_row_col} {}
 
-        constexpr bool valid() const { return first != static_cast<size_t>(-1) && first <= second; }
+        constexpr bool valid() const { return first != max_row_col && first <= second; }
         constexpr bool empty() const { return !valid() || first == second; }
         constexpr size_t size() const { return valid() ? second - first : 0ul; }
     };
@@ -78,6 +95,11 @@ namespace acmacs::sheet::inline v1
         bool maybe_titer(const cell_t& cell) const;
         bool maybe_titer(size_t row, size_t col) const { return maybe_titer(cell(row, col)); }
         range titer_range(size_t row) const; // returns column range, returns empty range if not found
+
+        cell_addr_t min_cell() const { return {0, 0}; }
+        cell_addr_t max_cell() const { return {number_of_rows(), number_of_columns()}; }
+
+        std::vector<cell_match_t> grep(const std::regex& rex, const cell_addr_t& min, const cell_addr_t& max) const;
     };
 
 } // namespace acmacs

@@ -40,7 +40,9 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
             AD_INFO("Sheet \"{}\": ignored on request in cell A1", sheet->name());
             return nullptr;
         }
-        else if (detected.lab == "CRICK") {
+
+        AD_INFO("{}", detected);
+        if (detected.lab == "CRICK") {
             if (detected.assay == "HI") {
                 extractor = std::make_unique<ExtractorCrick>(sheet);
                 extractor->subtype(detected.subtype);

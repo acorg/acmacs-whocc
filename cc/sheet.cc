@@ -102,6 +102,26 @@ acmacs::sheet::v1::range acmacs::sheet::v1::Sheet::titer_range(size_t row) const
 
 // ----------------------------------------------------------------------
 
+std::vector<acmacs::sheet::cell_match_t> acmacs::sheet::v1::Sheet::grep(const std::regex& rex, const cell_addr_t& min, const cell_addr_t& max) const
+{
+    std::vector<cell_match_t> result;
+    AD_DEBUG("Sheet::grep {} {}   {} {}", min.row, max.row, min.col, max.col);
+    for (const auto row : range_from_to(min.row, max.row)) {
+        for (const auto col : range_from_to(min.col, max.col)) {
+            const auto cl = cell(row, col);
+            AD_DEBUG("Sheet::grep {} {} \"{}\"", row, col, cl);
+            std::smatch match;
+            if (matches(rex, match, cl)) {
+                AD_DEBUG("Sheet::grep {} {} -> {}", row, col, match.str(0));
+                cell_match_t cm{.row = row, .col = col};
+                std::transform(std::cbegin(match), std::cend(match), std::back_insert_iterator(cm.matches), [](const auto& submatch) { return submatch.str(); });
+                result.push_back(std::move(cm));
+            }
+        }
+    }
+    return result;
+
+} // acmacs::sheet::v1::Sheet::grep
 
 // ----------------------------------------------------------------------
 /// Local Variables:
