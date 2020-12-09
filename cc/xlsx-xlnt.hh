@@ -70,7 +70,7 @@ namespace acmacs::xlsx::inline v1
         {
           public:
             size_t number_of_sheets() const { return workbook_.sheet_count(); }
-            std::unique_ptr<Sheet> sheet(size_t sheet_no) { return std::make_unique<Sheet>(workbook_.sheet_by_index(sheet_no)); }
+            std::shared_ptr<Sheet> sheet(size_t sheet_no) { return std::make_shared<Sheet>(workbook_.sheet_by_index(sheet_no)); }
 
           protected:
             Doc(std::string_view filename) : workbook_{::xlnt::path{std::string{filename}}} {}

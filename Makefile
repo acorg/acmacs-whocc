@@ -21,8 +21,11 @@ SHEET_SOURCES = \
   sheet-extractor.cc \
   sheet-to-torg.cc \
   sheet.cc \
-  data-fix.cc \
-  data-fix-py.cc
+  data-fix.cc
+
+WHOCC_XLSX_TO_TORG_SOURCES = \
+  $(SHEET_SOURCES) \
+  whocc-xlsx-to-torg-py.cc
 
 # data-fix-guile.cc
 
@@ -89,7 +92,7 @@ $(DIST)/%: $(BUILD)/%.o | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 
-$(DIST)/whocc-xlsx-to-torg: $(BUILD)/whocc-xlsx-to-torg.o $(patsubst %.cc,$(BUILD)/%.o,$(SHEET_SOURCES)) | $(DIST)
+$(DIST)/whocc-xlsx-to-torg: $(BUILD)/whocc-xlsx-to-torg.o $(patsubst %.cc,$(BUILD)/%.o,$(WHOCC_XLSX_TO_TORG_SOURCES)) | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(PYTHON_LIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 

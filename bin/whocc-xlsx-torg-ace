@@ -34,7 +34,7 @@ def main(args):
 # ----------------------------------------------------------------------
 
 def name_from_xlsx(xlsx_filename):
-    return subprocess.check_output(["whocc-xlsx-to-torg", "-n", "-f", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", xlsx_filename]).decode("utf-8")
+    return subprocess.check_output(["whocc-xlsx-to-torg", "-n", "-f", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", "-s", whocc_tables_dir().joinpath("whocc-xlsx-to-torg.detect.py"), xlsx_filename]).decode("utf-8")
 
 # ----------------------------------------------------------------------
 
@@ -53,9 +53,13 @@ def split_name(name):
 
 # ----------------------------------------------------------------------
 
+def whocc_tables_dir():
+    return Path("~/ac/whocc-tables").expanduser()
+
+# ----------------------------------------------------------------------
+
 def detect_dir(name):
-    whocc_tables_dir = Path("~/ac/whocc-tables").expanduser()
-    cmd = [whocc_tables_dir.joinpath("bin", "output-dir"), "--subtype", name.subtype, "--assay", name.assay, "--lab", name.lab]
+    cmd = [whocc_tables_dir().joinpath("bin", "output-dir"), "--subtype", name.subtype, "--assay", name.assay, "--lab", name.lab]
     if name.rbc:
         cmd.extend(["--rbc", name.rbc])
     output_dir = subprocess.check_output(cmd)

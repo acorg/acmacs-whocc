@@ -1,6 +1,7 @@
 #include "acmacs-base/log.hh"
-#include "acmacs-whocc/data-fix-py.hh"
+#include "acmacs-whocc/whocc-xlsx-to-torg-py.hh"
 #include "acmacs-whocc/data-fix.hh"
+#include "acmacs-whocc/sheet.hh"
 
 // ----------------------------------------------------------------------
 
@@ -10,10 +11,10 @@
 #pragma GCC diagnostic ignored "-Wmissing-variable-declarations" // 2.6.1 2020-12-06
 #endif
 
-using namespace pybind11::literals;
-
-PYBIND11_EMBEDDED_MODULE(data_fix_module, mdl)
+PYBIND11_EMBEDDED_MODULE(data_fix_builtin_module, mdl)
 {
+    using namespace pybind11::literals;
+
     mdl.def(
         "name_antigen_serum_fix",
         [](std::string& rex, std::string& replacement) {
@@ -39,18 +40,53 @@ PYBIND11_EMBEDDED_MODULE(data_fix_module, mdl)
         "rex"_a, "replacement"_a);
 }
 
+// ----------------------------------------------------------------------
+
+PYBIND11_EMBEDDED_MODULE(xlsx_access_builtin_module, mdl)
+{
+    using namespace pybind11::literals;
+
+    py::class_<acmacs::sheet::Sheet, std::shared_ptr<acmacs::sheet::Sheet>>(mdl, "Sheet") //
+        .def("name", &acmacs::sheet::Sheet::name)
+        .def("number_of_rows", &acmacs::sheet::Sheet::number_of_rows)
+        .def("number_of_columns", &acmacs::sheet::Sheet::number_of_columns)
+        ;
+}
+
+// ----------------------------------------------------------------------
+
 #pragma GCC diagnostic pop
 
 // ----------------------------------------------------------------------
 
-void acmacs::data_fix::v1::py_init(const std::vector<std::string_view>& scripts)
+void acmacs::whocc_xlsx::v1::py_init(const std::vector<std::string_view>& scripts)
 {
     for (const auto& script : scripts) {
-        AD_DEBUG("import {}", script);
+        AD_INFO("import {}", script);
         py::eval_file(pybind11::str{script.data(), script.size()});
     }
 
 } // acmacs::data_fix::v1::py_init
+
+// ----------------------------------------------------------------------
+
+acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(std::shared_ptr<acmacs::sheet::Sheet> sheet)
+{
+    const auto detected = py::globals()["detect"](sheet);
+    detect_result_t result;
+    for (const auto key : detected) {
+        if (const auto key_s = key.cast<std::string>(); key_s == "lab")
+            result.lab = detected[key].cast<std::string>();
+        else if (key_s == "assay")
+            result.assay = detected[key].cast<std::string>();
+        else if (key_s == "subtype")
+            result.subtype = detected[key].cast<std::string>();
+        else
+            AD_WARNING("py function detect returned unrecognized key/value: \"{}\": {}", key_s, static_cast<std::string>(py::str(detected[key])));
+    }
+    return result;
+
+} // acmacs::whocc_xlsx::v1::py_sheet_detect
 
 // ----------------------------------------------------------------------
 /// Local Variables:

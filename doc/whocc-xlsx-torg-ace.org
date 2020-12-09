@@ -1,0 +1,16 @@
+# Time-stamp: <2020-12-09 13:13:34 eu>
+
+* whocc-xlsx-torg-ace
+
+see [[file:~/ac/whocc-tables/README.org][~/ac/whocc-tables/README.org]]
+
+* COMMENT local vars ----------------------------------------------------------------------
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+#+STARTUP: showall indent
+Local Variables:
+eval: (auto-fill-mode 0)
+eval: (add-hook 'before-save-hook 'time-stamp)
+eval: (set (make-local-variable 'org-confirm-elisp-link-function) nil)
+End:

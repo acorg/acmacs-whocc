@@ -34,10 +34,10 @@ namespace acmacs::sheet::inline v1
     class Extractor
     {
       public:
-        Extractor(const Sheet& a_sheet) : sheet_{a_sheet} {}
+        Extractor(std::shared_ptr<Sheet> a_sheet) : sheet_{a_sheet} {}
         virtual ~Extractor() = default;
 
-        const Sheet& sheet() const { return sheet_; }
+        const Sheet& sheet() const { return *sheet_; }
 
         std::string_view lab() const { return lab_; }
         std::string_view subtype() const { return subtype_; }
@@ -89,7 +89,7 @@ namespace acmacs::sheet::inline v1
         std::vector<size_t>& serum_columns() { return serum_columns_; }
 
       private:
-        const Sheet& sheet_;
+        std::shared_ptr<Sheet> sheet_;
         std::string lab_;
         std::string subtype_;
         std::string lineage_;
@@ -102,14 +102,14 @@ namespace acmacs::sheet::inline v1
         std::vector<size_t> antigen_rows_, serum_columns_;
     };
 
-    std::unique_ptr<Extractor> extractor_factory(const Sheet& sheet, Extractor::warn_if_not_found winf);
+    std::unique_ptr<Extractor> extractor_factory(std::shared_ptr<Sheet> sheet, Extractor::warn_if_not_found winf);
 
     // ----------------------------------------------------------------------
 
     class ExtractorCrick : public Extractor
     {
       public:
-        ExtractorCrick(const Sheet& a_sheet);
+        ExtractorCrick(std::shared_ptr<Sheet> a_sheet);
 
         serum_fields_t serum(size_t sr_no) const override;
         std::string titer(size_t ag_no, size_t sr_no) const override;
@@ -125,7 +125,7 @@ namespace acmacs::sheet::inline v1
     class ExtractorCrickPRN : public ExtractorCrick
     {
       public:
-        ExtractorCrickPRN(const Sheet& a_sheet);
+        ExtractorCrickPRN(std::shared_ptr<Sheet> a_sheet);
 
         std::string titer_comment() const override;
         std::string titer(size_t ag_no, size_t sr_no) const override;

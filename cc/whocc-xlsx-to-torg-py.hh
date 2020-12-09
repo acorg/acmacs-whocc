@@ -4,11 +4,25 @@
 
 // ----------------------------------------------------------------------
 
-namespace acmacs::data_fix::inline v1
+namespace acmacs::sheet::inline v1
+{
+    class Sheet;
+}
+
+namespace acmacs::whocc_xlsx::inline v1
 {
     void py_init(const std::vector<std::string_view>& scripts);
 
-} // namespace acmacs::data_fix::inline v1
+    struct detect_result_t
+    {
+        std::string lab{};
+        std::string assay{};
+        std::string subtype{};
+    };
+
+    detect_result_t py_sheet_detect(std::shared_ptr<acmacs::sheet::Sheet> sheet);
+
+} // namespace acmacs::whocc_xlsx::inline v1
 
 // ----------------------------------------------------------------------
 /// Local Variables:

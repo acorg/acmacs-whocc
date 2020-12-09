@@ -11,7 +11,7 @@
 #if defined(ACMACS_USE_GUILE)
 #include "acmacs-whocc/data-fix-guile.hh"
 #elif defined(ACMACS_USE_PY)
-#include "acmacs-whocc/data-fix-py.hh"
+#include "acmacs-whocc/whocc-xlsx-to-torg-py.hh"
 #endif
 
 // ----------------------------------------------------------------------
@@ -44,7 +44,7 @@ int main(int argc, char* const argv[])
         guile::init(acmacs::data_fix::guile_defines, *opt.scripts);
 #elif defined(ACMACS_USE_PY)
         py::scoped_interpreter guard{};
-        acmacs::data_fix::py_init(*opt.scripts);
+        acmacs::whocc_xlsx::py_init(*opt.scripts);
 #endif
 
         for (auto& xlsx : opt.xlsx) {
