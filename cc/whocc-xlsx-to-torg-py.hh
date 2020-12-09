@@ -1,6 +1,7 @@
 #pragma once
 
 #include "acmacs-base/pybind11.hh"
+#include "acmacs-base/date.hh"
 
 // ----------------------------------------------------------------------
 
@@ -20,6 +21,7 @@ namespace acmacs::whocc_xlsx::inline v1
         std::string assay{};
         std::string subtype{};
         std::string lineage{};
+        date::year_month_day date{date::invalid_date()};
     };
 
     detect_result_t py_sheet_detect(std::shared_ptr<acmacs::sheet::Sheet> sheet);

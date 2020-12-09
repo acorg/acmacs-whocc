@@ -85,6 +85,10 @@ acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(
             result.assay = detected[key].cast<std::string>();
         else if (key_s == "subtype")
             result.subtype = detected[key].cast<std::string>();
+        else if (key_s == "lineage")
+            result.lineage = detected[key].cast<std::string>();
+        else if (key_s == "date")
+            result.date = date::from_string(detected[key].cast<std::string>(), date::allow_incomplete::no, date::throw_on_error::no);
         else if (key_s == "ignore")
             result.ignore = detected[key].cast<bool>();
         else

@@ -10,9 +10,9 @@
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_ac_ignore_sheet{"^AC-IGNORE", acmacs::regex::icase};
+// static const std::regex re_ac_ignore_sheet{"^AC-IGNORE", acmacs::regex::icase};
 
-static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\s*\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
+// static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\s*\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
 static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::regex::icase};
 static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCK|CELL|EGG)", acmacs::regex::icase};
@@ -33,46 +33,73 @@ static const std::string_view LineageYamagata{"YAMAGATA"};
 
 std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(std::shared_ptr<Sheet> sheet, Extractor::warn_if_not_found winf)
 {
-    const auto detected = acmacs::whocc_xlsx::v1::py_sheet_detect(sheet);
-    AD_DEBUG("detected ignore:{} lab:\"{}\" assay:\"{}\" subtype:\"{}\" lineage:\"{}\"", detected.ignore, detected.lab, detected.assay, detected.subtype, detected.lineage);
-
-    std::unique_ptr<Extractor> extractor;
-    std::smatch match;
-    if (const auto cell00 = sheet->cell(0, 0), cell01 = sheet->cell(0, 1); sheet->matches(re_ac_ignore_sheet, cell00)) {
-        AD_INFO("Sheet \"{}\": ignored on request in cell A1", sheet->name());
-        return nullptr;
-    }
-    else if (sheet->matches(re_table_title_crick, match, cell00) || sheet->matches(re_table_title_crick, match, cell01)) {
-        // AD_DEBUG("Sheet: {}\ncell00: {}\ncell01: {}", sheet->name(), sheet->matches(re_table_title_crick, match, cell00), sheet->matches(re_table_title_crick, match, cell01));
-        if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
-            extractor = std::make_unique<ExtractorCrickPRN>(sheet);
+    try {
+        std::unique_ptr<Extractor> extractor;
+        const auto detected = acmacs::whocc_xlsx::v1::py_sheet_detect(sheet);
+        if (detected.ignore) {
+            AD_INFO("Sheet \"{}\": ignored on request in cell A1", sheet->name());
+            return nullptr;
         }
-        else {
-            extractor = std::make_unique<ExtractorCrick>(sheet);
-            auto subtype = match.str(1);
-            extractor->subtype(subtype);
-            if (subtype == "B" && match.length(2) > 4) {
-                switch (match.str(2)[0]) {
-                    case 'V':
-                    case 'v':
-                        extractor->lineage(LineageVictoria);
-                        break;
-                    case 'Y':
-                    case 'y':
-                        extractor->lineage(LineageYamagata);
-                        break;
-                }
+        else if (detected.lab == "CRICK") {
+            if (detected.assay == "HI") {
+                extractor = std::make_unique<ExtractorCrick>(sheet);
+                extractor->subtype(detected.subtype);
+                extractor->lineage(detected.lineage);
             }
+            else if (detected.assay == "PRN")
+                extractor = std::make_unique<ExtractorCrickPRN>(sheet);
+            else
+                throw std::exception{};
         }
-        extractor->date(date::from_string(match.str(3), date::allow_incomplete::no, date::throw_on_error::no));
+        else
+            throw std::exception{};
+        extractor->date(detected.date);
+        extractor->preprocess(winf);
+        return extractor;
     }
-    else {
+    catch (std::exception&) {
         throw std::runtime_error{fmt::format("Sheet \"{}\": no specific extractor found", sheet->name())};
-        // AD_WARNING("Sheet \"{}\": no specific extractor found", sheet->name());
-        // extractor = std::make_unique<Extractor>(sheet);
     }
-    extractor->preprocess(winf);
-    return extractor;
+
+    // AD_DEBUG("detected ignore:{} lab:\"{}\" assay:\"{}\" subtype:\"{}\" lineage:\"{}\"", detected.ignore, detected.lab, detected.assay, detected.subtype, detected.lineage);
+
+    // std::unique_ptr<Extractor> extractor;
+    // std::smatch match;
+    // if (const auto cell00 = sheet->cell(0, 0), cell01 = sheet->cell(0, 1); sheet->matches(re_ac_ignore_sheet, cell00)) {
+    //     AD_INFO("Sheet \"{}\": ignored on request in cell A1", sheet->name());
+    //     return nullptr;
+    // }
+    // else if (sheet->matches(re_table_title_crick, match, cell00) || sheet->matches(re_table_title_crick, match, cell01)) {
+    //     // AD_DEBUG("Sheet: {}\ncell00: {}\ncell01: {}", sheet->name(), sheet->matches(re_table_title_crick, match, cell00), sheet->matches(re_table_title_crick, match, cell01));
+    //     if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
+    //         extractor = std::make_unique<ExtractorCrickPRN>(sheet);
+    //     }
+    //     else {
+    //         extractor = std::make_unique<ExtractorCrick>(sheet);
+    //         auto subtype = match.str(1);
+    //         extractor->subtype(subtype);
+    //         if (subtype == "B" && match.length(2) > 4) {
+    //             switch (match.str(2)[0]) {
+    //                 case 'V':
+    //                 case 'v':
+    //                     extractor->lineage(LineageVictoria);
+    //                     break;
+    //                 case 'Y':
+    //                 case 'y':
+    //                     extractor->lineage(LineageYamagata);
+    //                     break;
+    //             }
+    //         }
+    //     }
+    //     extractor->date(date::from_string(match.str(3), date::allow_incomplete::no, date::throw_on_error::no));
+    // }
+    // else {
+    //     throw std::runtime_error{fmt::format("Sheet \"{}\": no specific extractor found", sheet->name())};
+    //     // AD_WARNING("Sheet \"{}\": no specific extractor found", sheet->name());
+    //     // extractor = std::make_unique<Extractor>(sheet);
+    // }
+    // extractor->preprocess(winf);
+    // return extractor;
 
 } // acmacs::sheet::v1::extractor_factory
 
