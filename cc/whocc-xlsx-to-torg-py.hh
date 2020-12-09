@@ -1,6 +1,7 @@
 #pragma once
 
 #include "acmacs-base/pybind11.hh"
+#include "acmacs-base/fmt.hh"
 #include "acmacs-base/date.hh"
 
 // ----------------------------------------------------------------------
@@ -27,6 +28,17 @@ namespace acmacs::whocc_xlsx::inline v1
     detect_result_t py_sheet_detect(std::shared_ptr<acmacs::sheet::Sheet> sheet);
 
 } // namespace acmacs::whocc_xlsx::inline v1
+
+// ----------------------------------------------------------------------
+
+template <> struct fmt::formatter<acmacs::whocc_xlsx::detect_result_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(const acmacs::whocc_xlsx::detect_result_t& detected, FormatCtx& ctx)
+    {
+        return format_to(ctx.out(), "ignore:{} lab:\"{}\" assay:\"{}\" subtype:\"{}\" lineage:\"{}\" date:\"{}\"", //
+                         detected.ignore, detected.lab, detected.assay, detected.subtype, detected.lineage, detected.date);
+    }
+};
 
 // ----------------------------------------------------------------------
 /// Local Variables:
