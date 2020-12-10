@@ -22,6 +22,7 @@ namespace acmacs::whocc_xlsx::inline v1
         std::string assay{};
         std::string subtype{};
         std::string lineage{};
+        std::string rbc{};
         date::year_month_day date{date::invalid_date()};
     };
 
@@ -37,9 +38,7 @@ template <> struct fmt::formatter<acmacs::whocc_xlsx::detect_result_t> : fmt::fo
     {
         if (detected.ignore)
             return format_to(ctx.out(), "[Sheet IGNORE]");
-        return format_to(ctx.out(), "[{} {}{} {} {}]", detected.lab, detected.subtype, detected.lineage, detected.assay, detected.date);
-        // return format_to(ctx.out(), "ignore:{} lab:\"{}\" assay:\"{}\" subtype:\"{}\" lineage:\"{}\" date:\"{}\"", //
-        //                  detected.ignore, detected.lab, detected.assay, detected.subtype, detected.lineage, detected.date);
+        return format_to(ctx.out(), "[{} {}{} {} {} {}]", detected.lab, detected.subtype, detected.lineage, detected.assay, detected.rbc, detected.date);
     }
 };
 
