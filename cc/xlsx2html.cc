@@ -31,12 +31,7 @@ int main(int argc, char* const argv[])
         <title>{title}</title>
         <style>
          h1 {{ color: #0000A0; }}
-         body {{
-             height: 100%;
-             border-left: 3em solid #ddf;
-             padding: 1em 0 0 1em;
-             margin: 0;
-         }}
+         body {{ margin: 0; font-size: 0.9em; }}
          table {{ border-collapse: collapse; }}
          td.col-row-no {{ font-weight: bold; text-align: center; background: #66A; color: white; }}
          td {{ padding: 0.3em; border: 1px solid #CCC; white-space: nowrap; }}
