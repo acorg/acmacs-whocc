@@ -59,14 +59,19 @@ PYBIND11_EMBEDDED_MODULE(xlsx_access_builtin_module, mdl)
 
         .def(
             "grep",
-            [](const Sheet& sheet, const std::string& rex, size_t min_row, size_t min_col, size_t max_row, size_t max_col) {
+            [](const Sheet& sheet, const std::string& rex, size_t min_row, size_t max_row, size_t min_col, size_t max_col) {
                 if (max_row == max_row_col)
                     max_row = sheet.number_of_rows();
+                else
+                    ++max_row;
                 if (max_col == max_row_col)
                     max_col = sheet.number_of_columns();
-                return sheet.grep(std::regex(rex, acmacs::regex::icase), {min_row, max_row}, {min_col, max_col});
-            },                                                                                      //
-            "regex"_a, "min_row"_a = 0, "min_col"_a = 0, "max_row"_a = max_row_col, "max_col"_a = max_row_col) //
+                else
+                    ++max_col;
+                return sheet.grep(std::regex(rex, acmacs::regex::icase), {min_row, min_col}, {max_row, max_col});
+            },                                                                                                 //
+            "regex"_a, "min_row"_a = 0, "max_row"_a = max_row_col, "min_col"_a = 0, "max_col"_a = max_row_col, //
+            py::doc("max_row and max_col are the last row and col to look in"))                                //
         ;
 }
 

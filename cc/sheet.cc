@@ -109,7 +109,7 @@ std::vector<acmacs::sheet::cell_match_t> acmacs::sheet::v1::Sheet::grep(const st
     for (const auto row : range_from_to(min.row, max.row)) {
         for (const auto col : range_from_to(min.col, max.col)) {
             const auto cl = cell(row, col);
-            AD_DEBUG("Sheet::grep {} {} \"{}\"", row, col, cl);
+            // AD_DEBUG("Sheet::grep {} {} \"{}\"", row, col, cl);
             std::smatch match;
             if (matches(rex, match, cl)) {
                 AD_DEBUG("Sheet::grep {} {} -> {}", row, col, match.str(0));
