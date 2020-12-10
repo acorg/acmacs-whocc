@@ -69,6 +69,7 @@ namespace acmacs::sheet::inline v1
       protected:
         virtual void find_titers(warn_if_not_found winf);
         virtual void find_antigen_name_column(warn_if_not_found winf);
+        virtual void remove_redundant_antigen_rows(warn_if_not_found winf);
         virtual void find_antigen_date_column(warn_if_not_found winf);
         virtual void find_antigen_passage_column(warn_if_not_found winf);
         virtual void find_antigen_lab_id_column(warn_if_not_found) {}
@@ -87,6 +88,8 @@ namespace acmacs::sheet::inline v1
         std::optional<size_t> serum_id_row() const { return serum_id_row_; }
 
         std::vector<size_t>& serum_columns() { return serum_columns_; }
+
+        bool is_virus_name(size_t row, size_t col) const;
 
       private:
         std::shared_ptr<Sheet> sheet_;

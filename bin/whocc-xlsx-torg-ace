@@ -46,7 +46,7 @@ def split_name(name):
     result = Name()
     result.subtype, assay_rbc, result.lab, result.date = name.split(" ")
     if "-" in assay_rbc:
-        result.assay, result.rbc = assay_rbc.split("-")
+        result.assay, result.rbc = assay_rbc.split("-", 1)
         result.stem = f"{result.subtype}-{result.assay}-{result.rbc}-{result.lab}-{result.date}"
     else:
         result.assay, result.rbc = assay_rbc, None

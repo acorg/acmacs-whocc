@@ -214,31 +214,65 @@ void acmacs::sheet::v1::Extractor::find_titers(warn_if_not_found winf)
 
 // ----------------------------------------------------------------------
 
+bool acmacs::sheet::v1::Extractor::is_virus_name(size_t row, size_t col) const
+{
+    return acmacs::virus::name::is_good(fmt::format("{}", sheet().cell(row, col)));
+
+} // acmacs::sheet::v1::Extractor::is_virus_name
+
+// ----------------------------------------------------------------------
+
 void acmacs::sheet::v1::Extractor::find_antigen_name_column(warn_if_not_found winf)
 {
-    const auto is_name = [this](size_t row, size_t col) { return acmacs::virus::name::is_good(fmt::format("{}", sheet().cell(row, col))); };
-
     for (const auto col : range_from_0_to(serum_columns()[0])) { // to the left from titers
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_name](size_t row) { return is_name(row, col); })) > (antigen_rows_.size() / 2)) {
+        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](size_t row) { return is_virus_name(row, col); })) > (antigen_rows_.size() / 2)) {
             antigen_name_column_ = col;
             break;
         }
     }
 
-    if (antigen_name_column_.has_value()) {
-        AD_LOG(acmacs::log::xlsx, "Antigen name column: {:c}", *antigen_name_column_ + 'A');
-        // remote antigen rows that have no name
-        ranges::actions::remove_if(antigen_rows_, [this, is_name, winf](size_t row) {
-            const auto no_name = !is_name(row, *antigen_name_column_);
-            if (no_name)
-                AD_WARNING_IF(winf == warn_if_not_found::yes, "row {} has titers but no name: {}", row + 1, sheet().cell(row, *antigen_name_column_));
-            return no_name;
-        });
-    }
+    if (antigen_name_column_.has_value())
+        remove_redundant_antigen_rows(winf);
     else
         AD_WARNING_IF(winf == warn_if_not_found::yes, "Antigen name column not found");
 
 } // acmacs::sheet::v1::Extractor::find_antigen_name_column
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::Extractor::remove_redundant_antigen_rows(warn_if_not_found winf)
+{
+    const auto cell_is_number_equal_to = [](const auto& cell, long num) {
+        return std::visit(
+            [num]<typename Content>(const Content& val) {
+                if constexpr (std::is_same_v<Content, long>)
+                    return val == num;
+                else
+                    return false;
+            },
+            cell);
+    };
+
+    const auto are_titers_increasing_numers = [this, cell_is_number_equal_to](size_t row) {
+        long num{1};
+        for (const auto col : serum_columns_) {
+            if (!cell_is_number_equal_to(sheet().cell(row, col), num))
+                return false;
+            ++num;
+        }
+        return true;
+    };
+
+    AD_LOG(acmacs::log::xlsx, "Antigen name column: {:c}", *antigen_name_column_ + 'A');
+    // remote antigen rows that have no name
+    ranges::actions::remove_if(antigen_rows_, [this, are_titers_increasing_numers, winf](size_t row) {
+        const auto no_name = !is_virus_name(row, *antigen_name_column_);
+        if (no_name && !are_titers_increasing_numers(row))
+            AD_WARNING_IF(winf == warn_if_not_found::yes, "row {} has titers but no name: {}", row + 1, sheet().cell(row, *antigen_name_column_));
+        return no_name;
+    });
+
+} // acmacs::sheet::v1::Extractor::remove_redundant_antigen_rows
 
 // ----------------------------------------------------------------------
 
