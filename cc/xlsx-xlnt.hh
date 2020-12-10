@@ -67,8 +67,8 @@ namespace acmacs::xlsx::inline v1
                 const ::xlnt::cell_reference ref{static_cast<::xlnt::column_t::index_t>(col + 1), static_cast<::xlnt::row_t>(row + 1)};
                 if (!sheet_.has_cell(ref))
                     return {};
-                const auto cell = sheet_.cell(ref);
                 acmacs::sheet::cell_spans_t spans;
+                // const auto cell = sheet_.cell(ref);
                 // if (const auto fill = cell.fill(); fill.type() == ::xlnt::fill_type::pattern) {
                 //     const auto fill_pattern = fill.pattern_fill();
 
