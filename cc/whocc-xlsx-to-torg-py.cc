@@ -73,6 +73,12 @@ PYBIND11_EMBEDDED_MODULE(xlsx_access_builtin_module, mdl)
             "regex"_a, "min_row"_a = 0, "max_row"_a = max_row_col, "min_col"_a = 0, "max_col"_a = max_row_col, //
             py::doc("max_row and max_col are the last row and col to look in"))                                //
         ;
+
+    py::class_<cell_match_t>(mdl, "cell_match_t") //
+        .def_readonly("row", &cell_match_t::row)
+        .def_readonly("col", &cell_match_t::col)
+        .def_readonly("matches", &cell_match_t::matches)
+        .def("__repr__", [](const cell_match_t& cm) { return fmt::format("<cell_match_t: {}:{} {}>", cm.row, cm.col, cm.matches); });
 }
 
 // ----------------------------------------------------------------------
