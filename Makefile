@@ -14,7 +14,8 @@ TARGETS = \
   $(DIST)/chart-update-vaccines \
   $(DIST)/chart-table-compare \
   $(DIST)/chart-table-map-compare \
-  $(DIST)/xlsx2csv
+  $(DIST)/xlsx2csv \
+  $(DIST)/xlsx2html
 
 # $(DIST)/guile-test
 
