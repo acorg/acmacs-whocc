@@ -54,7 +54,7 @@ namespace acmacs::sheet::inline v1
         virtual serum_fields_t serum(size_t sr_no) const;
 
         virtual std::string titer_comment() const { return {}; }
-        virtual std::string titer(size_t /*ag_no*/, size_t /*sr_no*/) const { return {}; }
+        virtual std::string titer(size_t ag_no, size_t sr_no) const;
 
         void lab(std::string_view a_lab) { lab_ = a_lab; }
         void subtype(std::string_view a_subtype) { subtype_ = a_subtype; }
@@ -74,8 +74,9 @@ namespace acmacs::sheet::inline v1
         virtual void find_antigen_passage_column(warn_if_not_found winf);
         virtual void find_antigen_lab_id_column(warn_if_not_found) {}
         virtual void find_serum_rows(warn_if_not_found) {}
-        virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf);
-        virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf);
+        virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf) { serum_passage_row_ = find_serum_row(re, "passage", winf); }
+        virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf) { serum_id_row_ = find_serum_row(re, "id", winf); }
+        virtual std::optional<size_t> find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const;
 
         std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }
@@ -115,7 +116,6 @@ namespace acmacs::sheet::inline v1
         ExtractorCrick(std::shared_ptr<Sheet> a_sheet);
 
         serum_fields_t serum(size_t sr_no) const override;
-        std::string titer(size_t ag_no, size_t sr_no) const override;
 
       protected:
         void find_serum_rows(warn_if_not_found winf) override;
@@ -149,6 +149,13 @@ namespace acmacs::sheet::inline v1
       public:
         ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet);
 
+        serum_fields_t serum(size_t sr_no) const override;
+
+      protected:
+        void find_serum_rows(warn_if_not_found winf) override;
+
+      private:
+        std::optional<size_t> serum_name_row_, serum_id_row_, serum_passage_row_;
     };
 
 

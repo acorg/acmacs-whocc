@@ -21,6 +21,9 @@ static const std::regex re_crick_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]
 static const std::regex re_crick_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
 static const std::regex re_crick_serum_id{"^F[0-9][0-9]/[0-2][0-9]$", acmacs::regex::icase};
 
+static const std::regex re_vidrl_serum_name{"^[A-Z][A-Z ]+[0-9]+$", acmacs::regex::icase};
+static const std::regex re_vidrl_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
+
 static const std::regex re_crick_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_crick_prn_read{"^read$", acmacs::regex::icase};
 
@@ -69,46 +72,6 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
     catch (std::exception&) {
         throw std::runtime_error{fmt::format("Sheet \"{}\": no specific extractor found, detected: {}", sheet->name(), detected)};
     }
-
-    // AD_DEBUG("detected ignore:{} lab:\"{}\" assay:\"{}\" subtype:\"{}\" lineage:\"{}\"", detected.ignore, detected.lab, detected.assay, detected.subtype, detected.lineage);
-
-    // std::unique_ptr<Extractor> extractor;
-    // std::smatch match;
-    // if (const auto cell00 = sheet->cell(0, 0), cell01 = sheet->cell(0, 1); sheet->matches(re_ac_ignore_sheet, cell00)) {
-    //     AD_INFO("Sheet \"{}\": ignored on request in cell A1", sheet->name());
-    //     return nullptr;
-    // }
-    // else if (sheet->matches(re_table_title_crick, match, cell00) || sheet->matches(re_table_title_crick, match, cell01)) {
-    //     // AD_DEBUG("Sheet: {}\ncell00: {}\ncell01: {}", sheet->name(), sheet->matches(re_table_title_crick, match, cell00), sheet->matches(re_table_title_crick, match, cell01));
-    //     if (acmacs::string::startswith_ignore_case(match.str(2), "Plaque")) {
-    //         extractor = std::make_unique<ExtractorCrickPRN>(sheet);
-    //     }
-    //     else {
-    //         extractor = std::make_unique<ExtractorCrick>(sheet);
-    //         auto subtype = match.str(1);
-    //         extractor->subtype(subtype);
-    //         if (subtype == "B" && match.length(2) > 4) {
-    //             switch (match.str(2)[0]) {
-    //                 case 'V':
-    //                 case 'v':
-    //                     extractor->lineage(LineageVictoria);
-    //                     break;
-    //                 case 'Y':
-    //                 case 'y':
-    //                     extractor->lineage(LineageYamagata);
-    //                     break;
-    //             }
-    //         }
-    //     }
-    //     extractor->date(date::from_string(match.str(3), date::allow_incomplete::no, date::throw_on_error::no));
-    // }
-    // else {
-    //     throw std::runtime_error{fmt::format("Sheet \"{}\": no specific extractor found", sheet->name())};
-    //     // AD_WARNING("Sheet \"{}\": no specific extractor found", sheet->name());
-    //     // extractor = std::make_unique<Extractor>(sheet);
-    // }
-    // extractor->preprocess(winf);
-    // return extractor;
 
 } // acmacs::sheet::v1::extractor_factory
 
@@ -184,6 +147,26 @@ void acmacs::sheet::v1::Extractor::preprocess(warn_if_not_found winf)
     find_serum_rows(winf);
 
 } // acmacs::sheet::v1::Extractor::preprocess
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::titer(size_t ag_no, size_t sr_no) const
+{
+    const auto cell = sheet().cell(antigen_rows().at(ag_no), serum_columns().at(sr_no));
+    return std::visit(
+        [&cell]<typename Content>(const Content& cont) -> std::string {
+            if constexpr (std::is_same_v<Content, std::string>)
+                return cont;
+            else if constexpr (std::is_same_v<Content, long>)
+                return fmt::format("{}", cont);
+            else if constexpr (std::is_same_v<Content, double>)
+                return fmt::format("{}", std::lround(cont)); // crick sometimes has real number titers
+            else
+                return fmt::format("{}", cell);
+        },
+        cell);
+
+} // acmacs::sheet::v1::Extractor::titer
 
 // ----------------------------------------------------------------------
 
@@ -322,39 +305,59 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::Extractor::find_serum_passage_row(const std::regex& re, warn_if_not_found winf)
+std::optional<size_t> acmacs::sheet::v1::Extractor::find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const
 {
+    std::optional<size_t> found;
     for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
         if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
-            serum_passage_row_ = row;
+            found = row;
             break;
         }
     }
 
-    if (serum_passage_row_.has_value())
-        AD_LOG(acmacs::log::xlsx, "[{}] Serum passage row: {}", lab(), *serum_passage_row_ + 1);
+    if (found.has_value())
+        AD_LOG(acmacs::log::xlsx, "[{}] Serum {} row: {}", lab(), row_name, *found + 1);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum passage row not found", lab());
+        AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum {} row not found", lab(), row_name);
+    return found;
 
-} // acmacs::sheet::v1::Extractor::find_serum_passage_row
+} // acmacs::sheet::v1::Extractor::find_serum_row
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::Extractor::find_serum_id_row(const std::regex& re, warn_if_not_found winf)
-{
-    for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
-        if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
-            serum_id_row_ = row;
-            break;
-        }
-    }
+// void acmacs::sheet::v1::Extractor::find_serum_passage_row(const std::regex& re, warn_if_not_found winf)
+// {
+//     for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
+//         if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
+//             serum_passage_row_ = row;
+//             break;
+//         }
+//     }
 
-    if (serum_id_row_.has_value())
-        AD_LOG(acmacs::log::xlsx, "[{}] Serum id row: {}", lab(), *serum_id_row_ + 1);
-    else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum id row not found", lab());
+//     if (serum_passage_row_.has_value())
+//         AD_LOG(acmacs::log::xlsx, "[{}] Serum passage row: {}", lab(), *serum_passage_row_ + 1);
+//     else
+//         AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum passage row not found", lab());
 
-} // acmacs::sheet::v1::Extractor::find_serum_id_row
+// } // acmacs::sheet::v1::Extractor::find_serum_passage_row
+
+// // ----------------------------------------------------------------------
+
+// void acmacs::sheet::v1::Extractor::find_serum_id_row(const std::regex& re, warn_if_not_found winf)
+// {
+//     for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
+//         if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
+//             serum_id_row_ = row;
+//             break;
+//         }
+//     }
+
+//     if (serum_id_row_.has_value())
+//         AD_LOG(acmacs::log::xlsx, "[{}] Serum id row: {}", lab(), *serum_id_row_ + 1);
+//     else
+//         AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum id row not found", lab());
+
+// } // acmacs::sheet::v1::Extractor::find_serum_id_row
 
 // ----------------------------------------------------------------------
 
@@ -424,26 +427,6 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCrick::serum(size_
     return serum;
 
 } // acmacs::sheet::v1::ExtractorCrick::serum
-
-// ----------------------------------------------------------------------
-
-std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no) const
-{
-    const auto cell = sheet().cell(antigen_rows().at(ag_no), serum_columns().at(sr_no));
-    return std::visit(
-        [&cell]<typename Content>(const Content& cont) -> std::string {
-            if constexpr (std::is_same_v<Content, std::string>)
-                return cont;
-            else if constexpr (std::is_same_v<Content, long>)
-                return fmt::format("{}", cont);
-            else if constexpr (std::is_same_v<Content, double>)
-                return fmt::format("{}", std::lround(cont));
-            else
-                return fmt::format("{}", cell);
-        },
-        cell);
-
-} // acmacs::sheet::v1::ExtractorCrick::titer
 
 // ----------------------------------------------------------------------
 
@@ -543,6 +526,26 @@ acmacs::sheet::v1::ExtractorVIDRL::ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet
 
 // ----------------------------------------------------------------------
 
+acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorVIDRL::serum(size_t sr_no) const
+{
+    auto serum = Extractor::serum(sr_no);
+    if (serum_name_row_)
+        serum.name = fmt::format("{}", sheet().cell(*serum_name_row_, serum_columns().at(sr_no)));
+    else
+        serum.name = "*no serum_name_row_*";
+    return serum;
+
+} // acmacs::sheet::v1::ExtractorVIDRL::serum
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorVIDRL::find_serum_rows(warn_if_not_found winf)
+{
+    serum_name_row_ = find_serum_row(re_vidrl_serum_name, "name", winf);
+    find_serum_passage_row(re_serum_passage, winf);
+    find_serum_id_row(re_vidrl_serum_id, winf);
+
+} // acmacs::sheet::v1::ExtractorVIDRL::find_serum_rows
 
 // ----------------------------------------------------------------------
 /// Local Variables:
