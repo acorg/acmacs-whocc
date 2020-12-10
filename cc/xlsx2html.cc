@@ -33,6 +33,9 @@ int main(int argc, char* const argv[])
          h1 {{ color: #0000A0; }}
          body {{ margin: 0; font-size: 0.9em; }}
          table {{ border-collapse: collapse; }}
+         tr:hover {{ background: #EFF; }}
+         td {{ position: relative; }}
+         td:hover::after {{ content: ""; position: absolute; background-color: #EFF; left: 0; top: -5000px; height: 10000px; width: 100%; z-index: -1; }} /* https://css-tricks.com/simple-css-row-column-highlighting/ */
          td.col-row-no {{ font-weight: bold; text-align: center; background: #66A; color: white; }}
          td {{ padding: 0.3em; border: 1px solid #CCC; white-space: nowrap; }}
         </style>
