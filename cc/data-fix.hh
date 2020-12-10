@@ -23,6 +23,7 @@ namespace acmacs::data_fix::inline v1
         virtual bool antigen_passage(std::string& /*src*/, std::string& /*name*/) const { return false; }
         virtual bool serum_name(std::string& /*src*/) const { return false; }
         virtual bool serum_passage(std::string& /*src*/, std::string& /*name*/) const { return false; }
+        virtual bool date(std::string& /*src*/) const { return false; }
         virtual bool titer(std::string& /*src*/) const { return false; }
     };
 
@@ -48,25 +49,36 @@ namespace acmacs::data_fix::inline v1
 
     // ----------------------------------------------------------------------
 
-    class AntigenSerumName : public Base
+    class FromTo : public Base
     {
       public:
-        AntigenSerumName(std::string&& from, std::string&& to) : from_{from, acmacs::regex::icase}, to_{std::move(to)} {}
+        FromTo(std::string&& from, std::string&& to) : from_{from, acmacs::regex::icase}, to_{std::move(to)} {}
 
-        bool antigen_name(std::string& src) const override
+
+    protected:
+        bool fix(std::string& src) const
         {
             if (std::smatch match; std::regex_search(src, match, from_)) {
                 src = match.format(to_);
                 return true;
             }
-            return Base::antigen_name(src);
+            return false;
         }
-
-        bool serum_name(std::string& src) const override { return antigen_name(src); }
 
       private:
         std::regex from_;
         std::string to_;
+
+    };
+
+    // ----------------------------------------------------------------------
+
+    class AntigenSerumName : public FromTo
+    {
+      public:
+        using FromTo::FromTo;
+        bool antigen_name(std::string& src) const override { return fix(src) || Base::antigen_name(src); }
+        bool serum_name(std::string& src) const override { return fix(src) || Base::serum_name(src); }
     };
 
     // ----------------------------------------------------------------------
@@ -95,6 +107,15 @@ namespace acmacs::data_fix::inline v1
         std::regex from_;
         std::string to_;
         std::string name_append_;
+    };
+
+    // ----------------------------------------------------------------------
+
+    class Date : public FromTo
+    {
+      public:
+        using FromTo::FromTo;
+        bool date(std::string& src) const override { return fix(src) || Base::date(src); }
     };
 
     // ----------------------------------------------------------------------

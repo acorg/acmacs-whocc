@@ -280,6 +280,7 @@ void acmacs::sheet::v1::Extractor::remove_redundant_antigen_rows(warn_if_not_fou
 void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found winf)
 {
     const auto is_date = [](const auto& cell) {
+        // VIDRL uses string values DD/MM/YYYY for antigen dates
         return acmacs::sheet::is_date(cell) || (acmacs::sheet::is_string(cell) && date::from_string(fmt::format("{}", cell), date::allow_incomplete::no, date::throw_on_error::no).ok());
     };
 

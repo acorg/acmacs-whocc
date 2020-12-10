@@ -17,7 +17,7 @@ static std::unique_ptr<acmacs::data_fix::v1::Set> sSet;
 const acmacs::data_fix::v1::Set& acmacs::data_fix::v1::Set::get()
 {
     if (!sSet)
-        throw std::runtime_error { "acmacs::data_fix::v1::Set accessed via get() before creating" };
+        sSet.reset(new Set{}); // throw std::runtime_error { "acmacs::data_fix::v1::Set accessed via get() before creating" };
     return *sSet;
 
 } // acmacs::data_fix::v1::Set::get
@@ -53,6 +53,14 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::antigen_fields_t& antigen, si
         const auto orig_passage = antigen.passage;
         if (const auto res = en->antigen_passage(antigen.passage, antigen.name); res) {
             AD_INFO("AG {:4d} passage \"{}\" <-- \"{}\"   name \"{}\" <-- \"{}\"", antigen_no, antigen.passage, orig_passage, antigen.name, orig_name);
+            break;
+        }
+    }
+
+    for (const auto& en : data) {
+        const auto orig_date = antigen.date;
+        if (const auto res = en->date(antigen.date); res) {
+            AD_INFO("AG {:4d} date \"{}\" <-- \"{}\"", antigen_no, antigen.date, orig_date);
             break;
         }
     }
