@@ -146,6 +146,8 @@ void acmacs::sheet::v1::Extractor::preprocess(warn_if_not_found winf)
     find_antigen_lab_id_column(winf);
     find_serum_rows(winf);
 
+    // TODO remove human, WHO, pooled sera
+
 } // acmacs::sheet::v1::Extractor::preprocess
 
 // ----------------------------------------------------------------------
@@ -322,42 +324,6 @@ std::optional<size_t> acmacs::sheet::v1::Extractor::find_serum_row(const std::re
     return found;
 
 } // acmacs::sheet::v1::Extractor::find_serum_row
-
-// ----------------------------------------------------------------------
-
-// void acmacs::sheet::v1::Extractor::find_serum_passage_row(const std::regex& re, warn_if_not_found winf)
-// {
-//     for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
-//         if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
-//             serum_passage_row_ = row;
-//             break;
-//         }
-//     }
-
-//     if (serum_passage_row_.has_value())
-//         AD_LOG(acmacs::log::xlsx, "[{}] Serum passage row: {}", lab(), *serum_passage_row_ + 1);
-//     else
-//         AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum passage row not found", lab());
-
-// } // acmacs::sheet::v1::Extractor::find_serum_passage_row
-
-// // ----------------------------------------------------------------------
-
-// void acmacs::sheet::v1::Extractor::find_serum_id_row(const std::regex& re, warn_if_not_found winf)
-// {
-//     for (const auto row : range_from_to(1ul, antigen_rows()[0])) {
-//         if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](size_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
-//             serum_id_row_ = row;
-//             break;
-//         }
-//     }
-
-//     if (serum_id_row_.has_value())
-//         AD_LOG(acmacs::log::xlsx, "[{}] Serum id row: {}", lab(), *serum_id_row_ + 1);
-//     else
-//         AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum id row not found", lab());
-
-// } // acmacs::sheet::v1::Extractor::find_serum_id_row
 
 // ----------------------------------------------------------------------
 
