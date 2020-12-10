@@ -139,6 +139,16 @@ namespace acmacs::sheet::inline v1
         void find_two_fold_read_row();
     };
 
+    // ----------------------------------------------------------------------
+
+    class ExtractorVIDRL : public Extractor
+    {
+      public:
+        ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet);
+
+    };
+
+
 } // namespace acmacs::sheet::inline v1
 
 // ----------------------------------------------------------------------

@@ -47,11 +47,18 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
                 extractor = std::make_unique<ExtractorCrick>(sheet);
                 extractor->subtype(detected.subtype);
                 extractor->lineage(detected.lineage);
+                extractor->rbc(detected.rbc);
             }
             else if (detected.assay == "PRN")
                 extractor = std::make_unique<ExtractorCrickPRN>(sheet);
             else
                 throw std::exception{};
+        }
+        else if (detected.lab == "VIDRL") {
+            extractor = std::make_unique<ExtractorVIDRL>(sheet);
+            extractor->subtype(detected.subtype);
+            extractor->lineage(detected.lineage);
+            extractor->rbc(detected.rbc);
         }
         else
             throw std::exception{};
@@ -484,6 +491,15 @@ std::string acmacs::sheet::v1::ExtractorCrickPRN::titer(size_t ag_no, size_t sr_
         return ExtractorCrick::titer(ag_no, sr_no);
 
 } // acmacs::sheet::v1::ExtractorCrickPRN::titer
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::ExtractorVIDRL::ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet)
+    : Extractor(a_sheet)
+{
+    lab("VIDRL");
+
+} // acmacs::sheet::v1::ExtractorVIDRL::ExtractorVIDRL
 
 // ----------------------------------------------------------------------
 
