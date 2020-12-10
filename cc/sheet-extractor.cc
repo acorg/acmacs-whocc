@@ -253,6 +253,7 @@ void acmacs::sheet::v1::Extractor::remove_redundant_antigen_rows(warn_if_not_fou
             cell);
     };
 
+    // VIDRL has row with serum indexes
     const auto are_titers_increasing_numers = [this, cell_is_number_equal_to](size_t row) {
         long num{1};
         for (const auto col : serum_columns_) {
@@ -278,8 +279,12 @@ void acmacs::sheet::v1::Extractor::remove_redundant_antigen_rows(warn_if_not_fou
 
 void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found winf)
 {
+    const auto is_date = [](const auto& cell) {
+        return acmacs::sheet::is_date(cell) || (acmacs::sheet::is_string(cell) && date::from_string(fmt::format("{}", cell), date::allow_incomplete::no, date::throw_on_error::no).ok());
+    };
+
     for (const auto col : range_from_0_to(sheet().number_of_columns())) {
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](size_t row) { return sheet().is_date(row, col); })) >= (antigen_rows_.size() / 2)) {
+        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_date, this](size_t row) { return is_date(sheet().cell(row, col)); })) >= (antigen_rows_.size() / 2)) {
             antigen_date_column_ = col;
             break;
         }

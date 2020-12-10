@@ -48,6 +48,18 @@ namespace acmacs::sheet::inline v1
             cell);
     }
 
+    inline bool is_string(const cell_t& cell)
+    {
+        return std::visit(
+            []<typename Content>(const Content&) {
+                if constexpr (std::is_same_v<Content, std::string>)
+                    return true;
+                else
+                    return false;
+            },
+            cell);
+    }
+
     // ----------------------------------------------------------------------
 
     struct cell_span_t
