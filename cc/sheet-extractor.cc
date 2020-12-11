@@ -48,7 +48,13 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
         }
 
         AD_INFO("{}", detected);
-        if (detected.lab == "CRICK") {
+        if (detected.lab == "CDC") {
+            extractor = std::make_unique<ExtractorCDC>(sheet);
+            extractor->subtype(detected.subtype);
+            extractor->lineage(detected.lineage);
+            extractor->rbc(detected.rbc);
+        }
+        else if (detected.lab == "CRICK") {
             if (detected.assay == "HI") {
                 extractor = std::make_unique<ExtractorCrick>(sheet);
                 extractor->subtype(detected.subtype);
@@ -349,6 +355,15 @@ void acmacs::sheet::v1::Extractor::exclude_control_sera(warn_if_not_found /*winf
     });
 
 } // acmacs::sheet::v1::Extractor::exclude_control_sera
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::ExtractorCDC::ExtractorCDC(std::shared_ptr<Sheet> a_sheet)
+    : Extractor(a_sheet)
+{
+    lab("CDC");
+
+} // acmacs::sheet::v1::ExtractorCDC::ExtractorCDC
 
 // ----------------------------------------------------------------------
 

@@ -111,6 +111,22 @@ namespace acmacs::sheet::inline v1
 
     // ----------------------------------------------------------------------
 
+    class ExtractorCDC : public Extractor
+    {
+      public:
+        ExtractorCDC(std::shared_ptr<Sheet> a_sheet);
+
+        // serum_fields_t serum(size_t sr_no) const override;
+
+      // protected:
+      //   void find_serum_rows(warn_if_not_found winf) override;
+
+      // private:
+      //   std::optional<size_t> serum_name_row_, serum_id_row_, serum_passage_row_;
+    };
+
+    // ----------------------------------------------------------------------
+
     class ExtractorCrick : public Extractor
     {
       public:
@@ -158,7 +174,6 @@ namespace acmacs::sheet::inline v1
       private:
         std::optional<size_t> serum_name_row_, serum_id_row_, serum_passage_row_;
     };
-
 
 } // namespace acmacs::sheet::inline v1
 
