@@ -66,6 +66,8 @@ namespace acmacs::sheet::inline v1
         enum class warn_if_not_found { no, yes };
         void preprocess(warn_if_not_found winf);
 
+        virtual void report_cells() const;
+
       protected:
         virtual void find_titers(warn_if_not_found winf);
         virtual void find_antigen_name_column(warn_if_not_found winf);

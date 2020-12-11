@@ -20,6 +20,8 @@ namespace acmacs::sheet::inline v1
         std::string format_assay_data(std::string_view format) const;
         std::string name() const { return format_assay_data("{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}"); }
 
+        const Extractor& extractor() const { return *extractor_; }
+
       private:
         std::shared_ptr<Sheet> sheet_; // shared_ptr necessary for py interface
         std::unique_ptr<Extractor> extractor_;

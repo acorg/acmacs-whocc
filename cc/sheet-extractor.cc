@@ -162,6 +162,15 @@ void acmacs::sheet::v1::Extractor::preprocess(warn_if_not_found winf)
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::Extractor::report_cells() const
+{
+    AD_INFO("Antigens: {}", antigen_rows_);
+    AD_INFO("Sera: {}", serum_columns_);
+
+} // acmacs::sheet::v1::Extractor::report_cells
+
+// ----------------------------------------------------------------------
+
 std::string acmacs::sheet::v1::Extractor::titer(size_t ag_no, size_t sr_no) const
 {
     const auto cell = sheet().cell(antigen_rows().at(ag_no), serum_columns().at(sr_no));
