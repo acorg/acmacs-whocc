@@ -1,6 +1,7 @@
 #include "acmacs-base/range-v3.hh"
 #include "acmacs-base/enumerate.hh"
 #include "acmacs-base/string-compare.hh"
+#include "acmacs-base/string-split.hh"
 #include "acmacs-virus/virus-name-normalize.hh"
 #include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/sheet-extractor.hh"
@@ -21,7 +22,7 @@ static const std::regex re_crick_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]
 static const std::regex re_crick_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
 static const std::regex re_crick_serum_id{"^F[0-9][0-9]/[0-2][0-9]$", acmacs::regex::icase};
 
-static const std::regex re_vidrl_serum_name{"^[A-Z][A-Z ]+[0-9]+$", acmacs::regex::icase};
+static const std::regex re_vidrl_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_vidrl_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
 static const std::regex re_crick_prn_2fold{"^2-fold$", acmacs::regex::icase};
@@ -495,8 +496,21 @@ acmacs::sheet::v1::ExtractorVIDRL::ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet
 acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorVIDRL::serum(size_t sr_no) const
 {
     auto serum = Extractor::serum(sr_no);
-    if (serum_name_row_)
+    if (serum_name_row_) {
         serum.name = fmt::format("{}", sheet().cell(*serum_name_row_, serum_columns().at(sr_no)));
+
+        // TAS503 -> A(H3N2)/TASMANIA/503/2020
+        if (std::smatch match; std::regex_search(serum.name, match, re_vidrl_serum_name)) {
+            for (const auto ag_no : range_from_0_to(number_of_antigens())) {
+                const auto antigen_name = antigen(ag_no).name;
+                const auto antigen_name_fields = acmacs::string::split(antigen_name, "/");
+                if (antigen_name_fields.size() == 4 && acmacs::string::startswith_ignore_case(antigen_name_fields[1], match.str(1)) && antigen_name_fields[2] == match.str(2)) {
+                    serum.name = antigen_name;
+                    break;
+                }
+            }
+        }
+    }
     else
         serum.name = "*no serum_name_row_*";
     return serum;
