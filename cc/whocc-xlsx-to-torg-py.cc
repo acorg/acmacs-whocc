@@ -109,6 +109,7 @@ acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(
 {
     const auto detected = py::globals()["detect"](sheet);
     detect_result_t result;
+    std::string date;
     for (const auto key : detected) {
         if (const auto key_s = key.cast<std::string>(); key_s == "lab")
             result.lab = detected[key].cast<std::string>();
@@ -121,12 +122,14 @@ acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(
        else if (key_s == "rbc")
             result.rbc = detected[key].cast<std::string>();
         else if (key_s == "date")
-            result.date = date::from_string(detected[key].cast<std::string>(), date::allow_incomplete::no, date::throw_on_error::no);
+            date = detected[key].cast<std::string>();
         else if (key_s == "ignore")
             result.ignore = detected[key].cast<bool>();
         else
             AD_WARNING("py function detect returned unrecognized key/value: \"{}\": {}", key_s, static_cast<std::string>(py::str(detected[key])));
     }
+    if (!date.empty())
+        result.date = date::from_string(date, date::allow_incomplete::no, date::throw_on_error::no, result.lab == "CDC" ? date::month_first::yes : date::month_first::no);
     return result;
 
 } // acmacs::whocc_xlsx::v1::py_sheet_detect
