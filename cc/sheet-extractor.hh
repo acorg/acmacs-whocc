@@ -77,6 +77,7 @@ namespace acmacs::sheet::inline v1
         virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf) { serum_passage_row_ = find_serum_row(re, "passage", winf); }
         virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf) { serum_id_row_ = find_serum_row(re, "id", winf); }
         virtual std::optional<size_t> find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const;
+        virtual void exclude_control_sera(warn_if_not_found winf);
 
         std::optional<size_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<size_t> antigen_date_column() const { return antigen_date_column_; }

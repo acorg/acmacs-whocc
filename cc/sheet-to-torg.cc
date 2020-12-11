@@ -140,9 +140,6 @@ std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view f
 } // acmacs::sheet::v1::SheetToTorg::format_assay_data
 
 // ----------------------------------------------------------------------
-
-
-// ----------------------------------------------------------------------
 /// Local Variables:
 /// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
 /// End:

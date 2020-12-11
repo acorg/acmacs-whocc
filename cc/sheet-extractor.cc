@@ -28,6 +28,8 @@ static const std::regex re_vidrl_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)
 static const std::regex re_crick_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_crick_prn_read{"^read$", acmacs::regex::icase};
 
+static const std::regex re_human_who_serum{"(HUMAN|WHO|NORMAL)", acmacs::regex::icase};
+
 #include "acmacs-base/diagnostics-pop.hh"
 
 static const std::string_view LineageVictoria{"VICTORIA"};
@@ -146,8 +148,7 @@ void acmacs::sheet::v1::Extractor::preprocess(warn_if_not_found winf)
     find_antigen_passage_column(winf);
     find_antigen_lab_id_column(winf);
     find_serum_rows(winf);
-
-    // TODO remove human, WHO, pooled sera
+    exclude_control_sera(winf); // remove human, WHO, pooled sera
 
 } // acmacs::sheet::v1::Extractor::preprocess
 
@@ -325,6 +326,29 @@ std::optional<size_t> acmacs::sheet::v1::Extractor::find_serum_row(const std::re
     return found;
 
 } // acmacs::sheet::v1::Extractor::find_serum_row
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::Extractor::exclude_control_sera(warn_if_not_found /*winf*/)
+{
+    const auto exclude = [](const auto& cell) {
+        if (is_string(cell)) {
+            const auto text = fmt::format("{}", cell);
+            if (std::regex_search(text, re_human_who_serum))
+                return true;
+        }
+        return false;
+    };
+
+    ranges::actions::remove_if(serum_columns_, [this, exclude](size_t col) {
+        if ((serum_id_row_.has_value() && exclude(sheet().cell(*serum_id_row_, col))) || (serum_passage_row_.has_value() && exclude(sheet().cell(*serum_passage_row_, col)))) {
+            AD_LOG(acmacs::log::xlsx, "[{}] serum column {:c} excluded: HUMAN or WHO or NORMAL serum", lab(), col + 'A');
+            return true;
+        }
+        return false;
+    });
+
+} // acmacs::sheet::v1::Extractor::exclude_control_sera
 
 // ----------------------------------------------------------------------
 
