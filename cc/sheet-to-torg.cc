@@ -95,6 +95,13 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
         fmt::format_to(result, "\n");
     }
 
+    fmt::format_to(result, "\n* COMMENT local vars ----------------------------------------------------------------------\n"
+                           ":PROPERTIES:\n:VISIBILITY: folded\n:END:\n\n"
+                           "#+STARTUP: showall indent\n"
+                           "Local Variables:\n"
+                           "eval: (if (fboundp 'eu-whocc-torg-to-ace) (add-hook 'after-save-hook 'eu-whocc-torg-to-ace nil 'local))\n"
+                           "End:\n");
+
     return fmt::to_string(result);
 
 } // acmacs::sheet::v1::SheetToTorg::torg
