@@ -90,6 +90,8 @@ std::string acmacs::sheet::v1::Extractor::subtype_short() const
 {
     if (subtype_ == "A(H1N1)")
         return "h1";
+    if (subtype_ == "A(H1N1)PDM09")
+        return "h1pdm";
     if (subtype_ == "A(H3N2)")
         return "h3";
     if (subtype_ == "B") {
