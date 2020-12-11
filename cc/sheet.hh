@@ -127,32 +127,35 @@ namespace acmacs::sheet::inline v1
         std::vector<cell_match_t> grep(const std::regex& rex, const cell_addr_t& min, const cell_addr_t& max) const;
     };
 
-} // namespace acmacs
+    inline std::string format_row_number(size_t row) { return fmt::format("{}", row + 1); }
+    inline std::string format_column_number(size_t column) { return fmt::format("{:c}", column + 'A'); }
 
-// ----------------------------------------------------------------------
+} // namespace acmacs::sheet::inline v1
 
-template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
-{
-    template <typename FormatCtx> auto format(const acmacs::sheet::cell_t& cell, FormatCtx& ctx)
+    // ----------------------------------------------------------------------
+
+    template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
     {
-        std::visit(
-            [&ctx]<typename Content>(const Content& arg) {
-                if constexpr (std::is_same_v<Content, acmacs::sheet::cell::empty>)
-                    ; // format_to(ctx.out(), "<empty>");
-                else if constexpr (std::is_same_v<Content, acmacs::sheet::cell::error>)
-                    format_to(ctx.out(), "<error>");
-                else if constexpr (std::is_same_v<Content, bool>)
-                    format_to(ctx.out(), "{}", arg);
-                else if constexpr (std::is_same_v<Content, std::string> || std::is_same_v<Content, double> || std::is_same_v<Content, long>)
-                    format_to(ctx.out(), "{}", arg);
-                else if constexpr (std::is_same_v<Content, date::year_month_day>)
-                    format_to(ctx.out(), "{}", date::display(arg));
-                else
-                    format_to(ctx.out(), "<*unknown*>");
-            },
-            cell);
-        return ctx.out();
-    }
+        template <typename FormatCtx> auto format(const acmacs::sheet::cell_t& cell, FormatCtx& ctx)
+        {
+            std::visit(
+                [&ctx]<typename Content>(const Content& arg) {
+                    if constexpr (std::is_same_v<Content, acmacs::sheet::cell::empty>)
+                        ; // format_to(ctx.out(), "<empty>");
+                    else if constexpr (std::is_same_v<Content, acmacs::sheet::cell::error>)
+                        format_to(ctx.out(), "<error>");
+                    else if constexpr (std::is_same_v<Content, bool>)
+                        format_to(ctx.out(), "{}", arg);
+                    else if constexpr (std::is_same_v<Content, std::string> || std::is_same_v<Content, double> || std::is_same_v<Content, long>)
+                        format_to(ctx.out(), "{}", arg);
+                    else if constexpr (std::is_same_v<Content, date::year_month_day>)
+                        format_to(ctx.out(), "{}", date::display(arg));
+                    else
+                        format_to(ctx.out(), "<*unknown*>");
+                },
+                cell);
+            return ctx.out();
+        }
 };
 
 template <> struct fmt::formatter<acmacs::sheet::range> : fmt::formatter<acmacs::fmt_helper::default_formatter>

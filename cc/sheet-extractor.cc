@@ -162,10 +162,61 @@ void acmacs::sheet::v1::Extractor::preprocess(warn_if_not_found winf)
 
 // ----------------------------------------------------------------------
 
+using number_ranges = std::vector<std::pair<size_t, size_t>>;
+
+inline number_ranges make_ranges(const std::vector<size_t>& numbers)
+{
+    number_ranges rngs;
+    for (const auto num : numbers) {
+        if (rngs.empty() || num != (rngs.back().second + 1))
+            rngs.emplace_back(num, num);
+        else
+            rngs.back().second = num;
+    }
+    return rngs;
+
+} // make_ranges
+
+template <> struct fmt::formatter<number_ranges>
+{
+    template <typename ParseContext> constexpr auto parse(ParseContext& ctx)
+    {
+        auto it = ctx.begin();
+        if (it != ctx.end() && *it == ':')
+            ++it;
+        if (*it == '+') {
+            to_add_ = 1;
+            ++it;
+        }
+        if (*it == 'c')
+            to_add_ += 'A';
+        const auto end = std::find(it, ctx.end(), '}');
+        format_ = fmt::format("{{:{}}}-{{:{}}}", std::string(it, end), std::string(it, end));
+        return end;
+    }
+
+    template <typename FormatCtx> auto format(const number_ranges& rngs, FormatCtx& ctx)
+    {
+        std::string prefix;
+        for (const auto& en : rngs) {
+            format_to(ctx.out(), "{}", prefix);
+            format_to(ctx.out(), format_, en.first + to_add_, en.second + to_add_);
+            prefix = " ";
+        }
+        return ctx.out();
+    }
+
+  private:
+    size_t to_add_{0};
+    std::string format_{"{:d}-{:d}"};
+};
+
+// ----------------------------------------------------------------------
+
 void acmacs::sheet::v1::Extractor::report_cells() const
 {
-    AD_INFO("Antigens: {}", antigen_rows_);
-    AD_INFO("Sera: {}", serum_columns_);
+    AD_INFO("Antigens: {:+d}", make_ranges(antigen_rows_));
+    AD_INFO("Sera: {:c}", make_ranges(serum_columns_));
 
 } // acmacs::sheet::v1::Extractor::report_cells
 
