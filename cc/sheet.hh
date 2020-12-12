@@ -62,15 +62,15 @@ namespace acmacs::sheet::inline v1
 
     // ----------------------------------------------------------------------
 
-    struct cell_span_t
-    {
-        size_t first;
-        size_t last;
-        std::string foreground{};
-        std::string background{};
-    };
+    // struct cell_span_t
+    // {
+    //     size_t first;
+    //     size_t last;
+    //     std::string foreground{};
+    //     std::string background{};
+    // };
 
-    using cell_spans_t = std::vector<cell_span_t>;
+    // using cell_spans_t = std::vector<cell_span_t>;
 
     // ----------------------------------------------------------------------
 
@@ -108,7 +108,7 @@ namespace acmacs::sheet::inline v1
         virtual size_t number_of_rows() const = 0;
         virtual size_t number_of_columns() const = 0;
         virtual cell_t cell(size_t row, size_t col) const = 0;                               // row and col are zero based
-        virtual cell_spans_t cell_spans(size_t /*row*/, size_t /*col*/) const { return {}; } // row and col are zero based
+        // virtual cell_spans_t cell_spans(size_t /*row*/, size_t /*col*/) const { return {}; } // row and col are zero based
 
         static bool matches(const std::regex& re, const cell_t& cell);
         static bool matches(const std::regex& re, std::smatch& match, const cell_t& cell);

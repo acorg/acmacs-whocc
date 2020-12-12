@@ -65,9 +65,9 @@ int main(int argc, char* const argv[])
                 size_t colspan = 0;
                 for (const auto col : range_from_0_to(sheet->number_of_columns())) {
                     auto cell = fmt::format("{}", sheet->cell(row, col));
-                    if (const auto cell_spans = sheet->cell_spans(row, col); !cell_spans.empty()) {
-                        cell = fmt::format("<span style='color: {}; background: {}'>{}</span>", cell_spans[0].foreground, cell_spans[0].background, cell);
-                    }
+                    // if (const auto cell_spans = sheet->cell_spans(row, col); !cell_spans.empty()) {
+                    //     cell = fmt::format("<span style='color: {}; background: {}'>{}</span>", cell_spans[0].foreground, cell_spans[0].background, cell);
+                    // }
                     if (!cell.empty()) {
                         if (colspan)
                             fmt::format_to(out, "<td colspan={}>{}</td>", colspan, prev_cell);

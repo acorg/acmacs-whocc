@@ -111,8 +111,8 @@ std::vector<acmacs::sheet::cell_match_t> acmacs::sheet::v1::Sheet::grep(const st
             // AD_DEBUG("Sheet::grep {} {} \"{}\"", row, col, cl);
             std::smatch match;
             if (matches(rex, match, cl)) {
-                cell_match_t cm{.row = row, .col = col};
-                std::transform(std::cbegin(match), std::cend(match), std::back_insert_iterator(cm.matches), [](const auto& submatch) { return submatch.str(); });
+                cell_match_t cm{.row = row, .col = col, .matches = std::vector<std::string>(match.size())};
+                std::transform(std::cbegin(match), std::cend(match), std::begin(cm.matches), [](const auto& submatch) { return submatch.str(); });
                 result.push_back(std::move(cm));
             }
         }
