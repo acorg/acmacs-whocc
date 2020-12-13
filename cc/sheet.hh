@@ -6,6 +6,7 @@
 #include "acmacs-base/fmt.hh"
 #include "acmacs-base/date.hh"
 #include "acmacs-base/regex.hh"
+#include "acmacs-base/named-type.hh"
 
 // ----------------------------------------------------------------------
 
@@ -76,27 +77,30 @@ namespace acmacs::sheet::inline v1
 
     constexpr const auto max_row_col = std::numeric_limits<size_t>::max();
 
+    using nrow_t = named_size_t<struct nrow_t_tag>;
+    using ncol_t = named_size_t<struct ncol_t_tag>;
+
     struct cell_addr_t
     {
-        size_t row{max_row_col};
-        size_t col{max_row_col};
+        nrow_t row{max_row_col};
+        ncol_t col{max_row_col};
     };
 
     struct cell_match_t
     {
-        size_t row{max_row_col};
-        size_t col{max_row_col};
+        nrow_t row{max_row_col};
+        ncol_t col{max_row_col};
         std::vector<std::string> matches{}; // match groups starting with 0
     };
 
 
-    struct range : public std::pair<size_t, size_t>
+    template <typename nrowcol> struct range : public std::pair<nrowcol, nrowcol>
     {
-        range() : std::pair<size_t, size_t>{max_row_col, max_row_col} {}
+        range() : std::pair<nrowcol, nrowcol>{max_row_col, max_row_col} {}
 
-        constexpr bool valid() const { return first != max_row_col && first <= second; }
-        constexpr bool empty() const { return !valid() || first == second; }
-        constexpr size_t size() const { return valid() ? second - first : 0ul; }
+        constexpr bool valid() const { return this->first != nrowcol{max_row_col} && this->first <= this->second; }
+        constexpr bool empty() const { return !valid() || this->first == this->second; }
+        constexpr nrowcol size() const { return valid() ? this->second - this->first : nrowcol{0}; }
     };
 
     class Sheet
@@ -105,30 +109,27 @@ namespace acmacs::sheet::inline v1
         virtual ~Sheet() = default;
 
         virtual std::string name() const = 0;
-        virtual size_t number_of_rows() const = 0;
-        virtual size_t number_of_columns() const = 0;
-        virtual cell_t cell(size_t row, size_t col) const = 0;                               // row and col are zero based
-        // virtual cell_spans_t cell_spans(size_t /*row*/, size_t /*col*/) const { return {}; } // row and col are zero based
+        virtual nrow_t number_of_rows() const = 0;
+        virtual ncol_t number_of_columns() const = 0;
+        virtual cell_t cell(nrow_t row, ncol_t col) const = 0;                               // row and col are zero based
+        // virtual cell_spans_t cell_spans(nrow_t /*row*/, ncol_t /*col*/) const { return {}; } // row and col are zero based
 
         static bool matches(const std::regex& re, const cell_t& cell);
         static bool matches(const std::regex& re, std::smatch& match, const cell_t& cell);
-        bool matches(const std::regex& re, size_t row, size_t col) const { return matches(re, cell(row, col)); }
-        bool is_date(size_t row, size_t col) const { return acmacs::sheet::is_date(cell(row, col)); }
+        bool matches(const std::regex& re, nrow_t row, ncol_t col) const { return matches(re, cell(row, col)); }
+        bool is_date(nrow_t row, ncol_t col) const { return acmacs::sheet::is_date(cell(row, col)); }
         size_t size(const cell_t& cell) const;
-        size_t size(size_t row, size_t col) const { return size(cell(row, col)); }
+        size_t size(nrow_t row, ncol_t col) const { return size(cell(row, col)); }
 
         bool maybe_titer(const cell_t& cell) const;
-        bool maybe_titer(size_t row, size_t col) const { return maybe_titer(cell(row, col)); }
-        range titer_range(size_t row) const; // returns column range, returns empty range if not found
+        bool maybe_titer(nrow_t row, ncol_t col) const { return maybe_titer(cell(row, col)); }
+        range<ncol_t> titer_range(nrow_t row) const; // returns column range, returns empty range if not found
 
-        cell_addr_t min_cell() const { return {0, 0}; }
+        cell_addr_t min_cell() const { return {nrow_t{0}, ncol_t{0}}; }
         cell_addr_t max_cell() const { return {number_of_rows(), number_of_columns()}; }
 
         std::vector<cell_match_t> grep(const std::regex& rex, const cell_addr_t& min, const cell_addr_t& max) const;
     };
-
-    inline std::string format_row_number(size_t row) { return fmt::format("{}", row + 1); }
-    inline std::string format_column_number(size_t column) { return fmt::format("{:c}", column + 'A'); }
 
 } // namespace acmacs::sheet::inline v1
 
@@ -158,11 +159,27 @@ namespace acmacs::sheet::inline v1
         }
 };
 
-template <> struct fmt::formatter<acmacs::sheet::range> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+template <> struct fmt::formatter<acmacs::sheet::nrow_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
 {
-    template <typename FormatCtx> auto format(const acmacs::sheet::range& rng, FormatCtx& ctx)
+    template <typename FormatCtx> auto format(acmacs::sheet::nrow_t row, FormatCtx& ctx)
     {
-        return format_to(ctx.out(), "{}:{}", rng.first + 1, rng.second + 1);
+        return format_to(ctx.out(), "{}", *row + 1);
+    }
+};
+
+template <> struct fmt::formatter<acmacs::sheet::ncol_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(acmacs::sheet::ncol_t col, FormatCtx& ctx)
+    {
+        return format_to(ctx.out(), "{:c}", *col + 'A');
+    }
+};
+
+template <typename nrowcol> struct fmt::formatter<acmacs::sheet::range<nrowcol>> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(const acmacs::sheet::range<nrowcol>& rng, FormatCtx& ctx)
+    {
+        return format_to(ctx.out(), "{}:{}", rng.first, rng.second);
     }
 };
 

@@ -32,12 +32,12 @@ int main(int argc, char* const argv[])
             auto sheet = doc.sheet(sheet_no);
             csv << "Sheet" << sheet_no + 1 << sheet->name() << CsvWriter::end_of_row;
             csv << CsvWriter::empty_field;
-            for (const auto col : range_from_0_to(sheet->number_of_columns()))
-                csv << fmt::format("{:c}", col + 'A');
+            for (acmacs::sheet::ncol_t col{0}; col < sheet->number_of_columns(); ++col)
+                csv << fmt::format("{}", col);
             csv << CsvWriter::end_of_row;
-            for (const auto row : range_from_0_to(sheet->number_of_rows())) {
-                csv << row + 1;
-                for (const auto col : range_from_0_to(sheet->number_of_columns()))
+            for (acmacs::sheet::nrow_t row{0}; row < sheet->number_of_rows(); ++row) {
+                csv << *row + 1;
+                for (acmacs::sheet::ncol_t col{0}; col < sheet->number_of_columns(); ++col)
                     csv << fmt::format("{}", sheet->cell(row, col));
                 csv << CsvWriter::end_of_row;
             }

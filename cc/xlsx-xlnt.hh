@@ -18,19 +18,19 @@ namespace acmacs::xlsx::inline v1
             Sheet(::xlnt::worksheet&& src) : sheet_{std::move(src)} {}
 
             std::string name() const override { return sheet_.title(); }
-            size_t number_of_rows() const override { return sheet_.highest_row(); }
-            size_t number_of_columns() const override { return sheet_.highest_column().index; }
+            sheet::nrow_t number_of_rows() const override { return sheet::nrow_t{sheet_.highest_row()}; }
+            sheet::ncol_t number_of_columns() const override { return sheet::ncol_t{sheet_.highest_column().index}; }
 
-            static inline date::year_month_day make_date(const ::xlnt::datetime& dt, size_t /*row*/, size_t /*col*/)
+            static inline date::year_month_day make_date(const ::xlnt::datetime& dt, sheet::nrow_t /*row*/, sheet::ncol_t /*col*/)
             {
                 // if (dt.hour || dt.minute || dt.second || dt.microsecond)
                 //     AD_WARNING("xlnt datetime at {:c}{} contains time: {}", col + 'A', row + 1, dt.to_string());
                 return date::year{dt.year} / date::month{static_cast<unsigned>(dt.month)} / dt.day;
             }
 
-            acmacs::sheet::cell_t cell(size_t row, size_t col) const override // row and col are zero based
+            acmacs::sheet::cell_t cell(sheet::nrow_t row, sheet::ncol_t col) const override // row and col are zero based
             {
-                const ::xlnt::cell_reference ref{static_cast<::xlnt::column_t::index_t>(col + 1), static_cast<::xlnt::row_t>(row + 1)};
+                const ::xlnt::cell_reference ref{static_cast<::xlnt::column_t::index_t>(*col + 1), static_cast<::xlnt::row_t>(*row + 1)};
                 if (!sheet_.has_cell(ref))
                     return acmacs::sheet::cell::empty{};
 
@@ -62,7 +62,7 @@ namespace acmacs::xlsx::inline v1
                 return acmacs::sheet::cell::empty{};
             }
 
-            // acmacs::sheet::cell_spans_t cell_spans(size_t row, size_t col) const override
+            // acmacs::sheet::cell_spans_t cell_spans(nrow_t row, ncol_t col) const override
             // {
             //     const ::xlnt::cell_reference ref{static_cast<::xlnt::column_t::index_t>(col + 1), static_cast<::xlnt::row_t>(row + 1)};
             //     if (!sheet_.has_cell(ref))

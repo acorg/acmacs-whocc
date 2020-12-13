@@ -72,24 +72,23 @@ bool acmacs::sheet::v1::Sheet::maybe_titer(const cell_t& cell) const
 
 // ----------------------------------------------------------------------
 
-acmacs::sheet::v1::range acmacs::sheet::v1::Sheet::titer_range(size_t row) const
+acmacs::sheet::v1::range<acmacs::sheet::v1::ncol_t> acmacs::sheet::v1::Sheet::titer_range(nrow_t row) const
 {
-    range longest;
-    range current;
+    range<ncol_t> longest;
+    range<ncol_t> current;
     const auto update = [&longest, &current] {
         if (current.valid() && (!longest.valid() || longest.size() < current.size())) {
             longest = current;
-            current = range{};
+            current = range<ncol_t>{};
             // AD_DEBUG("longest {}: {:c}:{:c}", row + 1, longest.first + 'A', longest.second - 1 + 'A');
         }
     };
 
-    for (const auto col : range_from_0_to(number_of_columns()))
-    {
+    for (auto col = ncol_t{0}; col < number_of_columns(); ++col) {
         if (maybe_titer(row, col)) {
             if (!current.valid())
                 current.first = col;
-            current.second = col + 1;
+            current.second = col + ncol_t{1};
             // AD_DEBUG("titer {:c}{}: {} --> {:c}:{:c}", col + 'A', row + 1, cell(row, col), current.first + 'A', current.second - 1 + 'A');
         }
         else
@@ -105,8 +104,8 @@ acmacs::sheet::v1::range acmacs::sheet::v1::Sheet::titer_range(size_t row) const
 std::vector<acmacs::sheet::cell_match_t> acmacs::sheet::v1::Sheet::grep(const std::regex& rex, const cell_addr_t& min, const cell_addr_t& max) const
 {
     std::vector<cell_match_t> result;
-    for (const auto row : range_from_to(min.row, max.row)) {
-        for (const auto col : range_from_to(min.col, max.col)) {
+    for (auto row = min.row; row < max.row; ++row) {
+        for (auto col = min.col; col < max.col; ++col) {
             const auto cl = cell(row, col);
             // AD_DEBUG("Sheet::grep {} {} \"{}\"", row, col, cl);
             std::smatch match;

@@ -56,34 +56,34 @@ PYBIND11_EMBEDDED_MODULE(xlsx_access_builtin_module, mdl)
     using namespace pybind11::literals;
     using namespace acmacs::sheet;
 
-    py::class_<Sheet, std::shared_ptr<Sheet>>(mdl, "Sheet")  //
-        .def("name", &Sheet::name)                           //
-        .def("number_of_rows", &Sheet::number_of_rows)       //
-        .def("number_of_columns", &Sheet::number_of_columns) //
+    py::class_<Sheet, std::shared_ptr<Sheet>>(mdl, "Sheet")                                      //
+        .def("name", &Sheet::name)                                                               //
+        .def("number_of_rows", [](const Sheet& sheet) { return *sheet.number_of_rows(); })       //
+        .def("number_of_columns", [](const Sheet& sheet) { return *sheet.number_of_columns(); }) //
 
         .def(
-            "cell_as_str", [](const Sheet& sheet, size_t row, size_t column) { return fmt::format("{}", sheet.cell(row, column)); }, "row"_a, "column"_a) //
+            "cell_as_str", [](const Sheet& sheet, size_t row, size_t column) { return fmt::format("{}", sheet.cell(nrow_t{row}, ncol_t{column})); }, "row"_a, "column"_a) //
 
         .def(
             "grep",
             [](const Sheet& sheet, const std::string& rex, size_t min_row, size_t max_row, size_t min_col, size_t max_col) {
                 if (max_row == max_row_col)
-                    max_row = sheet.number_of_rows();
+                    max_row = *sheet.number_of_rows();
                 else
                     ++max_row;
                 if (max_col == max_row_col)
-                    max_col = sheet.number_of_columns();
+                    max_col = *sheet.number_of_columns();
                 else
                     ++max_col;
-                return sheet.grep(std::regex(rex, acmacs::regex::icase), {min_row, min_col}, {max_row, max_col});
+                return sheet.grep(std::regex(rex, acmacs::regex::icase), {nrow_t{min_row}, ncol_t{min_col}}, {nrow_t{max_row}, ncol_t{max_col}});
             },                                                                                                 //
             "regex"_a, "min_row"_a = 0, "max_row"_a = max_row_col, "min_col"_a = 0, "max_col"_a = max_row_col, //
             py::doc("max_row and max_col are the last row and col to look in"))                                //
         ;
 
     py::class_<cell_match_t>(mdl, "cell_match_t") //
-        .def_readonly("row", &cell_match_t::row)
-        .def_readonly("col", &cell_match_t::col)
+        .def_property_readonly("row", [](const cell_match_t& cm) { return *cm.row; })
+        .def_property_readonly("col", [](const cell_match_t& cm) { return *cm.col; })
         .def_readonly("matches", &cell_match_t::matches)
         .def("__repr__", [](const cell_match_t& cm) { return fmt::format("<cell_match_t: {}:{} {}>", cm.row, cm.col, cm.matches); });
 }

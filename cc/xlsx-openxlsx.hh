@@ -15,9 +15,9 @@ namespace acmacs::xlsx::inline v1
           public:
             std::string name() const { return sheet_.name(); }
 
-            size_t number_of_rows() const
+            nrow_t number_of_rows() const
             {
-                size_t cells{0};
+                nrow_t cells{0};
                 fmt::print("lastCell {}\n", sheet_.lastCell().address());
                 for (auto& cell : sheet_.range(OpenXLSX::XLCellReference{1, 1},  sheet_.lastCell())) {
                     fmt::print("cell {}:{}:{}\n", cell.cellReference().address(), cell.cellReference().row(), cell.cellReference().column());
@@ -26,7 +26,7 @@ namespace acmacs::xlsx::inline v1
                 return cells;
             }
 
-            size_t number_of_columns() const { return static_cast<size_t>(sheet_.range().numColumns()); }
+            ncol_t number_of_columns() const { return static_cast<size_t>(sheet_.range().numColumns()); }
 
           private:
             mutable OpenXLSX::XLWorksheet sheet_;
