@@ -51,7 +51,7 @@ namespace acmacs::sheet::inline v1
         size_t number_of_sera() const { return serum_columns().size(); }
 
         virtual antigen_fields_t antigen(size_t ag_no) const;
-        virtual serum_fields_t serum(size_t sr_no) const;
+        virtual serum_fields_t serum(size_t sr_no) const = 0;
 
         virtual std::string titer_comment() const { return {}; }
         virtual std::string titer(size_t ag_no, size_t sr_no) const;
@@ -76,10 +76,8 @@ namespace acmacs::sheet::inline v1
         virtual void find_antigen_passage_column(warn_if_not_found winf);
         virtual void find_antigen_lab_id_column(warn_if_not_found) {}
         virtual void find_serum_rows(warn_if_not_found) {}
-        virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf) { serum_passage_row_ = find_serum_row(re, "passage", winf); }
-        virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf) { serum_id_row_ = find_serum_row(re, "id", winf); }
         virtual std::optional<nrow_t> find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const;
-        virtual void exclude_control_sera(warn_if_not_found winf);
+        virtual void exclude_control_sera(warn_if_not_found winf) = 0;
 
         std::optional<ncol_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<ncol_t> antigen_date_column() const { return antigen_date_column_; }
@@ -88,13 +86,15 @@ namespace acmacs::sheet::inline v1
         const std::vector<nrow_t>& antigen_rows() const { return antigen_rows_; }
         const std::vector<ncol_t>& serum_columns() const { return serum_columns_; }
 
-        std::optional<nrow_t> serum_passage_row() const { return serum_passage_row_; }
-        std::optional<nrow_t> serum_id_row() const { return serum_id_row_; }
-
         std::vector<ncol_t>& serum_columns() { return serum_columns_; }
 
         virtual bool is_virus_name(nrow_t row, ncol_t col) const;
         virtual bool is_passage(nrow_t row, ncol_t col) const;
+        virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
+
+        std::optional<ncol_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_;
+        std::vector<nrow_t> antigen_rows_;
+        std::vector<ncol_t> serum_columns_;
 
       private:
         std::shared_ptr<Sheet> sheet_;
@@ -105,10 +105,6 @@ namespace acmacs::sheet::inline v1
         std::string rbc_;
         date::year_month_day date_{date::invalid_date()};
 
-        std::optional<ncol_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_;
-        std::optional<nrow_t> serum_passage_row_, serum_id_row_;
-        std::vector<nrow_t> antigen_rows_;
-        std::vector<ncol_t> serum_columns_;
     };
 
     std::unique_ptr<Extractor> extractor_factory(std::shared_ptr<Sheet> sheet, Extractor::warn_if_not_found winf);
@@ -120,11 +116,14 @@ namespace acmacs::sheet::inline v1
       public:
         ExtractorCDC(std::shared_ptr<Sheet> a_sheet);
 
-        // serum_fields_t serum(size_t sr_no) const override;
+        serum_fields_t serum(size_t sr_no) const override;
 
       protected:
         bool is_passage(nrow_t row, ncol_t col) const override;
+        bool is_lab_id(nrow_t row, ncol_t col) const override;
+        void find_antigen_lab_id_column(warn_if_not_found) override;
       //   void find_serum_rows(warn_if_not_found winf) override;
+        void exclude_control_sera(warn_if_not_found winf) override;
 
       // private:
       //   std::optional<size_t> serum_name_row_, serum_id_row_, serum_passage_row_;
@@ -132,7 +131,28 @@ namespace acmacs::sheet::inline v1
 
     // ----------------------------------------------------------------------
 
-    class ExtractorCrick : public Extractor
+    class ExtractorWithSerumRowsAbove : public Extractor
+    {
+    public:
+        using Extractor::Extractor;
+
+        serum_fields_t serum(size_t sr_no) const override;
+
+    protected:
+        virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf) { serum_passage_row_ = find_serum_row(re, "passage", winf); }
+        virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf) { serum_id_row_ = find_serum_row(re, "id", winf); }
+        void exclude_control_sera(warn_if_not_found winf) override;
+
+        std::optional<nrow_t> serum_name_row() const { return serum_passage_row_; }
+        std::optional<nrow_t> serum_passage_row() const { return serum_passage_row_; }
+        std::optional<nrow_t> serum_id_row() const { return serum_id_row_; }
+
+        std::optional<nrow_t> serum_name_row_, serum_passage_row_, serum_id_row_;
+    };
+
+    // ----------------------------------------------------------------------
+
+    class ExtractorCrick : public ExtractorWithSerumRowsAbove
     {
       public:
         ExtractorCrick(std::shared_ptr<Sheet> a_sheet);
@@ -143,8 +163,7 @@ namespace acmacs::sheet::inline v1
         void find_serum_rows(warn_if_not_found winf) override;
         void find_serum_name_rows(warn_if_not_found winf);
 
-      private:
-        std::optional<nrow_t> serum_name_1_row_, serum_name_2_row_, serum_id_row_;
+        std::optional<nrow_t> serum_name_1_row_, serum_name_2_row_;
     };
 
     class ExtractorCrickPRN : public ExtractorCrick
@@ -166,7 +185,7 @@ namespace acmacs::sheet::inline v1
 
     // ----------------------------------------------------------------------
 
-    class ExtractorVIDRL : public Extractor
+    class ExtractorVIDRL : public ExtractorWithSerumRowsAbove
     {
       public:
         ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet);
@@ -177,7 +196,6 @@ namespace acmacs::sheet::inline v1
         void find_serum_rows(warn_if_not_found winf) override;
 
       private:
-        std::optional<nrow_t> serum_name_row_, serum_id_row_, serum_passage_row_;
     };
 
 } // namespace acmacs::sheet::inline v1
