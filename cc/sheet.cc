@@ -7,11 +7,11 @@
 bool acmacs::sheet::v1::Sheet::matches(const std::regex& re, const cell_t& cell)
 {
     return std::visit(
-        [&re]<typename Content>(const Content& arg) {
+        [&re, &cell]<typename Content>(const Content& arg) {
             if constexpr (std::is_same_v<Content, std::string>)
                 return std::regex_search(arg, re);
             else
-                return false;
+                return std::regex_search(fmt::format("{}", cell), re); // CDC id is a number in CDC tables, still we want to match
         },
         cell);
 

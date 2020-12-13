@@ -366,6 +366,24 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::Extractor::find_antigen_lab_id_column(warn_if_not_found winf)
+{
+    for (ncol_t col{*antigen_name_column_ + ncol_t{1}}; col < ncol_t{6}; ++col) {
+        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_lab_id(row, col); })) >= (antigen_rows_.size() / 2)) {
+            antigen_lab_id_column_ = col;
+            break;
+        }
+    }
+
+    if (antigen_lab_id_column_.has_value())
+        AD_LOG(acmacs::log::xlsx, "Antigen lab_id column: {}", *antigen_lab_id_column_);
+    else
+        AD_WARNING_IF(winf == warn_if_not_found::yes, "Antigen lab_id column not found");
+
+} // acmacs::sheet::v1::Extractor::find_antigen_lab_id_column
+
+// ----------------------------------------------------------------------
+
 std::optional<acmacs::sheet::v1::nrow_t> acmacs::sheet::v1::Extractor::find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const
 {
     std::optional<nrow_t> found;
@@ -409,24 +427,6 @@ bool acmacs::sheet::v1::ExtractorCDC::is_lab_id(nrow_t row, ncol_t col) const
     return sheet().matches(re_CDC_antigen_lab_id, row, col);
 
 } // acmacs::sheet::v1::ExtractorCDC::is_lab_id
-
-// ----------------------------------------------------------------------
-
-void acmacs::sheet::v1::ExtractorCDC::find_antigen_lab_id_column(warn_if_not_found winf)
-{
-    for (ncol_t col{0}; col < sheet().number_of_columns(); ++col) {
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_lab_id(row, col); })) >= (antigen_rows_.size() / 2)) {
-            antigen_lab_id_column_ = col;
-            break;
-        }
-    }
-
-    if (antigen_lab_id_column_.has_value())
-        AD_LOG(acmacs::log::xlsx, "Antigen CDC lab_id column: {}", *antigen_lab_id_column_);
-    else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "Antigen CDC lab_id column not found");
-
-} // acmacs::sheet::v1::ExtractorCDC::find_antigen_lab_id_column
 
 // ----------------------------------------------------------------------
 

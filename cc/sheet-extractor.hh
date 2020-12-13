@@ -74,7 +74,7 @@ namespace acmacs::sheet::inline v1
         virtual void remove_redundant_antigen_rows(warn_if_not_found winf);
         virtual void find_antigen_date_column(warn_if_not_found winf);
         virtual void find_antigen_passage_column(warn_if_not_found winf);
-        virtual void find_antigen_lab_id_column(warn_if_not_found) {}
+        virtual void find_antigen_lab_id_column(warn_if_not_found winf);
         virtual void find_serum_rows(warn_if_not_found) {}
         virtual std::optional<nrow_t> find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const;
         virtual void exclude_control_sera(warn_if_not_found winf) = 0;
@@ -121,7 +121,6 @@ namespace acmacs::sheet::inline v1
       protected:
         bool is_passage(nrow_t row, ncol_t col) const override;
         bool is_lab_id(nrow_t row, ncol_t col) const override;
-        void find_antigen_lab_id_column(warn_if_not_found) override;
       //   void find_serum_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
 
