@@ -79,6 +79,7 @@ namespace acmacs::sheet::inline v1
 
     using nrow_t = named_size_t<struct nrow_t_tag>;
     using ncol_t = named_size_t<struct ncol_t_tag>;
+    template <typename nrowcol> concept NRowCol = std::is_same_v<nrowcol, nrow_t> || std::is_same_v<nrowcol, ncol_t>;
 
     struct cell_addr_t
     {
@@ -94,7 +95,7 @@ namespace acmacs::sheet::inline v1
     };
 
 
-    template <typename nrowcol> struct range : public std::pair<nrowcol, nrowcol>
+    template <NRowCol nrowcol> struct range : public std::pair<nrowcol, nrowcol>
     {
         range() : std::pair<nrowcol, nrowcol>{max_row_col, max_row_col} {}
 
@@ -133,30 +134,30 @@ namespace acmacs::sheet::inline v1
 
 } // namespace acmacs::sheet::inline v1
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(const acmacs::sheet::cell_t& cell, FormatCtx& ctx)
     {
-        template <typename FormatCtx> auto format(const acmacs::sheet::cell_t& cell, FormatCtx& ctx)
-        {
-            std::visit(
-                [&ctx]<typename Content>(const Content& arg) {
-                    if constexpr (std::is_same_v<Content, acmacs::sheet::cell::empty>)
-                        ; // format_to(ctx.out(), "<empty>");
-                    else if constexpr (std::is_same_v<Content, acmacs::sheet::cell::error>)
-                        format_to(ctx.out(), "<error>");
-                    else if constexpr (std::is_same_v<Content, bool>)
-                        format_to(ctx.out(), "{}", arg);
-                    else if constexpr (std::is_same_v<Content, std::string> || std::is_same_v<Content, double> || std::is_same_v<Content, long>)
-                        format_to(ctx.out(), "{}", arg);
-                    else if constexpr (std::is_same_v<Content, date::year_month_day>)
-                        format_to(ctx.out(), "{}", date::display(arg));
-                    else
-                        format_to(ctx.out(), "<*unknown*>");
-                },
-                cell);
-            return ctx.out();
-        }
+        std::visit(
+            [&ctx]<typename Content>(const Content& arg) {
+                if constexpr (std::is_same_v<Content, acmacs::sheet::cell::empty>)
+                    ; // format_to(ctx.out(), "<empty>");
+                else if constexpr (std::is_same_v<Content, acmacs::sheet::cell::error>)
+                    format_to(ctx.out(), "<error>");
+                else if constexpr (std::is_same_v<Content, bool>)
+                    format_to(ctx.out(), "{}", arg);
+                else if constexpr (std::is_same_v<Content, std::string> || std::is_same_v<Content, double> || std::is_same_v<Content, long>)
+                    format_to(ctx.out(), "{}", arg);
+                else if constexpr (std::is_same_v<Content, date::year_month_day>)
+                    format_to(ctx.out(), "{}", date::display(arg));
+                else
+                    format_to(ctx.out(), "<*unknown*>");
+            },
+            cell);
+        return ctx.out();
+    }
 };
 
 template <> struct fmt::formatter<acmacs::sheet::nrow_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
@@ -175,11 +176,22 @@ template <> struct fmt::formatter<acmacs::sheet::ncol_t> : fmt::formatter<acmacs
     }
 };
 
-template <typename nrowcol> struct fmt::formatter<acmacs::sheet::range<nrowcol>> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+template <acmacs::sheet::NRowCol nrowcol> struct fmt::formatter<acmacs::sheet::range<nrowcol>> : fmt::formatter<acmacs::fmt_helper::default_formatter>
 {
     template <typename FormatCtx> auto format(const acmacs::sheet::range<nrowcol>& rng, FormatCtx& ctx)
     {
         return format_to(ctx.out(), "{}:{}", rng.first, rng.second);
+    }
+};
+
+template <acmacs::sheet::NRowCol nrowcol> struct fmt::formatter<std::optional<nrowcol>> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(std::optional<nrowcol> rowcol, FormatCtx& ctx)
+    {
+        if (rowcol.has_value())
+            return format_to(ctx.out(), "{}", *rowcol);
+        else
+            return format_to(ctx.out(), "{}", "**no-value**");
     }
 };
 

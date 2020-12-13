@@ -66,7 +66,7 @@ namespace acmacs::sheet::inline v1
         enum class warn_if_not_found { no, yes };
         void preprocess(warn_if_not_found winf);
 
-        virtual void report_cells() const;
+        virtual void report_data_anchors() const;
 
       protected:
         virtual void find_titers(warn_if_not_found winf);
@@ -93,7 +93,8 @@ namespace acmacs::sheet::inline v1
 
         std::vector<ncol_t>& serum_columns() { return serum_columns_; }
 
-        bool is_virus_name(nrow_t row, ncol_t col) const;
+        virtual bool is_virus_name(nrow_t row, ncol_t col) const;
+        virtual bool is_passage(nrow_t row, ncol_t col) const;
 
       private:
         std::shared_ptr<Sheet> sheet_;
@@ -121,7 +122,8 @@ namespace acmacs::sheet::inline v1
 
         // serum_fields_t serum(size_t sr_no) const override;
 
-      // protected:
+      protected:
+        bool is_passage(nrow_t row, ncol_t col) const override;
       //   void find_serum_rows(warn_if_not_found winf) override;
 
       // private:

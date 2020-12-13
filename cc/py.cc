@@ -93,7 +93,7 @@ inline void py_chart(py::module_& mdl)
         .def(
             "relax", //
             [](ChartModify& chart, size_t number_of_dimensions, size_t number_of_optimizations, const std::string& minimum_column_basis, bool dimension_annealing, bool rough,
-               size_t number_of_best_distinct_projections_to_keep) {
+               size_t /*number_of_best_distinct_projections_to_keep*/) {
                 if (number_of_optimizations == 0)
                     number_of_optimizations = 100;
                 chart.relax(number_of_optimizations_t{number_of_optimizations}, MinimumColumnBasis{minimum_column_basis}, acmacs::number_of_dimensions_t{number_of_dimensions},

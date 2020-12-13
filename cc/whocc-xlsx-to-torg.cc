@@ -59,13 +59,13 @@ int main(int argc, char* const argv[])
                             fmt::print("{}\n", converter.format_assay_data(opt.format));
                         }
                         else if (opt.output_dir) {
-                            converter.extractor().report_cells();
+                            converter.extractor().report_data_anchors();
                             const auto filename = fmt::format("{}/{}.torg", opt.output_dir, converter.format_assay_data(opt.format));
                             AD_INFO("{}", filename);
                             acmacs::file::write(filename, converter.torg());
                         }
                         else {
-                            converter.extractor().report_cells();
+                            converter.extractor().report_data_anchors();
                             fmt::print("\n{}\n\n", converter.torg());
                         }
                     }
