@@ -2,6 +2,7 @@
 #include "acmacs-base/log.hh"
 #include "acmacs-base/string.hh"
 #include "acmacs-base/string-split.hh"
+#include "acmacs-base/string-join.hh"
 #include "acmacs-whocc/sheet-to-torg.hh"
 #include "acmacs-whocc/data-fix.hh"
 
@@ -12,6 +13,14 @@ void acmacs::sheet::v1::SheetToTorg::preprocess(Extractor::warn_if_not_found win
     extractor_ = extractor_factory(sheet(), winf);
 
 } // acmacs::sheet::v1::SheetToTorg::preprocess
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::SheetToTorg::serum_name(const serum_fields_t& serum) const
+{
+    return acmacs::string::join(acmacs::string::join_space, serum.name, serum.conc, serum.dilut, serum.boosted ? "BOOSTED" : "");
+
+} // acmacs::sheet::v1::SheetToTorg::serum_name
 
 // ----------------------------------------------------------------------
 
@@ -35,7 +44,7 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
         const auto sr_col = st(ag_col::base) + sr_no;
         auto serum = extractor_->serum(sr_no);
         acmacs::data_fix::Set::fix(serum, sr_no);
-        data[st(sr_row::name)][sr_col] = serum.name;
+        data[st(sr_row::name)][sr_col] = serum_name(serum);
         data[st(sr_row::passage)][sr_col] = serum.passage;
         data[st(sr_row::serum_id)][sr_col] = serum.serum_id;
     }

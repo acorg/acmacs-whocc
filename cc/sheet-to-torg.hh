@@ -27,6 +27,7 @@ namespace acmacs::sheet::inline v1
         std::unique_ptr<Extractor> extractor_;
 
         std::shared_ptr<Sheet> sheet() const { return sheet_; }
+        std::string serum_name(const serum_fields_t& serum) const;
     };
 
 } // namespace acmacs::xlsx::inline v1
