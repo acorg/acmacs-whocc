@@ -94,6 +94,8 @@ namespace acmacs::sheet::inline v1
 
         virtual std::string make_passage(const std::string& src) const { return src; }
 
+        virtual std::string report_serum_anchors() const = 0;
+
         std::optional<ncol_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_;
         std::vector<nrow_t> antigen_rows_;
         std::vector<ncol_t> serum_columns_;
@@ -123,13 +125,20 @@ namespace acmacs::sheet::inline v1
       protected:
         bool is_passage(nrow_t row, ncol_t col) const override;
         bool is_lab_id(nrow_t row, ncol_t col) const override;
-        //   void find_serum_rows(warn_if_not_found winf) override;
+        void find_serum_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
 
         std::string make_passage(const std::string& src) const override;
 
-        // private:
-        //   std::optional<size_t> serum_name_row_, serum_id_row_, serum_passage_row_;
+        std::string report_serum_anchors() const override;
+
+      private:
+        std::optional<nrow_t> serum_index_row_;
+        std::vector<nrow_t> serum_rows_;
+        std::optional<ncol_t> serum_index_column_, serum_name_column_, serum_id_column_, serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_, serum_passage_column_, serum_pool_coumn_;
+
+        void find_serum_index_row(warn_if_not_found winf);
+        void find_serum_columns(warn_if_not_found winf);
     };
 
     // ----------------------------------------------------------------------
@@ -149,6 +158,8 @@ namespace acmacs::sheet::inline v1
         std::optional<nrow_t> serum_name_row() const { return serum_passage_row_; }
         std::optional<nrow_t> serum_passage_row() const { return serum_passage_row_; }
         std::optional<nrow_t> serum_id_row() const { return serum_id_row_; }
+
+        std::string report_serum_anchors() const override;
 
         std::optional<nrow_t> serum_name_row_, serum_passage_row_, serum_id_row_;
     };
