@@ -45,6 +45,7 @@ namespace acmacs::sheet::inline v1
 
         std::string_view lab() const { return lab_; }
         std::string_view subtype() const { return subtype_; }
+        std::string_view subtype_without_lineage() const;
         std::string subtype_short() const;
         std::string_view lineage() const { return lineage_; }
         std::string_view assay() const { return assay_; }

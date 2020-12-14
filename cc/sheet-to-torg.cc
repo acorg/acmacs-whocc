@@ -78,7 +78,7 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     fmt::format_to(result, "- Lab: {}\n", extractor_->lab());
     fmt::format_to(result, "- Date: {}\n", extractor_->date());
     fmt::format_to(result, "- Assay: {}\n", extractor_->assay());
-    fmt::format_to(result, "- Subtype: {}\n", extractor_->subtype());
+    fmt::format_to(result, "- Subtype: {}\n", extractor_->subtype_without_lineage());
     if (const auto rbc = extractor_->rbc(); !rbc.empty())
         fmt::format_to(result, "- Rbc: {}\n", rbc);
     if (const auto lineage = extractor_->lineage(); !lineage.empty())

@@ -3,6 +3,7 @@
 #include "acmacs-base/string-compare.hh"
 #include "acmacs-base/string-split.hh"
 #include "acmacs-virus/virus-name-normalize.hh"
+#include "acmacs-virus/passage.hh"
 #include "acmacs-whocc/log.hh"
 #include "acmacs-whocc/sheet-extractor.hh"
 #include "acmacs-whocc/whocc-xlsx-to-torg-py.hh"
@@ -100,6 +101,17 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
     }
 
 } // acmacs::sheet::v1::extractor_factory
+
+// ----------------------------------------------------------------------
+
+std::string_view acmacs::sheet::v1::Extractor::subtype_without_lineage() const
+{
+    if (subtype_ == "A(H1N1)PDM09")
+        return std::string_view(subtype_.data(), 7);
+    else
+        return subtype_;
+
+} // acmacs::sheet::v1::Extractor::subtype_without_lineage
 
 // ----------------------------------------------------------------------
 
@@ -448,10 +460,16 @@ std::string acmacs::sheet::v1::ExtractorCDC::make_passage(const std::string& src
 {
     std::smatch match;
     if (std::regex_match(src, match, re_CDC_antigen_passage)) {
+        std::string date;
+        const auto [passage, extra] = acmacs::virus::parse_passage(match.str(1), acmacs::virus::passage_only::yes);
+        std::string result = *passage;
         if (match.length(2))
-            return fmt::format("{} ({})", match.str(1), date::from_string(match.str(2), date::allow_incomplete::no, date::throw_on_error::yes, date::month_first::yes));
-        else
-            return match.str(1);
+            result += fmt::format(" ({})", date::from_string(match.str(2), date::allow_incomplete::no, date::throw_on_error::yes, date::month_first::yes));
+        if (!extra.empty()) {
+            AD_WARNING("[CDC] passage \"{}\" has extra \"{}\"", src, extra);
+            result += fmt::format(" {}", extra);
+        }
+        return result;
     }
     else {
         if (!src.empty())
@@ -502,7 +520,7 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t 
 
         return {.name = make(serum_name_column_),       //
                 .serum_id = make(serum_id_column_),     //
-                .passage = make(serum_passage_column_), //
+                .passage = make_passage(make(serum_passage_column_)), //
                 .species = make(serum_species_column_), //
                 .conc = make(serum_conc_column_),       //
                 .dilut = make(serum_dilut_column_),     //
@@ -669,8 +687,8 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorWithSerumRowsAbove
 
     return serum_fields_t{
         // .serum_name is set by lab specific extractor
-        .serum_id = make(serum_id_row()),    //
-        .passage = make(serum_passage_row()) //
+        .serum_id = make(serum_id_row()),                  //
+        .passage = make_passage(make(serum_passage_row())) //
     };
 
 } // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::serum
