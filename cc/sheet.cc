@@ -51,7 +51,7 @@ size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_titer{"^(<|[<>]?[0-9]+|N[DA]|\\*)$", acmacs::regex::icase};
+static const std::regex re_titer{"^(<|[<>]?[1-9][0-9]{0,5}|N[DA]|\\*)$", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
@@ -77,10 +77,12 @@ acmacs::sheet::v1::range<acmacs::sheet::v1::ncol_t> acmacs::sheet::v1::Sheet::ti
     range<ncol_t> longest;
     range<ncol_t> current;
     const auto update = [&longest, &current] {
-        if (current.valid() && (!longest.valid() || longest.size() < current.size())) {
-            longest = current;
+        if (current.valid()) {
+            if (!longest.valid() || longest.size() < current.size()) {
+                longest = current;
+                // AD_DEBUG("longest {}: {}", row, longest);
+            }
             current = range<ncol_t>{};
-            // AD_DEBUG("longest {}: {:c}:{:c}", row + 1, longest.first + 'A', longest.second - 1 + 'A');
         }
     };
 
@@ -89,7 +91,7 @@ acmacs::sheet::v1::range<acmacs::sheet::v1::ncol_t> acmacs::sheet::v1::Sheet::ti
             if (!current.valid())
                 current.first = col;
             current.second = col + ncol_t{1};
-            // AD_DEBUG("titer {:c}{}: {} --> {:c}:{:c}", col + 'A', row + 1, cell(row, col), current.first + 'A', current.second - 1 + 'A');
+            // AD_DEBUG("titer {}{}: {} --> {}", row, col, cell(row, col), current);
         }
         else
             update();
