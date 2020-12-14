@@ -25,8 +25,12 @@ namespace acmacs::sheet::inline v1
     struct serum_fields_t
     {
         std::string name{};
-        std::string passage{};
         std::string serum_id{};
+        std::string passage{};
+        std::string species{};
+        std::string conc{};
+        std::string dilut{};
+        bool boosted{false};
     };
 
     // ----------------------------------------------------------------------

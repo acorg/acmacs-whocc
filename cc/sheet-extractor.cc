@@ -460,11 +460,34 @@ bool acmacs::sheet::v1::ExtractorCDC::is_lab_id(nrow_t row, ncol_t col) const
 
 acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t sr_no) const
 {
-    return serum_fields_t{
-        // .serum_name is set by lab specific extractor
-        // .passage = make(serum_passage_row()), //
-        // .serum_id = make(serum_id_row())      //
-    };
+    if (serum_index_row_.has_value() && serum_index_column_.has_value()) {
+        if (const auto serum_index = fmt::format("{}", sheet().cell(*serum_index_row_, serum_columns().at(sr_no))); !serum_index.empty()) {
+            for (nrow_t row{serum_rows_[0]}; row < sheet().number_of_rows(); ++row) {
+                if (const auto index_cell = sheet().cell(row, *serum_index_column_); !is_empty(index_cell) && fmt::format("{}", index_cell)[0] == serum_index[0]) {
+
+                    const auto make = [this, row](std::optional<ncol_t> col) -> std::string {
+                        if (col.has_value()) {
+                            if (const auto cell = sheet().cell(row, *col); !is_empty(cell))
+                                return fmt::format("{}", cell);
+                        }
+                        return {};
+                    };
+
+                    return {.name = make(serum_name_column_),       //
+                            .serum_id = make(serum_id_column_),     //
+                            .passage = make(serum_passage_column_), //
+                            .species = make(serum_species_column_), //
+                            .conc = make(serum_conc_column_),       //
+                            .dilut = make(serum_dilut_column_),     //
+                            .boosted =
+                                serum_boosted_column_.has_value() && !is_empty(sheet().cell(row, *serum_boosted_column_)) && fmt::format("{}", sheet().cell(row, *serum_boosted_column_))[0] == 'Y'};
+                }
+            }
+        }
+        else
+            AD_WARNING("[CDC] no serum index for serum {}", sr_no);
+    }
+    return {};
 
 } // acmacs::sheet::v1::ExtractorCDC::serum
 
@@ -608,8 +631,8 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorWithSerumRowsAbove
 
     return serum_fields_t{
         // .serum_name is set by lab specific extractor
-        .passage = make(serum_passage_row()), //
-        .serum_id = make(serum_id_row())      //
+        .serum_id = make(serum_id_row()),    //
+        .passage = make(serum_passage_row()) //
     };
 
 } // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::serum
