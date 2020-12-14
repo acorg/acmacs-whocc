@@ -175,7 +175,16 @@ template <> struct fmt::formatter<acmacs::sheet::ncol_t> : fmt::formatter<acmacs
 {
     template <typename FormatCtx> auto format(acmacs::sheet::ncol_t col, FormatCtx& ctx)
     {
-        return format_to(ctx.out(), "{:c}", *col + 'A');
+        auto coll = *col;
+        std::string nn;
+        while (true) {
+            nn.append(1, (coll % 26) + 'A');
+            if (coll < 26)
+                break;
+            coll = coll / 26 - 1;
+        }
+        std::reverse(std::begin(nn), std::end(nn));
+        return format_to(ctx.out(), "{}", nn);
     }
 };
 
