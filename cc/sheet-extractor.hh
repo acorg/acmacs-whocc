@@ -96,6 +96,7 @@ namespace acmacs::sheet::inline v1
         virtual bool is_passage(nrow_t row, ncol_t col) const;
         virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
         virtual bool valid_titer_row(nrow_t /*row*/) const { return true; }
+        bool is_control_serum_cell(const cell_t& cell) const;
 
         virtual std::string make_passage(const std::string& src) const { return src; }
 
@@ -147,6 +148,7 @@ namespace acmacs::sheet::inline v1
         void find_serum_index_row(warn_if_not_found winf);
         void find_serum_columns(warn_if_not_found winf);
         void find_serum_column_label(const std::regex& re, std::optional<ncol_t>& col, std::string_view label_name);
+        nrow_t find_serum_row_by_col(ncol_t col) const;
     };
 
     // ----------------------------------------------------------------------

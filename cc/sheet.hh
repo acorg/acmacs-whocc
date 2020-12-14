@@ -79,7 +79,10 @@ namespace acmacs::sheet::inline v1
 
     using nrow_t = named_size_t<struct nrow_t_tag>;
     using ncol_t = named_size_t<struct ncol_t_tag>;
+
     template <typename nrowcol> concept NRowCol = std::is_same_v<nrowcol, nrow_t> || std::is_same_v<nrowcol, ncol_t>;
+
+    template <NRowCol nrowcol> constexpr bool valid(nrowcol row_col) { return row_col != nrowcol{max_row_col}; }
 
     struct cell_addr_t
     {

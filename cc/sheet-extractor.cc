@@ -413,6 +413,19 @@ std::optional<acmacs::sheet::v1::nrow_t> acmacs::sheet::v1::Extractor::find_seru
 
 // ----------------------------------------------------------------------
 
+bool acmacs::sheet::v1::Extractor::is_control_serum_cell(const cell_t& cell) const
+{
+    if (is_string(cell)) {
+        const auto text = fmt::format("{}", cell);
+        if (std::regex_search(text, re_human_who_serum))
+            return true;
+    }
+    return false;
+
+} // acmacs::sheet::v1::Extractor::is_control_serum_cell
+
+// ----------------------------------------------------------------------
+
 acmacs::sheet::v1::ExtractorCDC::ExtractorCDC(std::shared_ptr<Sheet> a_sheet)
     : Extractor(a_sheet)
 {
@@ -458,36 +471,45 @@ bool acmacs::sheet::v1::ExtractorCDC::is_lab_id(nrow_t row, ncol_t col) const
 
 // ----------------------------------------------------------------------
 
-acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t sr_no) const
+acmacs::sheet::v1::nrow_t acmacs::sheet::v1::ExtractorCDC::find_serum_row_by_col(ncol_t col) const
 {
     if (serum_index_row_.has_value() && serum_index_column_.has_value()) {
-        if (const auto serum_index = fmt::format("{}", sheet().cell(*serum_index_row_, serum_columns().at(sr_no))); !serum_index.empty()) {
+        if (const auto serum_index = fmt::format("{}", sheet().cell(*serum_index_row_, col)); !serum_index.empty()) {
             for (nrow_t row{serum_rows_[0]}; row < sheet().number_of_rows(); ++row) {
-                if (const auto index_cell = sheet().cell(row, *serum_index_column_); !is_empty(index_cell) && fmt::format("{}", index_cell)[0] == serum_index[0]) {
-
-                    const auto make = [this, row](std::optional<ncol_t> col) -> std::string {
-                        if (col.has_value()) {
-                            if (const auto cell = sheet().cell(row, *col); !is_empty(cell))
-                                return fmt::format("{}", cell);
-                        }
-                        return {};
-                    };
-
-                    return {.name = make(serum_name_column_),       //
-                            .serum_id = make(serum_id_column_),     //
-                            .passage = make(serum_passage_column_), //
-                            .species = make(serum_species_column_), //
-                            .conc = make(serum_conc_column_),       //
-                            .dilut = make(serum_dilut_column_),     //
-                            .boosted =
-                                serum_boosted_column_.has_value() && !is_empty(sheet().cell(row, *serum_boosted_column_)) && fmt::format("{}", sheet().cell(row, *serum_boosted_column_))[0] == 'Y'};
-                }
+                if (const auto index_cell = sheet().cell(row, *serum_index_column_); !is_empty(index_cell) && fmt::format("{}", index_cell)[0] == serum_index[0])
+                    return row;
             }
         }
-        else
-            AD_WARNING("[CDC] no serum index for serum {}", sr_no);
     }
-    return {};
+    AD_WARNING("[CDC] cannot find serum for column {}", col);
+    return nrow_t{max_row_col};
+
+} // acmacs::sheet::v1::ExtractorCDC::find_serum_row_by_col
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t sr_no) const
+{
+    if (const auto row = find_serum_row_by_col(serum_columns().at(sr_no)); valid(row)) {
+
+        const auto make = [this, row](std::optional<ncol_t> col) -> std::string {
+            if (col.has_value()) {
+                if (const auto cell = sheet().cell(row, *col); !is_empty(cell))
+                    return fmt::format("{}", cell);
+            }
+            return {};
+        };
+
+        return {.name = make(serum_name_column_),       //
+                .serum_id = make(serum_id_column_),     //
+                .passage = make(serum_passage_column_), //
+                .species = make(serum_species_column_), //
+                .conc = make(serum_conc_column_),       //
+                .dilut = make(serum_dilut_column_),     //
+                .boosted = serum_boosted_column_.has_value() && !is_empty(sheet().cell(row, *serum_boosted_column_)) && fmt::format("{}", sheet().cell(row, *serum_boosted_column_))[0] == 'Y'};
+    }
+    else
+        return {};
 
 } // acmacs::sheet::v1::ExtractorCDC::serum
 
@@ -601,6 +623,22 @@ bool acmacs::sheet::v1::ExtractorCDC::valid_titer_row(nrow_t row) const
 
 void acmacs::sheet::v1::ExtractorCDC::exclude_control_sera(warn_if_not_found /*winf*/)
 {
+    if (serum_index_row_.has_value() && serum_index_column_.has_value() && serum_name_column_.has_value()) {
+        const auto exclude = [this](ncol_t col) {
+            if (const auto row = find_serum_row_by_col(col); valid(row)) {
+                if (const auto cell = sheet().cell(row, *serum_name_column_); is_control_serum_cell(cell)) {
+                    AD_LOG(acmacs::log::xlsx, "[CDC] serum excluded (HUMAN or WHO or NORMAL serum): \"{}\"", cell);
+                    return true;
+                }
+                else
+                    return false;
+            }
+            else
+                return true;
+        };
+
+        ranges::actions::remove_if(serum_columns_, exclude);
+    }
 
 } // acmacs::sheet::v1::ExtractorCDC::exclude_control_sera
 
@@ -641,17 +679,8 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorWithSerumRowsAbove
 
 void acmacs::sheet::v1::ExtractorWithSerumRowsAbove::exclude_control_sera(warn_if_not_found /*winf*/)
 {
-    const auto exclude = [](const auto& cell) {
-        if (is_string(cell)) {
-            const auto text = fmt::format("{}", cell);
-            if (std::regex_search(text, re_human_who_serum))
-                return true;
-        }
-        return false;
-    };
-
-    ranges::actions::remove_if(serum_columns_, [this, exclude](ncol_t col) {
-        if ((serum_id_row_.has_value() && exclude(sheet().cell(*serum_id_row_, col))) || (serum_passage_row_.has_value() && exclude(sheet().cell(*serum_passage_row_, col)))) {
+    ranges::actions::remove_if(serum_columns_, [this](ncol_t col) {
+        if ((serum_id_row_.has_value() && is_control_serum_cell(sheet().cell(*serum_id_row_, col))) || (serum_passage_row_.has_value() && is_control_serum_cell(sheet().cell(*serum_passage_row_, col)))) {
             AD_LOG(acmacs::log::xlsx, "[{}] serum column {} excluded: HUMAN or WHO or NORMAL serum", lab(), col);
             return true;
         }
