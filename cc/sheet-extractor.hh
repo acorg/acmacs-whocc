@@ -91,6 +91,7 @@ namespace acmacs::sheet::inline v1
         virtual bool is_virus_name(nrow_t row, ncol_t col) const;
         virtual bool is_passage(nrow_t row, ncol_t col) const;
         virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
+        virtual bool valid_titer_row(nrow_t /*row*/) const { return true; }
 
         virtual std::string make_passage(const std::string& src) const { return src; }
 
@@ -127,6 +128,8 @@ namespace acmacs::sheet::inline v1
         bool is_lab_id(nrow_t row, ncol_t col) const override;
         void find_serum_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
+
+        bool valid_titer_row(nrow_t row) const override;
 
         std::string make_passage(const std::string& src) const override;
 

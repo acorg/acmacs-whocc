@@ -100,8 +100,8 @@ namespace acmacs::sheet::inline v1
         range() : std::pair<nrowcol, nrowcol>{max_row_col, max_row_col} {}
 
         constexpr bool valid() const { return this->first != nrowcol{max_row_col} && this->first <= this->second; }
-        constexpr bool empty() const { return !valid() || this->first == this->second; }
-        constexpr nrowcol size() const { return valid() ? this->second - this->first : nrowcol{0}; }
+        constexpr bool empty() const { return !valid(); }
+        constexpr nrowcol length() const { return valid() ? this->second - this->first + nrowcol{1} : nrowcol{0}; }
     };
 
     class Sheet

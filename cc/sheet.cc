@@ -78,7 +78,7 @@ acmacs::sheet::v1::range<acmacs::sheet::v1::ncol_t> acmacs::sheet::v1::Sheet::ti
     range<ncol_t> current;
     const auto update = [&longest, &current] {
         if (current.valid()) {
-            if (!longest.valid() || longest.size() < current.size()) {
+            if (!longest.valid() || longest.length() < current.length()) {
                 longest = current;
                 // AD_DEBUG("longest {}: {}", row, longest);
             }
@@ -90,7 +90,7 @@ acmacs::sheet::v1::range<acmacs::sheet::v1::ncol_t> acmacs::sheet::v1::Sheet::ti
         if (maybe_titer(row, col)) {
             if (!current.valid())
                 current.first = col;
-            current.second = col + ncol_t{1};
+            current.second = col;
             // AD_DEBUG("titer {}{}: {} --> {}", row, col, cell(row, col), current);
         }
         else

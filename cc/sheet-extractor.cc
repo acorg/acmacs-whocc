@@ -22,6 +22,7 @@ static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCK|CELL|EGG)", acmacs::
 static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|S|E|HCK|QMC|C)[0-9X][^\s\(]*)\s*(?:\(([\d/]+)\))?[A-Z]*$)", acmacs::regex::icase};
 static const std::regex re_CDC_antigen_lab_id{"^[0-9]{10}$", acmacs::regex::icase};
 static const std::regex re_CDC_serum_index{"^([A-Z]|EGG)$", acmacs::regex::icase}; // EGG is excel auto-correction artefact
+static const std::regex re_CDC_serum_control{R"(^\s*SERUM\s+CONTROL\s*$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -227,19 +228,19 @@ void acmacs::sheet::v1::Extractor::find_titers(warn_if_not_found winf)
     std::vector<std::pair<nrow_t, range<ncol_t>>> rows;
     // AD_DEBUG("Sheet {}", sheet().name());
     for (nrow_t row{0}; row < sheet().number_of_rows(); ++row) {
-        if (auto titers = sheet().titer_range(row); !titers.empty() && titers.first > ncol_t{0})
+        if (auto titers = sheet().titer_range(row); titers.valid() && titers.first > ncol_t{0} && valid_titer_row(row))
             rows.emplace_back(row, std::move(titers));
     }
 
     if (!ranges::all_of(rows, [&rows](const auto& en) { return en.second == rows[0].second; })) {
         fmt::memory_buffer report; // fmt::format(rows, "{}", "\n  "));
         for (const auto& [row_no, rng] : rows)
-            fmt::format_to(report, "    {}: {} ({})\n", row_no, rng, rng.second - rng.first);
+            fmt::format_to(report, "    {}: {} ({})\n", row_no, rng, rng.length());
         if (winf == warn_if_not_found::yes)
             AD_WARNING_IF(winf == warn_if_not_found::yes, "sheet \"{}\": variable titer row ranges:\n{}", sheet().name(), fmt::to_string(report));
     }
 
-    for (ncol_t col{rows[0].second.first}; col < rows[0].second.second; ++col)
+    for (ncol_t col{rows[0].second.first}; col <= rows[0].second.second; ++col)
         serum_columns_.push_back(col);
     antigen_rows_.resize(rows.size());
     ranges::transform(rows, std::begin(antigen_rows_), [](const auto& row) { return row.first; });
@@ -498,7 +499,7 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_columns(warn_if_not_found winf)
             if (is_virus_name(row, col))
                 serum_rows_.push_back(row);
         }
-        if (serum_rows_.size() == serum_columns().size())
+        if (serum_rows_.size() > (serum_columns().size() / 2))
             serum_name_column_ = col;
     }
 
@@ -519,6 +520,14 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_columns(warn_if_not_found winf)
         AD_WARNING_IF(winf == warn_if_not_found::yes, "serum name column not found");
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_columns
+
+// ----------------------------------------------------------------------
+
+bool acmacs::sheet::v1::ExtractorCDC::valid_titer_row(nrow_t row) const
+{
+    return sheet().grep(re_CDC_serum_control, {row, ncol_t{0}}, {row + nrow_t{1}, sheet().number_of_columns()}).empty();
+
+} // acmacs::sheet::v1::ExtractorCDC::valid_titer_row
 
 // ----------------------------------------------------------------------
 
