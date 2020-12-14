@@ -92,6 +92,8 @@ namespace acmacs::sheet::inline v1
         virtual bool is_passage(nrow_t row, ncol_t col) const;
         virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
 
+        virtual std::string make_passage(const std::string& src) const { return src; }
+
         std::optional<ncol_t> antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_;
         std::vector<nrow_t> antigen_rows_;
         std::vector<ncol_t> serum_columns_;
@@ -121,11 +123,13 @@ namespace acmacs::sheet::inline v1
       protected:
         bool is_passage(nrow_t row, ncol_t col) const override;
         bool is_lab_id(nrow_t row, ncol_t col) const override;
-      //   void find_serum_rows(warn_if_not_found winf) override;
+        //   void find_serum_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
 
-      // private:
-      //   std::optional<size_t> serum_name_row_, serum_id_row_, serum_passage_row_;
+        std::string make_passage(const std::string& src) const override;
+
+        // private:
+        //   std::optional<size_t> serum_name_row_, serum_id_row_, serum_passage_row_;
     };
 
     // ----------------------------------------------------------------------

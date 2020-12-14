@@ -19,7 +19,7 @@ static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::r
 static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCK|CELL|EGG)", acmacs::regex::icase};
 
 
-static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|E|HCK|QMC|C)[0-9X][^\s\(]*)\s*(?:\(([\d/]+)\))?[A-Z]*)", acmacs::regex::icase};
+static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|E|HCK|QMC|C)[0-9X][^\s\(]*)\s*(?:\(([\d/]+)\))?[A-Z]*$)", acmacs::regex::icase};
 static const std::regex re_CDC_antigen_lab_id{"^[0-9]{10}$", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
@@ -125,7 +125,7 @@ acmacs::sheet::v1::antigen_fields_t acmacs::sheet::v1::Extractor::antigen(size_t
     return antigen_fields_t{
         .name = make(antigen_name_column()),       //
         .date = make(antigen_date_column()),       //
-        .passage = make(antigen_passage_column()), //
+        .passage = make_passage(make(antigen_passage_column())), //
         .lab_id = make(antigen_lab_id_column())    //
     };
 
@@ -419,6 +419,25 @@ bool acmacs::sheet::v1::ExtractorCDC::is_passage(nrow_t row, ncol_t col) const
     return sheet().matches(re_CDC_antigen_passage, row, col);
 
 } // acmacs::sheet::v1::ExtractorCDC::is_passage
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorCDC::make_passage(const std::string& src) const
+{
+    std::smatch match;
+    if (std::regex_match(src, match, re_CDC_antigen_passage)) {
+        if (match.length(2))
+            return fmt::format("{} ({})", match.str(1), date::from_string(match.str(2), date::allow_incomplete::no, date::throw_on_error::yes, date::month_first::yes));
+        else
+            return match.str(1);
+    }
+    else {
+        if (!src.empty())
+            AD_WARNING("[CDC] unrecognized passage: \"{}\"", src);
+        return src;
+    }
+
+} // acmacs::sheet::v1::ExtractorCDC::make_passage
 
 // ----------------------------------------------------------------------
 
