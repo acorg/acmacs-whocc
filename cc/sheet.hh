@@ -176,6 +176,11 @@ template <> struct fmt::formatter<acmacs::sheet::ncol_t> : fmt::formatter<acmacs
     }
 };
 
+template <> struct fmt::formatter<acmacs::sheet::cell_match_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(const acmacs::sheet::cell_match_t& match, FormatCtx& ctx) { return format_to(ctx.out(), "{}{}:{}", match.row, match.col, match.matches); }
+};
+
 template <acmacs::sheet::NRowCol nrowcol> struct fmt::formatter<acmacs::sheet::range<nrowcol>> : fmt::formatter<acmacs::fmt_helper::default_formatter>
 {
     template <typename FormatCtx> auto format(const acmacs::sheet::range<nrowcol>& rng, FormatCtx& ctx)

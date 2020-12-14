@@ -138,10 +138,11 @@ namespace acmacs::sheet::inline v1
       private:
         std::optional<nrow_t> serum_index_row_;
         std::vector<nrow_t> serum_rows_;
-        std::optional<ncol_t> serum_index_column_, serum_name_column_, serum_id_column_, serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_, serum_passage_column_, serum_pool_coumn_;
+        std::optional<ncol_t> serum_index_column_, serum_name_column_, serum_id_column_, serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_, serum_passage_column_, serum_pool_column_;
 
         void find_serum_index_row(warn_if_not_found winf);
         void find_serum_columns(warn_if_not_found winf);
+        void find_serum_column_label(const std::regex& re, std::optional<ncol_t>& col, std::string_view label_name);
     };
 
     // ----------------------------------------------------------------------

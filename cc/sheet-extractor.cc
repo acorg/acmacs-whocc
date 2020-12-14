@@ -23,6 +23,16 @@ static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|S|E|HCK|QMC|C)[
 static const std::regex re_CDC_antigen_lab_id{"^[0-9]{10}$", acmacs::regex::icase};
 static const std::regex re_CDC_serum_index{"^([A-Z]|EGG)$", acmacs::regex::icase}; // EGG is excel auto-correction artefact
 static const std::regex re_CDC_serum_control{R"(^\s*SERUM\s+CONTROL\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_lot_label{R"(^\s*LOT\s*#?\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_date_label{R"(^\s*DATE\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_treated_label{R"(^\s*TREATED\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_date_treated_label{R"(^\s*DATE\s+TREATED\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_species_label{R"(^\s*SPECIES\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_boosted_label{R"(^\s*BOOSTED\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_conc_label{R"(^\s*CONC\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_dilut_label{R"(^\s*DILUT\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_passage_label{R"(^\s*PASSAGE\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_pool_label{R"(^\s*POOL\s*$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -503,23 +513,58 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_columns(warn_if_not_found winf)
             serum_name_column_ = col;
     }
 
-    if (serum_name_column_.has_value()) {
-        AD_LOG(acmacs::log::xlsx, "[CDC] Serum name column: {}", serum_name_column_);
-        if (serum_name_column_ > ncol_t{0}) {
-            serum_index_column_ = *serum_name_column_ - ncol_t{1};
-            for (const nrow_t row : serum_rows_) {
-                if (!sheet().matches(re_CDC_serum_index, row, *serum_index_column_))
-                    AD_WARNING("[CDC] unrecognized serum index at {}{}: \"{}\" for serum \"{}\"", row, serum_index_column_, sheet().cell(row, *serum_index_column_),
-                               sheet().cell(row, *serum_name_column_));
-            }
+    if (!serum_name_column_.has_value()) {
+        AD_WARNING_IF(winf == warn_if_not_found::yes, "serum name column not found");
+        return;
+    }
+
+    AD_LOG(acmacs::log::xlsx, "[CDC] Serum name column: {}", serum_name_column_);
+
+    if (serum_name_column_ > ncol_t{0}) {
+        serum_index_column_ = *serum_name_column_ - ncol_t{1};
+        for (const nrow_t row : serum_rows_) {
+            if (!sheet().matches(re_CDC_serum_index, row, *serum_index_column_))
+                AD_WARNING("[CDC] unrecognized serum index at {}{}: \"{}\" for serum \"{}\"", row, serum_index_column_, sheet().cell(row, *serum_index_column_),
+                           sheet().cell(row, *serum_name_column_));
         }
-        else
-            AD_WARNING("[CDC] unexpected serum name column: {} -> no place for serum indexes", serum_name_column_);
     }
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "serum name column not found");
+        AD_WARNING("[CDC] unexpected serum name column: {} -> no place for serum indexes", serum_name_column_);
+
+    find_serum_column_label(re_CDC_lot_label, serum_id_column_, "LOT");
+    find_serum_column_label(re_CDC_species_label, serum_species_column_, "SPECIES");
+    find_serum_column_label(re_CDC_boosted_label, serum_boosted_column_, "BOOSTED");
+    find_serum_column_label(re_CDC_conc_label, serum_conc_column_, "CONC");
+    find_serum_column_label(re_CDC_dilut_label, serum_dilut_column_, "DILUT");
+    find_serum_column_label(re_CDC_passage_label, serum_passage_column_, "PASSAGE");
+    find_serum_column_label(re_CDC_pool_label, serum_pool_column_, "POOL");
+
+    if (const auto matches1 = sheet().grep(re_CDC_date_treated_label, {serum_rows_[0] - nrow_t{1}, *serum_name_column_ + ncol_t{1}}, {serum_rows_[0], sheet().number_of_columns()});
+        matches1.size() == 1) {
+        serum_treated_column_ = matches1[0].col;
+    }
+    else if (const auto matches2 = sheet().grep(re_CDC_treated_label, {serum_rows_[0] - nrow_t{1}, *serum_name_column_ + ncol_t{1}}, {serum_rows_[0], sheet().number_of_columns()});
+             !matches2.empty()) {
+        for (const auto& mm2 : matches2) {
+            if (sheet().matches(re_CDC_date_label, serum_rows_[0] - nrow_t{2}, mm2.col)) {
+                serum_treated_column_ = mm2.col;
+                break;
+            }
+        }
+    }
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_columns
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCDC::find_serum_column_label(const std::regex& re, std::optional<ncol_t>& col, std::string_view label_name)
+{
+    if (const auto matches = sheet().grep(re, {serum_rows_[0] - nrow_t{1}, *serum_name_column_ + ncol_t{1}}, {serum_rows_[0], sheet().number_of_columns()}); matches.size() == 1)
+        col = matches[0].col;
+    else if (matches.size() > 1)
+        AD_WARNING("[CDC] unclear {} label matches: {}", label_name, matches);
+
+} // acmacs::sheet::v1::ExtractorCDC::find_serum_column_label
 
 // ----------------------------------------------------------------------
 
@@ -545,7 +590,7 @@ std::string acmacs::sheet::v1::ExtractorCDC::report_serum_anchors() const
                        "    Passage: {}\n    Pool:    {}\n  Serum columns:   {}\n",                                                  //
                        serum_index_row_, serum_index_column_, format(make_ranges(serum_rows_)), serum_name_column_, serum_id_column_,                     //
                        serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_, //
-                       serum_passage_column_, serum_pool_coumn_, format(make_ranges(serum_columns_)));
+                       serum_passage_column_, serum_pool_column_, format(make_ranges(serum_columns_)));
 
 } // acmacs::sheet::v1::ExtractorCDC::report_serum_anchors
 
