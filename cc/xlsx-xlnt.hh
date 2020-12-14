@@ -15,11 +15,46 @@ namespace acmacs::xlsx::inline v1
         class Sheet : public acmacs::sheet::Sheet
         {
           public:
-            Sheet(::xlnt::worksheet&& src) : sheet_{std::move(src)} {}
+            Sheet(::xlnt::worksheet&& src) : sheet_{std::move(src)}, number_of_rows_{sheet_.highest_row()}, number_of_columns_{sheet_.highest_column().index}
+            {
+                using namespace acmacs::sheet;
+
+                if (number_of_columns_ > ncol_t{0} && number_of_rows_ > nrow_t{0}) {
+                    // remove last empty columns
+                    const auto is_empty_col = [this](ncol_t col) {
+                        for (nrow_t row{0}; row < number_of_rows_; ++row) {
+                            if (!is_empty(cell(row, col)))
+                                return false;
+                        }
+                        return true;
+                    };
+
+                    for (ncol_t col{number_of_columns_ - ncol_t{1}}; col > ncol_t{0}; --col) {
+                        if (!is_empty_col(col))
+                            break;
+                        --number_of_columns_;
+                    }
+
+                    // remove last empty rows
+                    const auto is_empty_row = [this](nrow_t row) {
+                        for (ncol_t col{0}; col < number_of_columns_; ++col) {
+                            if (!is_empty(cell(row, col)))
+                                return false;
+                        }
+                        return true;
+                    };
+
+                    for (nrow_t row{number_of_rows_ - nrow_t{1}}; row > nrow_t{0}; --row) {
+                        if (!is_empty_row(row))
+                            break;
+                        --number_of_rows_;
+                    }
+                }
+            }
 
             std::string name() const override { return sheet_.title(); }
-            sheet::nrow_t number_of_rows() const override { return sheet::nrow_t{sheet_.highest_row()}; }
-            sheet::ncol_t number_of_columns() const override { return sheet::ncol_t{sheet_.highest_column().index}; }
+            sheet::nrow_t number_of_rows() const override { return number_of_rows_; }
+            sheet::ncol_t number_of_columns() const override { return number_of_columns_; }
 
             static inline date::year_month_day make_date(const ::xlnt::datetime& dt, sheet::nrow_t /*row*/, sheet::ncol_t /*col*/)
             {
@@ -103,6 +138,8 @@ namespace acmacs::xlsx::inline v1
 
           private:
             ::xlnt::worksheet sheet_;
+            sheet::nrow_t number_of_rows_;
+            sheet::ncol_t number_of_columns_;
         };
 
         class Doc
