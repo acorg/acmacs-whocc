@@ -19,7 +19,7 @@ static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK)[0-9X]", acmacs::r
 static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCK|CELL|EGG)", acmacs::regex::icase};
 
 
-static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|E|HCK|QMC|C)[0-9X][^\s\(]*)\s*(?:\(([\d/]+)\))?[A-Z]*$)", acmacs::regex::icase};
+static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|S|E|HCK|QMC|C)[0-9X][^\s\(]*)\s*(?:\(([\d/]+)\))?[A-Z]*$)", acmacs::regex::icase};
 static const std::regex re_CDC_antigen_lab_id{"^[0-9]{10}$", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
