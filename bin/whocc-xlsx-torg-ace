@@ -15,7 +15,8 @@ class Error (Exception): pass
 # ======================================================================
 
 def main(args):
-    open_html(args.source[0])
+    if args.make_html:
+        open_html(args.source[0])
     names = [split_name(name) for name in name_from_xlsx(args.source[0]).split("\n") if name]
     if not names:
         raise Error("File provides no sheets with tables")
@@ -103,9 +104,12 @@ def check_output_names(names, output_dir):
 # ----------------------------------------------------------------------
 
 def copy_xlsx(source, xlsx_name):
-    subprocess.check_call(["/usr/bin/xattr", "-c", source])
-    module_logger.info(f"{source} -> {xlsx_name}")
-    shutil.copyfile(source, xlsx_name)
+    if str(source) != str(xlsx_name):
+        subprocess.check_call(["/usr/bin/xattr", "-c", source])
+        module_logger.info(f"{source} -> {xlsx_name}")
+        shutil.copyfile(source, xlsx_name)
+    else:
+        module_logger.info(f"{source} (nothing to copy)")
 
 # ----------------------------------------------------------------------
 
@@ -200,6 +204,7 @@ try:
     parser.add_argument('-e', action='store_true', dest='edit_torg', default=False, help='Edit .torg and autogenerate ace on save.')
     parser.add_argument('-t', action='store_true', dest='stop_on_torg', default=False, help='Stop after generating torg file.')
     parser.add_argument('-f', action='store_true', dest='overwrite', default=False, help='overwrite exiting output files.')
+    parser.add_argument('--no-html', action='store_false', dest='make_html', default=True, help='do not generate html.')
 
     parser.add_argument("source", nargs=1)
 

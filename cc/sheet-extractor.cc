@@ -516,12 +516,12 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t 
             return {};
         };
 
-        return {.name = make(serum_name_column_),       //
-                .serum_id = make(serum_id_column_),     //
-                .passage = make_passage(make(serum_passage_column_)), //
-                .species = make(serum_species_column_), //
-                .conc = make(serum_conc_column_),       //
-                .dilut = make(serum_dilut_column_),     //
+        return {.name = make(serum_name_column_),                          //
+                .serum_id = fmt::format("CDC {}", make(serum_id_column_)), //
+                .passage = make_passage(make(serum_passage_column_)),      //
+                .species = make(serum_species_column_),                    //
+                .conc = make(serum_conc_column_),                          //
+                .dilut = make(serum_dilut_column_),                        //
                 .boosted = serum_boosted_column_.has_value() && !is_empty(sheet().cell(row, *serum_boosted_column_)) && fmt::format("{}", sheet().cell(row, *serum_boosted_column_))[0] == 'Y'};
     }
     else
