@@ -15,7 +15,8 @@ TARGETS = \
   $(DIST)/chart-table-compare \
   $(DIST)/chart-table-map-compare \
   $(DIST)/xlsx2csv \
-  $(DIST)/xlsx2html
+  $(DIST)/xlsx2html \
+  $(DIST)/xlsx-read-test
 
 # $(DIST)/guile-test
 
