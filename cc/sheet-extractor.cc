@@ -489,7 +489,7 @@ void acmacs::sheet::v1::ExtractorCDC::remove_redundant_antigen_rows(warn_if_not_
         // remove CONTROL antigen rows, e.g. "INFLUENZA B CONTROL AG, YAM LINEAGE"
         ranges::actions::remove_if(antigen_rows_, [this](nrow_t row) {
             if (sheet().matches(re_CDC_antigen_control, row, *antigen_name_column_)) {
-                AD_DEBUG("CONTROL antigen removed: {}", row, sheet().cell(row, *antigen_name_column_));
+                // AD_DEBUG("CONTROL antigen removed: {}", row, sheet().cell(row, *antigen_name_column_));
                 return true;
             }
             else
@@ -654,7 +654,8 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_column_label(const std::regex& 
 
 bool acmacs::sheet::v1::ExtractorCDC::valid_titer_row(nrow_t row, const column_range& /*cr*/) const
 {
-    return sheet().grep(re_CDC_serum_control, {row, ncol_t{0}}, {row + nrow_t{1}, sheet().number_of_columns()}).empty();
+    return sheet().grep(re_CDC_serum_control, {row, ncol_t{0}}, {row + nrow_t{1}, sheet().number_of_columns()}).empty()
+        && row > nrow_t{3};     // at least 4 rows must be above (sheet title, clade, passage, serum index)
 
 } // acmacs::sheet::v1::ExtractorCDC::valid_titer_row
 
