@@ -24,6 +24,7 @@ namespace acmacs::data_fix::inline v1
         virtual bool serum_name(std::string& /*src*/) const { return false; }
         virtual bool serum_passage(std::string& /*src*/, std::string& /*name*/) const { return false; }
         virtual bool date(std::string& /*src*/) const { return false; }
+        virtual bool serum_id(std::string& /*src*/) const { return false; }
         virtual bool titer(std::string& /*src*/) const { return false; }
     };
 
@@ -116,6 +117,15 @@ namespace acmacs::data_fix::inline v1
       public:
         using FromTo::FromTo;
         bool date(std::string& src) const override { return fix(src) || Base::date(src); }
+    };
+
+    // ----------------------------------------------------------------------
+
+    class SerumId : public FromTo
+    {
+      public:
+        using FromTo::FromTo;
+        bool serum_id(std::string& src) const override { return fix(src) || Base::serum_id(src); }
     };
 
     // ----------------------------------------------------------------------

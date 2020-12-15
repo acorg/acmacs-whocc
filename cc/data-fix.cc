@@ -90,6 +90,14 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum, size_t
         }
     }
 
+    for (const auto& en : data) {
+        const auto orig_serum_id = serum.serum_id;
+        if (const auto res = en->serum_id(serum.serum_id); res) {
+            AD_INFO("SR {:4d} serum_id \"{}\" <-- \"{}\"", serum_no, serum.serum_id, orig_serum_id);
+            break;
+        }
+    }
+
 } // acmacs::data_fix::v1::Set::fix
 
 // ----------------------------------------------------------------------

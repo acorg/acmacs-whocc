@@ -41,6 +41,13 @@ PYBIND11_EMBEDDED_MODULE(data_fix_builtin_module, mdl)
         "rex"_a, "replacement"_a);
 
     mdl.def(
+        "serum_id_fix",
+        [](std::string& rex, std::string& replacement) {
+            acmacs::data_fix::Set::update().add(std::make_unique<acmacs::data_fix::SerumId>(std::move(rex), std::move(replacement)));
+        },
+        "rex"_a, "replacement"_a);
+
+    mdl.def(
         "titer_fix",
         [](std::string& rex, std::string& replacement) {
             // AD_DEBUG("titer_fix \"{}\" \"{}\"", rex, repl);
