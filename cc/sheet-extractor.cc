@@ -45,7 +45,7 @@ static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
-static const std::regex re_human_who_serum{"(HUMAN|WHO|NORMAL)", acmacs::regex::icase};
+static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT)\b)", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
@@ -613,7 +613,7 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_column_label(const std::regex& 
 
 // ----------------------------------------------------------------------
 
-bool acmacs::sheet::v1::ExtractorCDC::valid_titer_row(nrow_t row, const column_range& cr) const
+bool acmacs::sheet::v1::ExtractorCDC::valid_titer_row(nrow_t row, const column_range& /*cr*/) const
 {
     return sheet().grep(re_CDC_serum_control, {row, ncol_t{0}}, {row + nrow_t{1}, sheet().number_of_columns()}).empty();
 
