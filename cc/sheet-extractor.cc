@@ -512,7 +512,7 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t 
         };
 
         const auto make_serum_id = [](const std::string& src) {
-            if (!src.empty() && acmacs::string::startswith(src, "CDC"))
+            if (!src.empty() && !acmacs::string::startswith(src, "CDC"))
                 return fmt::format("CDC {}", src);
             else
                 return src;
