@@ -129,6 +129,7 @@ namespace acmacs::sheet::inline v1
         ExtractorCDC(std::shared_ptr<Sheet> a_sheet);
 
         serum_fields_t serum(size_t sr_no) const override;
+        std::string titer(size_t ag_no, size_t sr_no) const override;
 
       protected:
         bool is_lab_id(nrow_t row, ncol_t col) const override;

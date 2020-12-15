@@ -440,15 +440,6 @@ bool acmacs::sheet::v1::Extractor::is_control_serum_cell(const cell_t& cell) con
 
 // ----------------------------------------------------------------------
 
-acmacs::sheet::v1::ExtractorCDC::ExtractorCDC(std::shared_ptr<Sheet> a_sheet)
-    : Extractor(a_sheet)
-{
-    lab("CDC");
-
-} // acmacs::sheet::v1::ExtractorCDC::ExtractorCDC
-
-// ----------------------------------------------------------------------
-
 std::string acmacs::sheet::v1::Extractor::make_passage(const std::string& src) const
 {
     const auto [passage, extra] = acmacs::virus::parse_passage(src, acmacs::virus::passage_only::no);
@@ -460,6 +451,26 @@ std::string acmacs::sheet::v1::Extractor::make_passage(const std::string& src) c
         return *passage;
 
 } // acmacs::sheet::v1::Extractor::make_passage
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::ExtractorCDC::ExtractorCDC(std::shared_ptr<Sheet> a_sheet)
+    : Extractor(a_sheet)
+{
+    lab("CDC");
+
+} // acmacs::sheet::v1::ExtractorCDC::ExtractorCDC
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorCDC::titer(size_t ag_no, size_t sr_no) const
+{
+    auto result = Extractor::titer(ag_no, sr_no);
+    if (result == "5")
+        result = "<10";
+    return result;
+
+} // acmacs::sheet::v1::ExtractorCDC::titer
 
 // ----------------------------------------------------------------------
 
