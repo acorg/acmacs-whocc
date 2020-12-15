@@ -27,8 +27,9 @@ int main(int argc, char* const argv[])
         acmacs::log::enable(opt.verbose);
 
         for (const auto& filename : *opt.xlsx) {
+            AD_INFO("{}", filename);
             auto doc = acmacs::xlsx::open(filename);
-            AD_INFO("Sheets: {}", doc.number_of_sheets());
+            // AD_INFO("{} sheets: {}", filename, doc.number_of_sheets());
             for (const auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
                 auto sheet = doc.sheet(sheet_no);
                 AD_INFO("    {}: \"{}\" {}-{}", sheet_no + 1, sheet->name(), sheet->number_of_rows(), sheet->number_of_columns());
