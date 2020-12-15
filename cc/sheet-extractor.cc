@@ -45,7 +45,7 @@ static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
-static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT)\b)", acmacs::regex::icase};
+static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL|CONTROL)|GOAT)\b)", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
