@@ -65,6 +65,11 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
             return nullptr;
         }
 
+        if (sheet->number_of_rows() < nrow_t{5} || sheet->number_of_columns() < ncol_t{5}) {
+            AD_INFO("Sheet \"{}\": is too small, ignored", sheet->name());
+            return nullptr;
+        }
+
         AD_INFO("{}", detected);
         if (detected.lab == "CDC") {
             extractor = std::make_unique<ExtractorCDC>(sheet);
