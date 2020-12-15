@@ -34,6 +34,7 @@ static const std::regex re_CDC_dilut_label{R"(^\s*DILUT\s*$)", acmacs::regex::ic
 static const std::regex re_CDC_passage_label{R"(^\s*PASSAGE\s*$)", acmacs::regex::icase};
 static const std::regex re_CDC_pool_label{R"(^\s*POOL\s*$)", acmacs::regex::icase};
 static const std::regex re_CDC_titer_label{R"(^\s*(BACK)?\s*TITER\b)", acmacs::regex::icase};
+static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -45,7 +46,7 @@ static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
-static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL|CONTROL)|GOAT)\b)", acmacs::regex::icase};
+static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT)\b)", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
@@ -479,6 +480,26 @@ bool acmacs::sheet::v1::ExtractorCDC::is_lab_id(nrow_t row, ncol_t col) const
     return sheet().matches(re_CDC_antigen_lab_id, row, col);
 
 } // acmacs::sheet::v1::ExtractorCDC::is_lab_id
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCDC::remove_redundant_antigen_rows(warn_if_not_found winf)
+{
+    if (antigen_name_column_.has_value()) {
+        // remove CONTROL antigen rows, e.g. "INFLUENZA B CONTROL AG, YAM LINEAGE"
+        ranges::actions::remove_if(antigen_rows_, [this](nrow_t row) {
+            if (sheet().matches(re_CDC_antigen_control, row, *antigen_name_column_)) {
+                AD_DEBUG("CONTROL antigen removed: {}", row, sheet().cell(row, *antigen_name_column_));
+                return true;
+            }
+            else
+                return false;
+        });
+    }
+
+    Extractor::remove_redundant_antigen_rows(winf);
+
+} // acmacs::sheet::v1::ExtractorCDC::remove_redundant_antigen_rows
 
 // ----------------------------------------------------------------------
 
