@@ -104,8 +104,11 @@ namespace acmacs::sheet::inline v1
 
         constexpr bool valid() const { return this->first != nrowcol{max_row_col} && this->first <= this->second; }
         constexpr bool empty() const { return !valid(); }
-        constexpr nrowcol length() const { return valid() ? this->second - this->first + nrowcol{1} : nrowcol{0}; }
+        constexpr size_t length() const { return valid() ? *this->second - *this->first + 1 : 0; }
     };
+
+    using row_range = range<nrow_t>;
+    using column_range = range<ncol_t>;
 
     class Sheet
     {
@@ -127,7 +130,7 @@ namespace acmacs::sheet::inline v1
 
         bool maybe_titer(const cell_t& cell) const;
         bool maybe_titer(nrow_t row, ncol_t col) const { return maybe_titer(cell(row, col)); }
-        range<ncol_t> titer_range(nrow_t row) const; // returns column range, returns empty range if not found
+        column_range titer_range(nrow_t row) const; // returns column range, returns empty range if not found
 
         cell_addr_t min_cell() const { return {nrow_t{0}, ncol_t{0}}; }
         cell_addr_t max_cell() const { return {number_of_rows(), number_of_columns()}; }

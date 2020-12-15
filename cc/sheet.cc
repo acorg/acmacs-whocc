@@ -72,7 +72,7 @@ bool acmacs::sheet::v1::Sheet::maybe_titer(const cell_t& cell) const
 
 // ----------------------------------------------------------------------
 
-acmacs::sheet::v1::range<acmacs::sheet::v1::ncol_t> acmacs::sheet::v1::Sheet::titer_range(nrow_t row) const
+acmacs::sheet::v1::column_range acmacs::sheet::v1::Sheet::titer_range(nrow_t row) const
 {
     range<ncol_t> longest;
     range<ncol_t> current;

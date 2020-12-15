@@ -33,6 +33,7 @@ static const std::regex re_CDC_conc_label{R"(^\s*CONC\s*$)", acmacs::regex::icas
 static const std::regex re_CDC_dilut_label{R"(^\s*DILUT\s*$)", acmacs::regex::icase};
 static const std::regex re_CDC_passage_label{R"(^\s*PASSAGE\s*$)", acmacs::regex::icase};
 static const std::regex re_CDC_pool_label{R"(^\s*POOL\s*$)", acmacs::regex::icase};
+static const std::regex re_CDC_titer_label{R"(^\s*(BACK)?\s*TITER\b)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -248,7 +249,9 @@ void acmacs::sheet::v1::Extractor::find_titers(warn_if_not_found winf)
     std::vector<std::pair<nrow_t, range<ncol_t>>> rows;
     // AD_DEBUG("Sheet {}", sheet().name());
     for (nrow_t row{0}; row < sheet().number_of_rows(); ++row) {
-        if (auto titers = sheet().titer_range(row); titers.valid() && titers.first > ncol_t{0} && valid_titer_row(row))
+        auto titers = sheet().titer_range(row);
+        adjust_titer_range(row, titers);
+        if (titers.valid() && titers.first > ncol_t{0} && valid_titer_row(row, titers))
             rows.emplace_back(row, std::move(titers));
     }
 
@@ -610,7 +613,7 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_column_label(const std::regex& 
 
 // ----------------------------------------------------------------------
 
-bool acmacs::sheet::v1::ExtractorCDC::valid_titer_row(nrow_t row) const
+bool acmacs::sheet::v1::ExtractorCDC::valid_titer_row(nrow_t row, const column_range& cr) const
 {
     return sheet().grep(re_CDC_serum_control, {row, ncol_t{0}}, {row + nrow_t{1}, sheet().number_of_columns()}).empty();
 
@@ -638,6 +641,15 @@ void acmacs::sheet::v1::ExtractorCDC::exclude_control_sera(warn_if_not_found /*w
     }
 
 } // acmacs::sheet::v1::ExtractorCDC::exclude_control_sera
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCDC::adjust_titer_range(nrow_t row, column_range& cr)
+{
+    while (cr.second >= cr.first && !sheet().grep(re_CDC_titer_label, {nrow_t{0}, cr.second}, {row, cr.second + ncol_t{1}}).empty()) // ignore TITER and BACK TITER columns
+        --cr.second;
+
+} // acmacs::sheet::v1::ExtractorCDC::adjust_titer_range
 
 // ----------------------------------------------------------------------
 

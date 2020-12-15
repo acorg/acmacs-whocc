@@ -83,6 +83,7 @@ namespace acmacs::sheet::inline v1
         virtual void find_serum_rows(warn_if_not_found) {}
         virtual std::optional<nrow_t> find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const;
         virtual void exclude_control_sera(warn_if_not_found winf) = 0;
+        virtual void adjust_titer_range(nrow_t /*row*/, column_range& /*cr*/) {}
 
         std::optional<ncol_t> antigen_name_column() const { return antigen_name_column_; }
         std::optional<ncol_t> antigen_date_column() const { return antigen_date_column_; }
@@ -96,7 +97,7 @@ namespace acmacs::sheet::inline v1
         virtual bool is_virus_name(nrow_t row, ncol_t col) const;
         // virtual bool is_passage(nrow_t row, ncol_t col) const;
         virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
-        virtual bool valid_titer_row(nrow_t /*row*/) const { return true; }
+        virtual bool valid_titer_row(nrow_t /*row*/, const column_range& /*cr*/) const { return true; }
         bool is_control_serum_cell(const cell_t& cell) const;
 
         virtual std::string make_passage(const std::string& src) const;
@@ -133,8 +134,9 @@ namespace acmacs::sheet::inline v1
         bool is_lab_id(nrow_t row, ncol_t col) const override;
         void find_serum_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
+        void adjust_titer_range(nrow_t row, column_range& cr) override;
 
-        bool valid_titer_row(nrow_t row) const override;
+        bool valid_titer_row(nrow_t row, const column_range& cr) const override;
 
         std::string report_serum_anchors() const override;
 
