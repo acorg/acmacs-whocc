@@ -16,10 +16,10 @@
 
 // static const std::regex re_table_title_crick{R"(^Table\s+[XY0-9-]+\s*\.\s*Antigenic analys[ie]s of influenza ([AB](?:\(H3N2\)|\(H1N1\)pdm09)?)\s*viruses\s*-?\s*\(?(Plaque\s+Reduction\s+Neutralisation\s*\(MDCK-SIAT\)|(?:Victoria|Yamagata)\s+lineage)?\)?\s*\(?(20[0-2][0-9]-[01][0-9]-[0-3][0-9])\)?)", acmacs::regex::icase};
 
-static const std::regex re_antigen_passage{"^(MDCK|SIAT|E|HCK|X)[0-9X]", acmacs::regex::icase};
-static const std::regex re_serum_passage{"^(MDCK|SIAT|E|HCK|CELL|EGG)", acmacs::regex::icase};
+// static const std::regex re_antigen_passage{"^(MDCK|QMC|C|SIAT|S|E|HCK|X)[0-9X]", acmacs::regex::icase};
+static const std::regex re_serum_passage{"^(MDCK|QMC|C|SIAT|S|E|HCK|CELL|EGG)", acmacs::regex::icase};
 
-static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|S|E|HCK|QMC|C|X)[0-9X][^\s\(]*)\s*(?:\(([\d/]+)\))?[A-Z]*$)", acmacs::regex::icase};
+// static const std::regex re_CDC_antigen_passage{R"(^((?:MDCK|SIAT|S|E|HCK|QMC|C|X)[0-9X][^\s\(]*)\s*(?:\(([\d/]+)\))?[A-Z]*$)", acmacs::regex::icase};
 static const std::regex re_CDC_antigen_lab_id{"^[0-9]{10}$", acmacs::regex::icase};
 static const std::regex re_CDC_serum_index{"^([A-Z]|EGG)$", acmacs::regex::icase}; // EGG is excel auto-correction artefact
 static const std::regex re_CDC_serum_control{R"(^\s*SERUM\s+CONTROL\s*$)", acmacs::regex::icase};
@@ -359,18 +359,19 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found wi
 
 // ----------------------------------------------------------------------
 
-bool acmacs::sheet::v1::Extractor::is_passage(nrow_t row, ncol_t col) const
-{
-    return sheet().matches(re_antigen_passage, row, col);
+// bool acmacs::sheet::v1::Extractor::is_passage(nrow_t row, ncol_t col) const
+// {
+//     return sheet().matches(re_antigen_passage, row, col);
 
-} // acmacs::sheet::v1::Extractor::is_passage
+// } // acmacs::sheet::v1::Extractor::is_passage
 
 // ----------------------------------------------------------------------
 
 void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found winf)
 {
     for (ncol_t col{0}; col < sheet().number_of_columns(); ++col) {
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_passage(row, col); })) >= (antigen_rows_.size() / 2)) {
+        // if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_passage(row, col); })) >= (antigen_rows_.size() / 2)) {
+        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return acmacs::virus::is_good_passage(fmt::format("{}", sheet().cell(row, col))); })) >= (antigen_rows_.size() / 2)) {
             antigen_passage_column_ = col;
             break;
         }
@@ -445,37 +446,17 @@ acmacs::sheet::v1::ExtractorCDC::ExtractorCDC(std::shared_ptr<Sheet> a_sheet)
 
 // ----------------------------------------------------------------------
 
-bool acmacs::sheet::v1::ExtractorCDC::is_passage(nrow_t row, ncol_t col) const
+std::string acmacs::sheet::v1::Extractor::make_passage(const std::string& src) const
 {
-    // AD_DEBUG("CDC passage {}{} {} -> {}", row, col, sheet().cell(row, col), sheet().matches(re_CDC_antigen_passage, row, col));
-    return sheet().matches(re_CDC_antigen_passage, row, col);
-
-} // acmacs::sheet::v1::ExtractorCDC::is_passage
-
-// ----------------------------------------------------------------------
-
-std::string acmacs::sheet::v1::ExtractorCDC::make_passage(const std::string& src) const
-{
-    std::smatch match;
-    if (std::regex_match(src, match, re_CDC_antigen_passage)) {
-        std::string date;
-        const auto [passage, extra] = acmacs::virus::parse_passage(match.str(1), acmacs::virus::passage_only::yes);
-        std::string result = *passage;
-        if (match.length(2))
-            result += fmt::format(" ({})", date::from_string(match.str(2), date::allow_incomplete::no, date::throw_on_error::yes, date::month_first::yes));
-        if (!extra.empty()) {
-            AD_WARNING("[CDC] passage \"{}\" has extra \"{}\"", src, extra);
-            result += fmt::format(" {}", extra);
-        }
-        return result;
-    }
-    else {
-        if (!src.empty())
-            AD_WARNING("[CDC] unrecognized passage: \"{}\"", src);
+    const auto [passage, extra] = acmacs::virus::parse_passage(src, acmacs::virus::passage_only::no);
+    if (!extra.empty()) {
+        AD_WARNING("passage \"{}\" has extra \"{}\", not normalized", src, extra);
         return src;
     }
+    else
+        return *passage;
 
-} // acmacs::sheet::v1::ExtractorCDC::make_passage
+} // acmacs::sheet::v1::Extractor::make_passage
 
 // ----------------------------------------------------------------------
 

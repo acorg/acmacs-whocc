@@ -94,12 +94,12 @@ namespace acmacs::sheet::inline v1
         std::vector<ncol_t>& serum_columns() { return serum_columns_; }
 
         virtual bool is_virus_name(nrow_t row, ncol_t col) const;
-        virtual bool is_passage(nrow_t row, ncol_t col) const;
+        // virtual bool is_passage(nrow_t row, ncol_t col) const;
         virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
         virtual bool valid_titer_row(nrow_t /*row*/) const { return true; }
         bool is_control_serum_cell(const cell_t& cell) const;
 
-        virtual std::string make_passage(const std::string& src) const { return src; }
+        virtual std::string make_passage(const std::string& src) const;
 
         virtual std::string report_serum_anchors() const = 0;
 
@@ -130,14 +130,11 @@ namespace acmacs::sheet::inline v1
         serum_fields_t serum(size_t sr_no) const override;
 
       protected:
-        bool is_passage(nrow_t row, ncol_t col) const override;
         bool is_lab_id(nrow_t row, ncol_t col) const override;
         void find_serum_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
 
         bool valid_titer_row(nrow_t row) const override;
-
-        std::string make_passage(const std::string& src) const override;
 
         std::string report_serum_anchors() const override;
 
