@@ -49,6 +49,7 @@ int main(int argc, char* const argv[])
 
         for (auto& xlsx : opt.xlsx) {
             try {
+                AD_INFO("Reading {}", xlsx);
                 auto doc = acmacs::xlsx::open(xlsx);
                 for ([[maybe_unused]] auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
                     auto converter = acmacs::sheet::SheetToTorg{doc.sheet(sheet_no)};

@@ -62,7 +62,7 @@ bool acmacs::sheet::v1::Sheet::maybe_titer(const cell_t& cell) const
             if constexpr (std::is_same_v<Content, std::string>)
                 return std::regex_search(arg, re_titer);
             else if constexpr (std::is_same_v<Content, double> || std::is_same_v<Content, long>)
-                return true;
+                return arg > 0;
             else
                 return false;
         },
