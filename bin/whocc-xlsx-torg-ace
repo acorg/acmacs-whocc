@@ -104,11 +104,11 @@ def check_output_names(names, output_dir):
 # ----------------------------------------------------------------------
 
 def copy_xlsx(source, xlsx_name):
-    if str(source) != str(xlsx_name):
+    try:
         subprocess.check_call(["/usr/bin/xattr", "-c", source])
-        module_logger.info(f"{source} -> {xlsx_name}")
         shutil.copyfile(source, xlsx_name)
-    else:
+        module_logger.info(f"{source} -> {xlsx_name}")
+    except shutil.SameFileError:
         module_logger.info(f"{source} (nothing to copy)")
 
 # ----------------------------------------------------------------------
