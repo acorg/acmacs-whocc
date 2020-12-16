@@ -51,7 +51,7 @@ int main(int argc, char* const argv[])
                             auto& variant = hidb_variants.emplace_back(std::move(hidb_antigen_full_name), fmt::memory_buffer{});
                             const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
                             for (auto entry : by_lab_assay) {
-                                fmt::format_to(variant.second, "        [{} {} {}] ({})", entry.lab, entry.assay, entry.rbc, entry.tables.size());
+                                fmt::format_to(variant.second, "        [{} {}] ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
                                 for (auto table : entry.tables)
                                     fmt::format_to(variant.second, " {}", table->date());
                                 fmt::format_to(variant.second, "\n");
