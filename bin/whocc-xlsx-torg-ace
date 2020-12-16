@@ -187,10 +187,15 @@ def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False):
     if ace_prn_read:
         print(f">>> {ace_prn_read}:1")
     print()
-    prn_rem_conc = "" # leads to duplicates for A/Singapore/INFIMH-16-0019/2016 10-4 and 10-6: "--prn-remove-concentration" if prn_remove_concentration else ""
-    subprocess_check_call(f"chart-org-table-to-ace {prn_rem_conc} '{source}' '{ace}' && chart-fix-names-passages '{ace}' '{ace}' && chart-table '{ace}'", shell=True)
+    # prn_rem_conc = # leads to duplicates for A/Singapore/INFIMH-16-0019/2016 10-4 and 10-6: "--prn-remove-concentration" if prn_remove_concentration else ""
+    subprocess_check_call(["chart-org-table-to-ace", source, ace]) # , prn_rem_conc
+    subprocess_check_call(["chart-fix-names-passages", ace, ace, "-v", "all"])
+    subprocess_check_call(["chart-table", ace])
     if ace_prn_read:
-        subprocess_check_call(f"chart-org-table-to-ace --prn-read {prn_rem_conc} '{source}' '{ace_prn_read}' && chart-fix-names-passages '{ace_prn_read}' '{ace_prn_read}' && chart-table '{ace_prn_read}'", shell=True)
+        print("\n\n")
+        subprocess_check_call(["chart-org-table-to-ace", "--prn-read", source, ace_prn_read]) # , prn_rem_conc
+        subprocess_check_call(["chart-fix-names-passages", ace_prn_read, ace_prn_read])
+        subprocess_check_call(["chart-table", ace_prn_read])
 
 # ----------------------------------------------------------------------
 
