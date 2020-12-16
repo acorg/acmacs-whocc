@@ -38,7 +38,7 @@ static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
-static const std::regex re_CRICK_serum_id{"^F[0-9][0-9]/[0-2][0-9]$", acmacs::regex::icase};
+static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?F[0-9][0-9]/[0-2][0-9](?:\*\d)?$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
@@ -835,9 +835,10 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_rows(warn_if_not_found winf)
 void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows(warn_if_not_found winf)
 {
     fmt::memory_buffer report;
+    const auto number_of_sera_threshold = number_of_sera() / 3 * 2;
     for (nrow_t row{1}; row < antigen_rows()[0]; ++row) {
         if (const size_t matches = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this](ncol_t col) { return sheet().matches(re_CRICK_serum_name_1, row, col); }));
-            matches == number_of_sera()) {
+            matches > number_of_sera_threshold) {
             serum_name_1_row_ = row;
             break;
         }
@@ -851,7 +852,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows(warn_if_not_found w
         AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No serum name row 1 found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
 
     if (serum_name_1_row_.has_value() &&
-        static_cast<size_t>(ranges::count_if(serum_columns(), [this](ncol_t col) { return sheet().matches(re_CRICK_serum_name_2, *serum_name_1_row_ + nrow_t{1}, col); })) == number_of_sera())
+        static_cast<size_t>(ranges::count_if(serum_columns(), [this](ncol_t col) { return sheet().matches(re_CRICK_serum_name_2, *serum_name_1_row_ + nrow_t{1}, col); })) > number_of_sera_threshold)
         serum_name_2_row_ = *serum_name_1_row_ + nrow_t{1};
     else
         AD_DEBUG("re_CRICK_serum_name_2 {}: {}", *serum_name_1_row_ + nrow_t{1},
@@ -881,6 +882,38 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCrick::serum(size_
     return serum;
 
 } // acmacs::sheet::v1::ExtractorCrick::serum
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorCrick::report_serum_anchors() const
+{
+    return fmt::format("  Serum rows:\n    Name:    {}+{}\n    Passage: {}\n    Id:      {}\nSerum columns:   {}\n", //
+                       serum_name_1_row_, serum_name_2_row_, serum_passage_row_, serum_id_row_, format(make_ranges(serum_columns_)));
+
+} // acmacs::sheet::v1::ExtractorCrick::report_serum_anchors
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCrick::check_export_possibility() const
+{
+    std::string msg;
+    try {
+        // NO ExtractorWithSerumRowsAbove::check_export_possibility!
+        Extractor::check_export_possibility();
+    }
+    catch (Error& err) {
+        msg = err.what();
+    }
+
+    if (!serum_name_1_row_.has_value() ||!serum_name_2_row_.has_value())
+        msg += " [no serum name rows]";
+    if (serum_columns_.size() < 2)
+        msg += fmt::format(" [too few serum columns detetcted: {}]", serum_columns_);
+
+    if (!msg.empty())
+        throw Error(msg);
+
+} // acmacs::sheet::v1::ExtractorCrick::check_export_possibility
 
 // ----------------------------------------------------------------------
 

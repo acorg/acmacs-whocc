@@ -195,9 +195,13 @@ namespace acmacs::sheet::inline v1
 
         serum_fields_t serum(size_t sr_no) const override;
 
+        void check_export_possibility() const override; // throws Error if exporting is not possible
+
       protected:
         void find_serum_rows(warn_if_not_found winf) override;
         void find_serum_name_rows(warn_if_not_found winf);
+
+        std::string report_serum_anchors() const override;
 
         std::optional<nrow_t> serum_name_1_row_, serum_name_2_row_;
     };
