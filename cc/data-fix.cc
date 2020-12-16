@@ -73,6 +73,7 @@ void acmacs::data_fix::v1::Set::fix(acmacs::sheet::serum_fields_t& serum, size_t
 {
     auto& data = get().data_;
 
+    // AD_DEBUG("fix serum.name \"{}\"", serum.name);
     for (const auto& en : data) {
         const auto orig = serum.name;
         if (const auto res = en->serum_name(serum.name); res) {

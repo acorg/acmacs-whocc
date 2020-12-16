@@ -38,7 +38,8 @@ static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
-static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?F[0-9][0-9]/[0-2][0-9](?:\*\d)?$)", acmacs::regex::icase};
+static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?(F[0-9][0-9]/[0-2][0-9])(?:\*(\d))?$)", acmacs::regex::icase};
+static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
@@ -826,6 +827,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_rows(warn_if_not_found winf)
     find_serum_name_rows(winf);
     find_serum_passage_row(re_serum_passage, winf);
     find_serum_id_row(re_CRICK_serum_id, winf);
+    find_serum_less_than_substitutions(winf);
 
 } // acmacs::sheet::v1::ExtractorCrick::find_serum_rows
 
@@ -867,6 +869,33 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows(warn_if_not_found w
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions(warn_if_not_found winf)
+{
+    if (!antigen_rows_.empty()) {
+        if (const auto found = sheet().grep(re_CRICK_less_than, {antigen_rows_.back(), ncol_t{1}}, {sheet().number_of_rows(), ncol_t{2}}); !found.empty()) {
+            for (const auto& cell_match : found)
+                footnote_index_subst_.emplace_not_replace(string::strip(fmt::format("{}", sheet().cell(cell_match.row, cell_match.col - ncol_t{1}))), cell_match.matches[1]);
+            AD_LOG(acmacs::log::xlsx, "[Crick]: less than subst: {}", footnote_index_subst_);
+
+            serum_less_than_substitutions_.resize(number_of_sera(), "<");
+            if (serum_id_row_.has_value()) {
+                for (const auto sr_no : range_from_0_to(number_of_sera())) {
+                    const auto cell = sheet().cell(*serum_id_row_, serum_columns().at(sr_no));
+                    if (std::smatch match; sheet().matches(re_CRICK_serum_id, match, cell)) {
+                        serum_less_than_substitutions_[sr_no] = footnote_index_subst_.get_or(match.str(2), std::string{"<"});
+                        AD_LOG(acmacs::log::xlsx, "[Crick]:     SR: {} replacing \"<\" with \"{}\" (serum id footnote match: \"{}\")", sr_no, serum_less_than_substitutions_[sr_no], match.str(2));
+                    }
+                }
+            }
+        }
+        else
+            AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No less than substitution footnote");
+    }
+
+} // acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions
+
+// ----------------------------------------------------------------------
+
 acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCrick::serum(size_t sr_no) const
 {
     auto serum = ExtractorWithSerumRowsAbove::serum(sr_no);
@@ -885,10 +914,21 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCrick::serum(size_
 
 // ----------------------------------------------------------------------
 
+std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no) const
+{
+    auto result = ExtractorWithSerumRowsAbove::titer(ag_no, sr_no);
+    if (result == "<")
+        result = serum_less_than_substitutions_[sr_no];
+    return result;
+
+} // acmacs::sheet::v1::ExtractorCrick::titer
+
+// ----------------------------------------------------------------------
+
 std::string acmacs::sheet::v1::ExtractorCrick::report_serum_anchors() const
 {
-    return fmt::format("  Serum rows:\n    Name:    {}+{}\n    Passage: {}\n    Id:      {}\nSerum columns:   {}\n", //
-                       serum_name_1_row_, serum_name_2_row_, serum_passage_row_, serum_id_row_, format(make_ranges(serum_columns_)));
+    return fmt::format("  Serum rows:\n    Name:      {}+{}\n    Passage:   {}\n    Id:        {}\n    Less than: {}\nSerum columns:   {}\n", //
+                       serum_name_1_row_, serum_name_2_row_, serum_passage_row_, serum_id_row_, footnote_index_subst_, format(make_ranges(serum_columns_)));
 
 } // acmacs::sheet::v1::ExtractorCrick::report_serum_anchors
 
