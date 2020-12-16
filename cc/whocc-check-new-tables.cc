@@ -32,6 +32,7 @@ int main(int argc, char* const argv[])
             auto chart = acmacs::chart::import_from_file(filename);
             AD_INFO("{}", chart->make_name());
             const auto& hidb = hidb::get(chart->info()->virus_type(acmacs::chart::Info::Compute::Yes));
+            auto tables = hidb.tables();
 
             auto antigens = chart->antigens();
             for (auto [ag_no, antigen] : acmacs::enumerate(*antigens)) {
@@ -40,10 +41,35 @@ int main(int argc, char* const argv[])
                     if (!hidb_antigens.empty()) {
                         const auto full_name = antigen->full_name();
                         fmt::print("AG {:3d} \"{}\"\n", ag_no, full_name);
+                        std::vector<std::pair<std::string, fmt::memory_buffer>> hidb_variants;
+                        bool full_name_match_present{false};
                         for (const auto& [hidb_antigen, hidb_index] : hidb_antigens) {
-                            const auto hidb_antigen_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), hidb_antigen->reassortant(), hidb_antigen->passage());
-                            fmt::print("    {} {}\n", hidb_antigen_full_name == full_name ? '>' : ' ', hidb_antigen_full_name);
+                            auto hidb_antigen_full_name =
+                                acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
+                                                     hidb_antigen->reassortant(), hidb_antigen->passage());
+                            full_name_match_present |= hidb_antigen_full_name == full_name;
+                            auto& variant = hidb_variants.emplace_back(std::move(hidb_antigen_full_name), fmt::memory_buffer{});
+                            const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_table_t::recent_first);
+                            for (auto entry : by_lab_assay) {
+                                fmt::format_to(variant.second, "        {}:{} ({})", entry.lab, entry.assay, entry.tables.size());
+                                for (auto table : entry.tables)
+                                    fmt::format_to(variant.second, " {}{}", table->date(), entry.assay); // rbc(entry.assay, table->rbc()));
+                                fmt::format_to(variant.second, "\n");
+                            }
                         }
+                        std::sort(std::begin(hidb_variants), std::end(hidb_variants), [&full_name](const auto& e1, const auto& e2) {
+                            const auto f1 = e1.first == full_name, f2 = e2.first == full_name;
+                            if (f1 && !f2)
+                                return true;
+                            else if (!f1 && f2)
+                                return false;
+                            else
+                                return e1.first < e2.first;
+                        });
+                        if (!full_name_match_present)
+                            hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
+                        for (const auto& variant : hidb_variants)
+                            fmt::print("    {}\n{}", variant.first, fmt::to_string(variant.second));
                     }
                 }
             }
