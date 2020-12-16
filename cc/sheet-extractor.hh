@@ -12,6 +12,11 @@ namespace acmacs::sheet::inline v1
 
     class Sheet;
 
+    struct Error : public std::runtime_error
+    {
+        using std::runtime_error::runtime_error;
+    };
+
     // ----------------------------------------------------------------------
 
     struct antigen_fields_t
@@ -72,6 +77,7 @@ namespace acmacs::sheet::inline v1
         void preprocess(warn_if_not_found winf);
 
         virtual void report_data_anchors() const;
+        virtual void check_export_possibility() const; // throws Error if exporting is not possible
 
       protected:
         virtual void find_titers(warn_if_not_found winf);
@@ -131,6 +137,8 @@ namespace acmacs::sheet::inline v1
         serum_fields_t serum(size_t sr_no) const override;
         std::string titer(size_t ag_no, size_t sr_no) const override;
 
+        void check_export_possibility() const override; // throws Error if exporting is not possible
+
       protected:
         bool is_lab_id(nrow_t row, ncol_t col) const override;
         void find_serum_rows(warn_if_not_found winf) override;
@@ -161,6 +169,8 @@ namespace acmacs::sheet::inline v1
         using Extractor::Extractor;
 
         serum_fields_t serum(size_t sr_no) const override;
+
+        void check_export_possibility() const override; // throws Error if exporting is not possible
 
     protected:
         virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf) { serum_passage_row_ = find_serum_row(re, "passage", winf); }

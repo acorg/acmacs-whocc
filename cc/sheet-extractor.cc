@@ -230,6 +230,20 @@ void acmacs::sheet::v1::Extractor::report_data_anchors() const
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::Extractor::check_export_possibility() const // throws Error if exporting is not possible
+{
+    std::string msg;
+    if (!antigen_name_column_.has_value())
+        msg += " [no antigen name column]";
+    if (antigen_rows_.size() < 3)
+        msg += fmt::format(" [too few antigen rows detetcted: {}]", antigen_rows_);
+    if (!msg.empty())
+        throw Error(msg);
+
+} // acmacs::sheet::v1::Extractor::check_export_possibility
+
+// ----------------------------------------------------------------------
+
 std::string acmacs::sheet::v1::Extractor::titer(size_t ag_no, size_t sr_no) const
 {
     const auto cell = sheet().cell(antigen_rows().at(ag_no), serum_columns().at(sr_no));
@@ -711,6 +725,28 @@ std::string acmacs::sheet::v1::ExtractorCDC::report_serum_anchors() const
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::ExtractorCDC::check_export_possibility() const
+{
+    std::string msg;
+    try {
+        Extractor::check_export_possibility();
+    }
+    catch (Error& err) {
+        msg = err.what();
+    }
+
+    if (!serum_name_column_.has_value())
+        msg += " [no serum name column]";
+    if (serum_rows_.size() < 3)
+        msg += fmt::format(" [too few serum rows detetcted: {}]", serum_rows_);
+
+    if (!msg.empty())
+        throw Error(msg);
+
+} // acmacs::sheet::v1::ExtractorCDC::check_export_possibility
+
+// ----------------------------------------------------------------------
+
 acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorWithSerumRowsAbove::serum(size_t sr_no) const
 {
     const auto make = [this, col = serum_columns().at(sr_no)](std::optional<nrow_t> row) -> std::string {
@@ -751,6 +787,28 @@ std::string acmacs::sheet::v1::ExtractorWithSerumRowsAbove::report_serum_anchors
                        serum_name_row_, serum_passage_row_, serum_id_row_, format(make_ranges(serum_columns_)));
 
 } // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::report_serum_anchors
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorWithSerumRowsAbove::check_export_possibility() const
+{
+    std::string msg;
+    try {
+        Extractor::check_export_possibility();
+    }
+    catch (Error& err) {
+        msg = err.what();
+    }
+
+    if (!serum_name_row_.has_value())
+        msg += " [no serum name row]";
+    if (serum_columns_.size() < 2)
+        msg += fmt::format(" [too few serum columns detetcted: {}]", serum_columns_);
+
+    if (!msg.empty())
+        throw Error(msg);
+
+} // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::check_export_possibility
 
 // ----------------------------------------------------------------------
 
