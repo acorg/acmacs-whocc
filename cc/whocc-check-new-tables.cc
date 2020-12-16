@@ -49,11 +49,11 @@ int main(int argc, char* const argv[])
                                                      hidb_antigen->reassortant(), hidb_antigen->passage());
                             full_name_match_present |= hidb_antigen_full_name == full_name;
                             auto& variant = hidb_variants.emplace_back(std::move(hidb_antigen_full_name), fmt::memory_buffer{});
-                            const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_table_t::recent_first);
+                            const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
                             for (auto entry : by_lab_assay) {
-                                fmt::format_to(variant.second, "        {}:{} ({})", entry.lab, entry.assay, entry.tables.size());
+                                fmt::format_to(variant.second, "        [{} {} {}] ({})", entry.lab, entry.assay, entry.rbc, entry.tables.size());
                                 for (auto table : entry.tables)
-                                    fmt::format_to(variant.second, " {}{}", table->date(), entry.assay); // rbc(entry.assay, table->rbc()));
+                                    fmt::format_to(variant.second, " {}", table->date());
                                 fmt::format_to(variant.second, "\n");
                             }
                         }
