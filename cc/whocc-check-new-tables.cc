@@ -1,5 +1,7 @@
 #include "acmacs-base/argv.hh"
 // #include "acmacs-base/range-v3.hh"
+#include "acmacs-base/enumerate.hh"
+#include "acmacs-base/string-join.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "hidb-5/hidb-set.hh"
@@ -30,6 +32,21 @@ int main(int argc, char* const argv[])
             auto chart = acmacs::chart::import_from_file(filename);
             AD_INFO("{}", chart->make_name());
             const auto& hidb = hidb::get(chart->info()->virus_type(acmacs::chart::Info::Compute::Yes));
+
+            auto antigens = chart->antigens();
+            for (auto [ag_no, antigen] : acmacs::enumerate(*antigens)) {
+                if (!antigen->distinct()) {
+                    const auto hidb_antigens = hidb.antigens()->find(antigen->name(), hidb::fix_location::no);
+                    if (!hidb_antigens.empty()) {
+                        const auto full_name = antigen->full_name();
+                        fmt::print("AG {:3d} \"{}\"\n", ag_no, full_name);
+                        for (const auto& [hidb_antigen, hidb_index] : hidb_antigens) {
+                            const auto hidb_antigen_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), hidb_antigen->reassortant(), hidb_antigen->passage());
+                            fmt::print("    {} {}\n", hidb_antigen_full_name == full_name ? '>' : ' ', hidb_antigen_full_name);
+                        }
+                    }
+                }
+            }
         }
     }
     catch (std::exception& err) {
