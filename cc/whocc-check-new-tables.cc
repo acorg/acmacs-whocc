@@ -49,15 +49,15 @@ int main(int argc, char* const argv[])
             std::vector<std::pair<std::string, fmt::memory_buffer>> hidb_variants;
             bool full_name_match_present{false};
             for (const auto& [hidb_antigen, hidb_index] : hidb_ag_sr) {
-                std::string hidb_full_name;
-                if constexpr (is_antigen)
-                    hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
-                                                          hidb_antigen->reassortant(), hidb_antigen->passage());
-                else
-                    hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
-                                                          hidb_antigen->reassortant(), hidb_antigen->serum_id());
+                const auto hidb_full_name = hidb_antigen->full_name();
+                // if constexpr (is_antigen)
+                //     hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
+                //                                           hidb_antigen->reassortant(), hidb_antigen->passage());
+                // else
+                //     hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
+                //                                           hidb_antigen->reassortant(), hidb_antigen->serum_id());
                 full_name_match_present |= hidb_full_name == full_name;
-                auto& variant = hidb_variants.emplace_back(std::move(hidb_full_name), fmt::memory_buffer{});
+                auto& variant = hidb_variants.emplace_back(hidb_full_name, fmt::memory_buffer{});
                 // mark matching matching annotations, reassortant, passage, serum_id
                 if constexpr (is_antigen)
                     fmt::format_to(variant.second, "{}",
@@ -69,7 +69,7 @@ int main(int argc, char* const argv[])
                                    acmacs::string::join(acmacs::string::join_space,
                                                         /* hidb_antigen->name(), */ make_field(acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), annotations),
                                                         make_field(hidb_antigen->reassortant(), reassortant), make_field(hidb_antigen->serum_id(), ag_sr.serum_id())));
-                fmt::format_to(variant.second, "\n");
+                fmt::format_to(variant.second, "        {}\n", hidb_full_name);
                 const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
                 for (auto entry : by_lab_assay) {
                     fmt::format_to(variant.second, "        [{} {}] ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
