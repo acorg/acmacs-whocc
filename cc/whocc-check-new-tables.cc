@@ -87,8 +87,10 @@ int main(int argc, char* const argv[])
                 else
                     return e1.first < e2.first;
             });
-            if (!full_name_match_present)
-                hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
+            if (!full_name_match_present) {
+                const auto new_var = hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
+                fmt::format_to(new_var->second, "*** New ***\n");
+            }
             for (const auto& variant : hidb_variants) {
                 if (full_name_match_present) {
                     fmt::print("  + ");
