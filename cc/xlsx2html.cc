@@ -11,7 +11,7 @@ struct Options : public argv
     Options(int a_argc, const char* const a_argv[], on_error on_err = on_error::exit) : argv() { parse(a_argc, a_argv, on_err); }
 
     argument<str> xlsx{*this, arg_name{".xlsx"}, mandatory};
-    argument<str> csv{*this, arg_name{".csv"}, mandatory};
+    argument<str> csv{*this, arg_name{".html"}, mandatory};
 };
 
 int main(int argc, char* const argv[])

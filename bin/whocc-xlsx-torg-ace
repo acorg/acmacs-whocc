@@ -200,6 +200,7 @@ def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False):
         subprocess_check_call(["chart-org-table-to-ace", "--prn-read", source, ace_prn_read]) # , prn_rem_conc
         subprocess_check_call(["chart-fix-names-passages", ace_prn_read, ace_prn_read])
         subprocess_check_call(["chart-table", ace_prn_read])
+    subprocess_check_call(["whocc-check-new-tables", ace])
 
 # ----------------------------------------------------------------------
 
