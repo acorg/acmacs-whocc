@@ -28,6 +28,57 @@ int main(int argc, char* const argv[])
         Options opt(argc, argv);
         acmacs::log::enable(opt.verbose);
 
+        const auto show_matches = [](const auto& hidb, const auto& hidb_ag_sr, size_t no, const auto& ag_sr) {
+            constexpr auto is_antigen = std::is_same_v<std::decay_t<decltype(ag_sr)>, acmacs::chart::Antigen>;
+            const auto full_name = ag_sr.full_name();
+            if constexpr (is_antigen)
+                fmt::print("AG");
+            else
+                fmt::print("SR");
+            fmt::print("{:3d} \"{}\"\n", no, full_name);
+
+            std::vector<std::pair<std::string, fmt::memory_buffer>> hidb_variants;
+            bool full_name_match_present{false};
+            for (const auto& [hidb_antigen, hidb_index] : hidb_ag_sr) {
+                std::string hidb_full_name;
+                if constexpr (is_antigen)
+                    hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
+                                                          hidb_antigen->reassortant(), hidb_antigen->passage());
+                else
+                    hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
+                                                          hidb_antigen->reassortant(), hidb_antigen->serum_id());
+                full_name_match_present |= hidb_full_name == full_name;
+                auto& variant = hidb_variants.emplace_back(std::move(hidb_full_name), fmt::memory_buffer{});
+                const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
+                for (auto entry : by_lab_assay) {
+                    fmt::format_to(variant.second, "        [{} {}] ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
+                    for (auto table : entry.tables)
+                        fmt::format_to(variant.second, " {}", table->date());
+                    fmt::format_to(variant.second, "\n");
+                }
+            }
+            std::sort(std::begin(hidb_variants), std::end(hidb_variants), [&full_name](const auto& e1, const auto& e2) {
+                const auto f1 = e1.first == full_name, f2 = e2.first == full_name;
+                if (f1 && !f2)
+                    return true;
+                else if (!f1 && f2)
+                    return false;
+                else
+                    return e1.first < e2.first;
+            });
+            if (!full_name_match_present)
+                hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
+            for (const auto& variant : hidb_variants) {
+                if (full_name_match_present) {
+                    fmt::print("  + ");
+                    full_name_match_present = false;
+                }
+                else
+                    fmt::print("    ");
+                fmt::print("{}\n{}", variant.first, fmt::to_string(variant.second));
+            }
+        };
+
         for (const auto& filename : *opt.tables) {
             auto chart = acmacs::chart::import_from_file(filename);
             AD_INFO("{}", chart->make_name());
@@ -38,40 +89,17 @@ int main(int argc, char* const argv[])
             for (auto [ag_no, antigen] : acmacs::enumerate(*antigens)) {
                 if (!antigen->distinct()) {
                     const auto hidb_antigens = hidb.antigens()->find(antigen->name(), hidb::fix_location::no);
-                    if (!hidb_antigens.empty()) {
-                        const auto full_name = antigen->full_name();
-                        fmt::print("AG {:3d} \"{}\"\n", ag_no, full_name);
-                        std::vector<std::pair<std::string, fmt::memory_buffer>> hidb_variants;
-                        bool full_name_match_present{false};
-                        for (const auto& [hidb_antigen, hidb_index] : hidb_antigens) {
-                            auto hidb_antigen_full_name =
-                                acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
-                                                     hidb_antigen->reassortant(), hidb_antigen->passage());
-                            full_name_match_present |= hidb_antigen_full_name == full_name;
-                            auto& variant = hidb_variants.emplace_back(std::move(hidb_antigen_full_name), fmt::memory_buffer{});
-                            const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
-                            for (auto entry : by_lab_assay) {
-                                fmt::format_to(variant.second, "        [{} {}] ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
-                                for (auto table : entry.tables)
-                                    fmt::format_to(variant.second, " {}", table->date());
-                                fmt::format_to(variant.second, "\n");
-                            }
-                        }
-                        std::sort(std::begin(hidb_variants), std::end(hidb_variants), [&full_name](const auto& e1, const auto& e2) {
-                            const auto f1 = e1.first == full_name, f2 = e2.first == full_name;
-                            if (f1 && !f2)
-                                return true;
-                            else if (!f1 && f2)
-                                return false;
-                            else
-                                return e1.first < e2.first;
-                        });
-                        if (!full_name_match_present)
-                            hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
-                        for (const auto& variant : hidb_variants)
-                            fmt::print("    {}\n{}", variant.first, fmt::to_string(variant.second));
-                    }
+                    if (!hidb_antigens.empty())
+                        show_matches(hidb, hidb_antigens, ag_no, *antigen);
                 }
+            }
+            fmt::print("\n\n");
+
+            auto sera = chart->sera();
+            for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
+                const auto hidb_sera = hidb.sera()->find(serum->name(), hidb::fix_location::no);
+                // if (!hidb_sera.empty())
+                show_matches(hidb, hidb_sera, sr_no, *serum);
             }
         }
     }
