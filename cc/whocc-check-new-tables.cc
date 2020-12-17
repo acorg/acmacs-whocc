@@ -31,7 +31,7 @@ int main(int argc, char* const argv[])
         const auto show_matches = [](const auto& hidb, const auto& hidb_ag_sr, size_t no, const auto& ag_sr) {
             const auto make_field = [](const auto& value, const auto& to_compare) {
                 if (!value.empty() && value == to_compare)
-                    return fmt::format("~{}~", value);
+                    return fmt::format("<{}>", value);
                 else
                     return fmt::format("{}", value);
             };
@@ -100,9 +100,10 @@ int main(int argc, char* const argv[])
             }
         };
 
+        fmt::print("# -*- Mode: eu-whocc-scan2; -*-\n\n");
         for (const auto& filename : *opt.tables) {
             auto chart = acmacs::chart::import_from_file(filename);
-            AD_INFO("{}", chart->make_name());
+            fmt::print(">> {}\n\n", chart->make_name());
             const auto& hidb = hidb::get(chart->info()->virus_type(acmacs::chart::Info::Compute::Yes));
             auto tables = hidb.tables();
 
@@ -122,6 +123,8 @@ int main(int argc, char* const argv[])
                 // if (!hidb_sera.empty())
                 show_matches(hidb, hidb_sera, sr_no, *serum);
             }
+            fmt::print("\n\n");
+            fmt::print("> ====================================================================================================\n\n");
         }
     }
     catch (std::exception& err) {
