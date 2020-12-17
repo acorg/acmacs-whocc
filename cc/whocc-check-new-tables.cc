@@ -40,22 +40,11 @@ int main(int argc, char* const argv[])
             const auto full_name = ag_sr.full_name();
             const auto reassortant = ag_sr.reassortant();
             const auto annotations = acmacs::string::join(acmacs::string::join_space, ag_sr.annotations());
-            if constexpr (is_antigen)
-                fmt::print("AG");
-            else
-                fmt::print("SR");
-            fmt::print("{:3d} \"{}\"\n", no, full_name);
 
             std::vector<std::pair<std::string, fmt::memory_buffer>> hidb_variants;
             bool full_name_match_present{false};
             for (const auto& [hidb_antigen, hidb_index] : hidb_ag_sr) {
                 const auto hidb_full_name = hidb_antigen->full_name();
-                // if constexpr (is_antigen)
-                //     hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
-                //                                           hidb_antigen->reassortant(), hidb_antigen->passage());
-                // else
-                //     hidb_full_name = acmacs::string::join(acmacs::string::join_space, hidb_antigen->name(), acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()),
-                //                                           hidb_antigen->reassortant(), hidb_antigen->serum_id());
                 full_name_match_present |= hidb_full_name == full_name;
                 auto& variant = hidb_variants.emplace_back(hidb_full_name, fmt::memory_buffer{});
                 // mark matching matching annotations, reassortant, passage, serum_id
@@ -69,10 +58,11 @@ int main(int argc, char* const argv[])
                                    acmacs::string::join(acmacs::string::join_space,
                                                         /* hidb_antigen->name(), */ make_field(acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), annotations),
                                                         make_field(hidb_antigen->reassortant(), reassortant), make_field(hidb_antigen->serum_id(), ag_sr.serum_id())));
-                fmt::format_to(variant.second, "        {}\n", hidb_full_name);
+                // fmt::format_to(variant.second, "        {{{}}}\n", hidb_full_name);
+                fmt::format_to(variant.second, "\n");
                 const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
                 for (auto entry : by_lab_assay) {
-                    fmt::format_to(variant.second, "        [{} {}] ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
+                    fmt::format_to(variant.second, "        {{{} {}}} ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
                     for (auto table : entry.tables)
                         fmt::format_to(variant.second, " {}", table->date());
                     fmt::format_to(variant.second, "\n");
@@ -87,22 +77,24 @@ int main(int argc, char* const argv[])
                 else
                     return e1.first < e2.first;
             });
-            if (!full_name_match_present) {
-                const auto new_var = hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
-                fmt::format_to(new_var->second, "*** New ***\n");
-            }
+            // if (!full_name_match_present) {
+            //     const auto new_var = hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
+            //     fmt::format_to(new_var->second, "*** New ***\n");
+            // }
+
+            fmt::print("{} {} {:3d} {}\n", full_name_match_present ? '+' : '-', is_antigen ? "AG" : "SR", no, full_name);
             for (const auto& variant : hidb_variants) {
-                if (full_name_match_present) {
-                    fmt::print("  + ");
-                    full_name_match_present = false;
-                }
-                else
+                // if (full_name_match_present) {
+                //     fmt::print("  + ");
+                //     full_name_match_present = false;
+                // }
+                // else
                     fmt::print("    ");
                 fmt::print("{}", fmt::to_string(variant.second));
             }
         };
 
-        fmt::print("# -*- Mode: eu-whocc-scan2; -*-\n\n");
+        fmt::print("# -*- Mode: eu-whocc-check-new-tables; -*-\n\n");
         for (const auto& filename : *opt.tables) {
             auto chart = acmacs::chart::import_from_file(filename);
             fmt::print(">> {}\n\n", chart->make_name());
@@ -115,15 +107,17 @@ int main(int argc, char* const argv[])
                     const auto hidb_antigens = hidb.antigens()->find(antigen->name(), hidb::fix_location::no);
                     if (!hidb_antigens.empty())
                         show_matches(hidb, hidb_antigens, ag_no, *antigen);
+                    fmt::print("\n");
                 }
             }
-            fmt::print("\n\n");
+            fmt::print("\n");
 
             auto sera = chart->sera();
             for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
                 const auto hidb_sera = hidb.sera()->find(serum->name(), hidb::fix_location::no);
                 // if (!hidb_sera.empty())
                 show_matches(hidb, hidb_sera, sr_no, *serum);
+                fmt::print("\n");
             }
             fmt::print("\n\n");
             fmt::print("> ====================================================================================================\n\n");
