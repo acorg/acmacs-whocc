@@ -29,8 +29,17 @@ int main(int argc, char* const argv[])
         acmacs::log::enable(opt.verbose);
 
         const auto show_matches = [](const auto& hidb, const auto& hidb_ag_sr, size_t no, const auto& ag_sr) {
+            const auto make_field = [](const auto& value, const auto& to_compare) {
+                if (!value.empty() && value == to_compare)
+                    return fmt::format("~{}~", value);
+                else
+                    return fmt::format("{}", value);
+            };
+
             constexpr auto is_antigen = std::is_same_v<std::decay_t<decltype(ag_sr)>, acmacs::chart::Antigen>;
             const auto full_name = ag_sr.full_name();
+            const auto reassortant = ag_sr.reassortant();
+            const auto annotations = acmacs::string::join(acmacs::string::join_space, ag_sr.annotations());
             if constexpr (is_antigen)
                 fmt::print("AG");
             else
@@ -49,6 +58,18 @@ int main(int argc, char* const argv[])
                                                           hidb_antigen->reassortant(), hidb_antigen->serum_id());
                 full_name_match_present |= hidb_full_name == full_name;
                 auto& variant = hidb_variants.emplace_back(std::move(hidb_full_name), fmt::memory_buffer{});
+                // mark matching matching annotations, reassortant, passage, serum_id
+                if constexpr (is_antigen)
+                    fmt::format_to(variant.second, "{}",
+                                   acmacs::string::join(acmacs::string::join_space,
+                                                        /* hidb_antigen->name(), */ make_field(acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), annotations),
+                                                        make_field(hidb_antigen->reassortant(), reassortant), make_field(hidb_antigen->passage(), ag_sr.passage())));
+                else
+                    fmt::format_to(variant.second, "{}",
+                                   acmacs::string::join(acmacs::string::join_space,
+                                                        /* hidb_antigen->name(), */ make_field(acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), annotations),
+                                                        make_field(hidb_antigen->reassortant(), reassortant), make_field(hidb_antigen->serum_id(), ag_sr.serum_id())));
+                fmt::format_to(variant.second, "\n");
                 const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
                 for (auto entry : by_lab_assay) {
                     fmt::format_to(variant.second, "        [{} {}] ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
@@ -75,7 +96,7 @@ int main(int argc, char* const argv[])
                 }
                 else
                     fmt::print("    ");
-                fmt::print("{}\n{}", variant.first, fmt::to_string(variant.second));
+                fmt::print("{}", fmt::to_string(variant.second));
             }
         };
 
