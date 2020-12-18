@@ -230,6 +230,23 @@ namespace acmacs::sheet::inline v1
 
     // ----------------------------------------------------------------------
 
+    class ExtractorNIID : public ExtractorWithSerumRowsAbove
+    {
+      public:
+        ExtractorNIID(std::shared_ptr<Sheet> a_sheet);
+
+        serum_fields_t serum(size_t sr_no) const override;
+
+      protected:
+        void find_serum_rows(warn_if_not_found winf) override;
+        // void find_serum_name_rows(warn_if_not_found winf);
+        // void find_serum_less_than_substitutions(warn_if_not_found winf);
+
+        // std::string report_serum_anchors() const override;
+    };
+
+    // ----------------------------------------------------------------------
+
     class ExtractorVIDRL : public ExtractorWithSerumRowsAbove
     {
       public:
@@ -240,7 +257,6 @@ namespace acmacs::sheet::inline v1
       protected:
         void find_serum_rows(warn_if_not_found winf) override;
 
-      private:
     };
 
 } // namespace acmacs::sheet::inline v1

@@ -90,6 +90,12 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
             else
                 throw std::exception{};
         }
+        else if (detected.lab == "NIID") {
+            extractor = std::make_unique<ExtractorNIID>(sheet);
+            extractor->subtype(detected.subtype);
+            extractor->lineage(detected.lineage);
+            extractor->rbc(detected.rbc);
+        }
         else if (detected.lab == "VIDRL") {
             extractor = std::make_unique<ExtractorVIDRL>(sheet);
             extractor->subtype(detected.subtype);
@@ -1041,6 +1047,31 @@ std::string acmacs::sheet::v1::ExtractorCrickPRN::titer(size_t ag_no, size_t sr_
         return ExtractorCrick::titer(ag_no, sr_no);
 
 } // acmacs::sheet::v1::ExtractorCrickPRN::titer
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::ExtractorNIID::ExtractorNIID(std::shared_ptr<Sheet> a_sheet)
+    : ExtractorWithSerumRowsAbove(a_sheet)
+{
+    lab("NIID");
+
+} // acmacs::sheet::v1::ExtractorNIID::ExtractorNIID
+
+// ----------------------------------------------------------------------
+
+acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorNIID::serum(size_t sr_no) const
+{
+    return ExtractorWithSerumRowsAbove::serum(sr_no);
+
+} // acmacs::sheet::v1::ExtractorNIID::serum
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorNIID::find_serum_rows(warn_if_not_found winf)
+{
+    ExtractorWithSerumRowsAbove::find_serum_rows(winf);
+
+} // acmacs::sheet::v1::ExtractorNIID::find_serum_rows
 
 // ----------------------------------------------------------------------
 
