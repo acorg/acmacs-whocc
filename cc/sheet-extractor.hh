@@ -238,6 +238,7 @@ namespace acmacs::sheet::inline v1
         serum_fields_t serum(size_t sr_no) const override;
 
       protected:
+        void find_antigen_lab_id_column(warn_if_not_found winf) override;
         void find_serum_rows(warn_if_not_found winf) override;
         // void find_serum_name_rows(warn_if_not_found winf);
         // void find_serum_less_than_substitutions(warn_if_not_found winf);

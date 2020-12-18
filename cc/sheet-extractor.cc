@@ -44,6 +44,8 @@ static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 
+static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex::icase};
+
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
@@ -1056,6 +1058,22 @@ acmacs::sheet::v1::ExtractorNIID::ExtractorNIID(std::shared_ptr<Sheet> a_sheet)
     lab("NIID");
 
 } // acmacs::sheet::v1::ExtractorNIID::ExtractorNIID
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorNIID::find_antigen_lab_id_column(warn_if_not_found winf)
+{
+    if (const auto matches = sheet().grep(re_NIID_lab_id_label, {nrow_t{0}, ncol_t{0}}, {nrow_t{10}, ncol_t{2}}); matches.size() == 1) {
+        antigen_lab_id_column_ = matches[0].col;
+    }
+
+    if (antigen_lab_id_column_.has_value())
+        AD_LOG(acmacs::log::xlsx, "[NIID] Antigen lab_id column: {}", *antigen_lab_id_column_);
+    else
+        AD_WARNING_IF(winf == warn_if_not_found::yes, "[NIID] Antigen lab_id column not found");
+
+
+} // acmacs::sheet::v1::ExtractorNIID::find_antigen_lab_id_column
 
 // ----------------------------------------------------------------------
 
