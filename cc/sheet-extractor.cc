@@ -2,6 +2,7 @@
 #include "acmacs-base/enumerate.hh"
 #include "acmacs-base/string-compare.hh"
 #include "acmacs-base/string-split.hh"
+#include "acmacs-base/string.hh"
 #include "acmacs-virus/virus-name-normalize.hh"
 #include "acmacs-virus/passage.hh"
 #include "acmacs-whocc/log.hh"
@@ -44,7 +45,8 @@ static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 
-static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?([A-Z][A-Z\d\s/]+)\s+(EGG|CELL|HCK)\s+NO\s*\.\s*(\d+)$)", acmacs::regex::icase}; // [clade](name with reassortant) (passage-type) (serum-id)
+static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?([A-Z][A-Z\d\s\-_\./]+)\s+(EGG|CELL|HCK)\s+NO\s*\.\s*(\d+)$)", acmacs::regex::icase}; // [clade](name with reassortant) (passage-type) (serum-id)
+static const std::regex re_NIID_serum_name_fix{R"(\s*([\-/])\s*)", acmacs::regex::icase}; // remove spaces around - and /
 static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex::icase};
 
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
@@ -1080,7 +1082,19 @@ void acmacs::sheet::v1::ExtractorNIID::find_antigen_lab_id_column(warn_if_not_fo
 
 acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorNIID::serum(size_t sr_no) const
 {
-    return ExtractorWithSerumRowsAbove::serum(sr_no);
+    if (serum_name_row().has_value()) {
+        const auto serum_designation = fmt::format("{}", sheet().cell(*serum_name_row(), serum_columns().at(sr_no)));
+        if (std::smatch match; std::regex_search(serum_designation, match, re_NIID_serum_name)) {
+            auto name = ::string::replace(::string::upper(match.str(1)), '\n', ' ');
+            name = std::regex_replace(name, re_NIID_serum_name_fix, "$1");
+            return serum_fields_t{
+                .name = name,                                                                     //
+                .serum_id = ::string::upper(fmt::format("{} No.{}", match.str(2), match.str(3))), //
+                .passage = ::string::upper(match.str(2))                                          //
+            };
+        }
+    }
+    return serum_fields_t{};
 
 } // acmacs::sheet::v1::ExtractorNIID::serum
 

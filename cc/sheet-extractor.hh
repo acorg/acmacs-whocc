@@ -178,7 +178,7 @@ namespace acmacs::sheet::inline v1
         virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf) { serum_id_row_ = find_serum_row(re, "id", winf); }
         void exclude_control_sera(warn_if_not_found winf) override;
 
-        std::optional<nrow_t> serum_name_row() const { return serum_passage_row_; }
+        std::optional<nrow_t> serum_name_row() const { return serum_name_row_; }
         std::optional<nrow_t> serum_passage_row() const { return serum_passage_row_; }
         std::optional<nrow_t> serum_id_row() const { return serum_id_row_; }
 
