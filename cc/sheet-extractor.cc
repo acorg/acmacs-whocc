@@ -44,6 +44,7 @@ static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 
+static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?([A-Z][A-Z\d\s/]+)\s+(EGG|CELL|HCK)\s+NO\s*\.\s*(\d+)$)", acmacs::regex::icase}; // [clade](name with reassortant) (passage-type) (serum-id)
 static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex::icase};
 
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
@@ -1087,9 +1088,17 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorNIID::serum(size_t
 
 void acmacs::sheet::v1::ExtractorNIID::find_serum_rows(warn_if_not_found winf)
 {
-    ExtractorWithSerumRowsAbove::find_serum_rows(winf);
+    serum_name_row_ = find_serum_row(re_NIID_serum_name, "name", winf);
 
 } // acmacs::sheet::v1::ExtractorNIID::find_serum_rows
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorNIID::report_serum_anchors() const
+{
+    return fmt::format("  Serum rows:\n    Name:    {}\nSerum columns:   {}\n", serum_name_row_, format(make_ranges(serum_columns_)));
+
+} // acmacs::sheet::v1::ExtractorNIID::report_serum_anchors
 
 // ----------------------------------------------------------------------
 

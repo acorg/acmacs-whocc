@@ -243,7 +243,7 @@ namespace acmacs::sheet::inline v1
         // void find_serum_name_rows(warn_if_not_found winf);
         // void find_serum_less_than_substitutions(warn_if_not_found winf);
 
-        // std::string report_serum_anchors() const override;
+        std::string report_serum_anchors() const override;
     };
 
     // ----------------------------------------------------------------------
