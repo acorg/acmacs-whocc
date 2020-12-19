@@ -262,7 +262,7 @@ std::string acmacs::sheet::v1::Extractor::titer(size_t ag_no, size_t sr_no) cons
     return std::visit(
         [&cell]<typename Content>(const Content& cont) -> std::string {
             if constexpr (std::is_same_v<Content, std::string>)
-                return cont;
+                return ::string::remove_spaces(cont); // NIID has titers with spaces, e.g. "< 10"
             else if constexpr (std::is_same_v<Content, long>)
                 return fmt::format("{}", cont);
             else if constexpr (std::is_same_v<Content, double>)
