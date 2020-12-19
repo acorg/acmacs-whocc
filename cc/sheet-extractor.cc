@@ -1087,6 +1087,8 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorNIID::serum(size_t
         if (std::smatch match; std::regex_search(serum_designation, match, re_NIID_serum_name)) {
             auto name = ::string::replace(::string::upper(match.str(1)), '\n', ' ');
             name = std::regex_replace(name, re_NIID_serum_name_fix, "$1");
+            if (name.size() > 2 && ((name[0] != 'A' && name[0] != 'B') || name[1] != '/'))
+                name = fmt::format("{}/{}", subtype_without_lineage(), name);
             return serum_fields_t{
                 .name = name,                                                                     //
                 .serum_id = ::string::upper(fmt::format("{} No.{}", match.str(2), match.str(3))), //
