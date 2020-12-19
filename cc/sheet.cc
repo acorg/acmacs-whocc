@@ -51,7 +51,7 @@ size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_titer{"^(<|[<>]?[1-9][0-9]{0,5}|N[DA]|QNS|\\*)$", acmacs::regex::icase};
+static const std::regex re_titer{R"(^(<|[<>]?\s*[1-9][0-9]{0,5}|N[DA]|QNS|\*)$)", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
