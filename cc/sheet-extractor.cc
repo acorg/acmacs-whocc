@@ -45,7 +45,7 @@ static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 
-static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?([A-Z][A-Z\d\s\-_\./]+)\s+(EGG|CELL|HCK)\s+NO\s*\.\s*(\d+)$)", acmacs::regex::icase}; // [clade](name with reassortant) (passage-type) (serum-id)
+static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?([A-Z][A-Z\d\s\-_\./\(\)]+)\s+(EGG|CELL|HCK)\s+(?:NIID\s+)?NO\s*\.\s*(\d+)$)", acmacs::regex::icase}; // [clade](name with reassortant) (passage-type) (serum-id)
 static const std::regex re_NIID_serum_name_fix{R"(\s*([\-/])\s*)", acmacs::regex::icase}; // remove spaces around - and /
 static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex::icase};
 
