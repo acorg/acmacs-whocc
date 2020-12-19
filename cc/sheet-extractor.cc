@@ -1103,6 +1103,16 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorNIID::serum(size_t
 
 // ----------------------------------------------------------------------
 
+std::string acmacs::sheet::v1::ExtractorNIID::titer(size_t ag_no, size_t sr_no) const
+{
+    auto titer = ExtractorWithSerumRowsAbove::titer(ag_no, sr_no);
+    titer = ::string::replace(titer, "\xEF\xBC\x9C", "<"); // unicode Fullwidth Less-Than Sign &#xFF1C
+    return titer;
+
+} // acmacs::sheet::v1::ExtractorNIID::titer
+
+// ----------------------------------------------------------------------
+
 void acmacs::sheet::v1::ExtractorNIID::find_serum_rows(warn_if_not_found winf)
 {
     serum_name_row_ = find_serum_row(re_NIID_serum_name, "name", winf);

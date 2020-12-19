@@ -236,6 +236,7 @@ namespace acmacs::sheet::inline v1
         ExtractorNIID(std::shared_ptr<Sheet> a_sheet);
 
         serum_fields_t serum(size_t sr_no) const override;
+        std::string titer(size_t ag_no, size_t sr_no) const override;
 
       protected:
         void find_antigen_lab_id_column(warn_if_not_found winf) override;

@@ -51,7 +51,8 @@ size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
 
 #include "acmacs-base/global-constructors-push.hh"
 
-static const std::regex re_titer{R"(^(<|[<>]?\s*[1-9][0-9]{0,5}|N[DA]|QNS|\*)$)", acmacs::regex::icase};
+// \xEF\xBC\x9C -> "<" unicode Fullwidth Less-Than Sign &#xFF1C; (NIID)
+static const std::regex re_titer{R"(^(<|(?:<|>|\xEF\xBC\x9C)?\s*[1-9][0-9]{0,5}|N[DA]|QNS|\*)$)", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
@@ -59,8 +60,14 @@ bool acmacs::sheet::v1::Sheet::maybe_titer(const cell_t& cell) const
 {
     return std::visit(
         []<typename Content>(const Content& arg) {
-            if constexpr (std::is_same_v<Content, std::string>)
+            if constexpr (std::is_same_v<Content, std::string>) {
+                // if (!arg.empty() && static_cast<unsigned char>(arg[0]) > 0x7F) {
+                //     AD_DEBUG("titer? \"{}\"", arg);
+                //     for (auto cc : arg)
+                //         AD_DEBUG("titer? 0x{:X}", static_cast<unsigned char>(cc));
+                // }
                 return std::regex_search(arg, re_titer);
+            }
             else if constexpr (std::is_same_v<Content, double> || std::is_same_v<Content, long>)
                 return arg > 0;
             else
