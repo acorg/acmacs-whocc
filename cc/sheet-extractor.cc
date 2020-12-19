@@ -48,6 +48,7 @@ static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?([A-Z][A-Z\d\s\-_\./\(\)]+)\s+(EGG|CELL|HCK)\s+(?:NIID\s+)?NO\s*\.\s*(\d+)$)", acmacs::regex::icase}; // [clade](name with reassortant) (passage-type) (serum-id)
 static const std::regex re_NIID_serum_name_fix{R"(\s*([\-/])\s*)", acmacs::regex::icase}; // remove spaces around - and /
 static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex::icase};
+static const std::regex re_NIID_serum_name_row_non_serum_label{R"((HA\s*group))", acmacs::regex::icase};
 
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
@@ -782,7 +783,7 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorWithSerumRowsAbove
 void acmacs::sheet::v1::ExtractorWithSerumRowsAbove::exclude_control_sera(warn_if_not_found /*winf*/)
 {
     ranges::actions::remove_if(serum_columns_, [this](ncol_t col) {
-        if ((serum_id_row_.has_value() && is_control_serum_cell(sheet().cell(*serum_id_row_, col))) || (serum_passage_row_.has_value() && is_control_serum_cell(sheet().cell(*serum_passage_row_, col)))) {
+        if ((serum_name_row_.has_value() && is_control_serum_cell(sheet().cell(*serum_name_row_, col))) || (serum_id_row_.has_value() && is_control_serum_cell(sheet().cell(*serum_id_row_, col))) || (serum_passage_row_.has_value() && is_control_serum_cell(sheet().cell(*serum_passage_row_, col)))) {
             AD_LOG(acmacs::log::xlsx, "[{}] serum column {} excluded: HUMAN or WHO or NORMAL serum", lab(), col);
             return true;
         }
@@ -1107,6 +1108,22 @@ void acmacs::sheet::v1::ExtractorNIID::find_serum_rows(warn_if_not_found winf)
     serum_name_row_ = find_serum_row(re_NIID_serum_name, "name", winf);
 
 } // acmacs::sheet::v1::ExtractorNIID::find_serum_rows
+
+// ----------------------------------------------------------------------
+
+bool acmacs::sheet::v1::ExtractorNIID::is_control_serum_cell(const cell_t& cell) const
+{
+    if (ExtractorWithSerumRowsAbove::is_control_serum_cell(cell))
+        return true;
+
+    if (is_string(cell)) {
+        const auto text = fmt::format("{}", cell);
+        if (std::regex_search(text, re_NIID_serum_name_row_non_serum_label))
+            return true;
+    }
+    return false;
+
+} // acmacs::sheet::v1::ExtractorNIID::is_control_serum_cell
 
 // ----------------------------------------------------------------------
 

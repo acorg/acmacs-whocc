@@ -105,7 +105,7 @@ namespace acmacs::sheet::inline v1
         // virtual bool is_passage(nrow_t row, ncol_t col) const;
         virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
         virtual bool valid_titer_row(nrow_t /*row*/, const column_range& /*cr*/) const { return true; }
-        bool is_control_serum_cell(const cell_t& cell) const;
+        virtual bool is_control_serum_cell(const cell_t& cell) const;
 
         virtual std::string make_passage(const std::string& src) const;
 
@@ -240,8 +240,7 @@ namespace acmacs::sheet::inline v1
       protected:
         void find_antigen_lab_id_column(warn_if_not_found winf) override;
         void find_serum_rows(warn_if_not_found winf) override;
-        // void find_serum_name_rows(warn_if_not_found winf);
-        // void find_serum_less_than_substitutions(warn_if_not_found winf);
+        bool is_control_serum_cell(const cell_t& cell) const override;
 
         std::string report_serum_anchors() const override;
     };
