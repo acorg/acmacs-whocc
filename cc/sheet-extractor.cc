@@ -45,7 +45,14 @@ static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
 
-static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?([A-Z][A-Z\d\s\-_\./\(\)]+)\s+(EGG|CELL|HCK)\s+(?:NIID\s+)?NO\s*\.\s*([\d\-]+)$)", acmacs::regex::icase}; // [clade](name with reassortant) (passage-type) (serum-id)
+static const std::regex re_NIID_serum_name{R"(^\s*(?:\d+[A-Z]\s+)?)"           // [clade]
+                                           R"(([A-Z][A-Z\d\s\-_\./\(\)]+)\s+)" // name with reassortant $1
+                                           // R"((?:(EGG|CELL|HCK)\s+)?)"         // passage type (sometimes absent for reassortants) $2
+                                           // R"((?:NIID\s+)?)"                   // NIID artefact
+                                           R"(NO\s*\.\s*([\d\-]+)$)",          // serum_id $2
+                                           acmacs::regex::icase};
+static const std::regex re_NIID_serum_passage{R"(\s*(EGG|CELL|HCK)?\s*(?:NIID)?\s*$)", acmacs::regex::icase};
+
 static const std::regex re_NIID_serum_name_fix{R"(\s*([\-/])\s*)", acmacs::regex::icase}; // remove spaces around - and /
 static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex::icase};
 static const std::regex re_NIID_serum_name_row_non_serum_label{R"((HA\s*group))", acmacs::regex::icase};
@@ -1090,10 +1097,17 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorNIID::serum(size_t
             name = std::regex_replace(name, re_NIID_serum_name_fix, "$1");
             if (name.size() > 2 && ((name[0] != 'A' && name[0] != 'B') || name[1] != '/'))
                 name = fmt::format("{}/{}", subtype_without_lineage(), name);
+            // AD_DEBUG("serum fields \"{}\" \"{}\"", name, match.str(2));
+            std::string passage;
+            if (std::smatch match_passage; std::regex_search(name, match_passage, re_NIID_serum_passage)) {
+                passage = ::string::upper(match_passage.str(1));
+                name = match_passage.prefix();
+            }
+            // AD_DEBUG("serum fields2 \"{}\" \"{}\" \"{}\"", name, passage, match.str(2));
             return serum_fields_t{
                 .name = name,                                                                     //
-                .serum_id = ::string::upper(fmt::format("{} No.{}", match.str(2), match.str(3))), //
-                .passage = ::string::upper(match.str(2))                                          //
+                .serum_id = ::string::upper(fmt::format("{} No.{}", passage, match.str(2))), //
+                .passage = passage                                                                //
             };
         }
     }
