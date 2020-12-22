@@ -45,7 +45,8 @@ date
 echo H3
 echo
 DB=$DB_DIR/hidb5.h3
-run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ace
+# run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ace
+run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/h3-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 
 echo
@@ -54,7 +55,8 @@ date
 echo H1PDM
 echo
 DB=$DB_DIR/hidb5.h1
-run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ace
+# run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ace
+run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/h1pdm-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 
 echo
@@ -63,7 +65,8 @@ date
 echo B
 echo
 DB=$DB_DIR/hidb5.b
-run hidb5-make "${DB}.json.xz" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ace ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ace
+# run hidb5-make "${DB}.json.xz" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ace ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ace
+run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/b{,vic,yam]-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 echo
 date
