@@ -171,11 +171,18 @@ acmacs::sheet::v1::antigen_fields_t acmacs::sheet::v1::Extractor::antigen(size_t
         return {};
     };
 
+    const auto make_date = [this](const std::string& source) {
+        if (!source.empty())
+            return date::display(date::from_string(source, date::allow_incomplete::no, date::throw_on_error::yes, lab() == "CDC" ? date::month_first::yes : date::month_first::no));
+        else
+            return source;
+    };
+
     return antigen_fields_t{
-        .name = make(antigen_name_column()),       //
-        .date = make(antigen_date_column()),       //
+        .name = make(antigen_name_column()),                     //
+        .date = make_date(make(antigen_date_column())),          //
         .passage = make_passage(make(antigen_passage_column())), //
-        .lab_id = make(antigen_lab_id_column())    //
+        .lab_id = make(antigen_lab_id_column())                  //
     };
 
 } // acmacs::sheet::v1::Extractor::antigen
