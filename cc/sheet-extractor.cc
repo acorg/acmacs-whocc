@@ -412,7 +412,6 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found wi
     };
 
     antigen_date_column_ = ::find_column(sheet(), antigen_rows_, is_date);
-
     if (antigen_date_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen date column: {}", *antigen_date_column_);
     else
@@ -433,14 +432,6 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found wi
 void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found winf)
 {
     antigen_passage_column_ = ::find_column(sheet(), antigen_rows_, [](const auto& cell) { return acmacs::virus::is_good_passage(fmt::format("{}", cell)); });
-    // for (ncol_t col{0}; col < sheet().number_of_columns(); ++col) {
-    //     // if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_passage(row, col); })) >= (antigen_rows_.size() / 2)) {
-    //     if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return acmacs::virus::is_good_passage(fmt::format("{}", sheet().cell(row, col))); })) >= (antigen_rows_.size() / 2)) {
-    //         antigen_passage_column_ = col;
-    //         break;
-    //     }
-    // }
-
     if (antigen_passage_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen passage column: {}", *antigen_passage_column_);
     else
@@ -453,13 +444,6 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found
 void acmacs::sheet::v1::Extractor::find_antigen_lab_id_column(warn_if_not_found winf)
 {
     antigen_lab_id_column_ = ::find_column(sheet(), antigen_rows_, [this](const auto& cell) { return is_lab_id(cell); });
-    // for (ncol_t col{*antigen_name_column_ + ncol_t{1}}; col < ncol_t{6}; ++col) {
-    //     if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_lab_id(row, col); })) >= (antigen_rows_.size() / 2)) {
-    //         antigen_lab_id_column_ = col;
-    //         break;
-    //     }
-    // }
-
     if (antigen_lab_id_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen lab_id column: {}", *antigen_lab_id_column_);
     else
