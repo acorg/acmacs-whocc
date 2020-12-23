@@ -2,7 +2,6 @@
 #include "acmacs-base/string.hh"
 #include "acmacs-base/string-split.hh"
 #include "acmacs-base/range.hh"
-#include "acmacs-base/stream.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "seqdb-3/seqdb.hh"

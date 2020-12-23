@@ -6,7 +6,6 @@
 #include <cmath>
 
 #include "acmacs-base/argc-argv.hh"
-#include "acmacs-base/stream.hh"
 #include "acmacs-base/enumerate.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/factory-import.hh"

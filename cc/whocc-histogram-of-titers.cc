@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include "acmacs-base/argc-argv.hh"
-#include "acmacs-base/stream.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-draw/surface-cairo.hh"
@@ -34,18 +33,26 @@ class TiterData
 
     void histogram(std::string_view filename);
 
- private:
+    const auto& titers() const { return mTiters; }
+
+  private:
     std::map<acmacs::chart::Titer, size_t> mTiters;
 
-    friend inline std::ostream& operator<<(std::ostream& out, const TiterData& aData)
+};
+
+template <> struct fmt::formatter<TiterData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
+    template <typename FormatCtx> auto format(const TiterData& value, FormatCtx& ctx)
     {
-        out << '{';
-        std::transform(std::begin(aData.mTiters), std::end(aData.mTiters), polyfill::make_ostream_joiner(out, ", "), [](const auto& elt) {
-            std::ostringstream os;
-            os << '<' << *elt.first << ">: <" << elt.second << '>';
-            return os.str();
-        });
-        return out << '}';
+        format_to(ctx.out(), "{{");
+        bool first{true};
+        for (const auto& en : value.titers()) {
+            if (first)
+                first = false;
+            else
+                format_to(ctx.out(), ", ");
+            format_to(ctx.out(), "<{}>: <{}>", en.first, en.second);
+        }
+        return format_to(ctx.out(), "}}");
     }
 };
 
@@ -66,14 +73,13 @@ int main(int argc, const char* argv[])
             TiterData data;
             for (size_t file_no = 0; file_no < (args.number_of_arguments() - 1); ++file_no) {
                 process_source(data, args[file_no]);
-                std::cout << data << std::endl;
-                std::cout << "max: " << data.max_number() << '\n';
+                fmt::print("{}\nmax: {}\n", data, data.max_number());
                 data.histogram(args[args.number_of_arguments() - 1]);
             }
         }
     }
     catch (std::exception& err) {
-        std::cerr << err.what() << std::endl;
+        AD_ERROR("{}", err);
         exit_code = 1;
     }
     return exit_code;
