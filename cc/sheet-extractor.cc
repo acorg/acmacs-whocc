@@ -57,6 +57,7 @@ static const std::regex re_NIID_serum_name_fix{R"(\s*([\-/])\s*)", acmacs::regex
 static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex::icase};
 static const std::regex re_NIID_serum_name_row_non_serum_label{R"((HA\s*group))", acmacs::regex::icase};
 
+static const std::regex re_VIDRL_antigen_lab_id{"^(SL|VW)[0-9]{8}$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
@@ -386,6 +387,23 @@ void acmacs::sheet::v1::Extractor::remove_redundant_antigen_rows(warn_if_not_fou
 
 // ----------------------------------------------------------------------
 
+template <typename F> inline std::optional<acmacs::sheet::ncol_t> find_column(const acmacs::sheet::Sheet& sheet, const std::vector<acmacs::sheet::nrow_t>& rows, F valid_cell)
+{
+    using namespace acmacs::sheet;
+
+    std::vector<std::tuple<ncol_t, ssize_t>> number_per_column;
+    for (ncol_t col{0}; col < sheet.number_of_columns(); ++col) {
+        if (const auto number = ranges::count_if(rows, [col, &valid_cell, &sheet](nrow_t row) { return valid_cell(sheet.cell(row, col)); }); number > 0)
+            number_per_column.emplace_back(col, number);
+    }
+    if (!number_per_column.empty())
+        return std::get<ncol_t>(*ranges::max_element(number_per_column, [](const auto& e1, const auto& e2) { return std::get<ssize_t>(e1) < std::get<ssize_t>(e2); }));
+    else
+        return std::nullopt;
+}
+
+// ----------------------------------------------------------------------
+
 void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found winf)
 {
     const auto is_date = [](const auto& cell) {
@@ -393,12 +411,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found wi
         return acmacs::sheet::is_date(cell) || (acmacs::sheet::is_string(cell) && date::from_string(fmt::format("{}", cell), date::allow_incomplete::no, date::throw_on_error::no).ok());
     };
 
-    for (ncol_t col{0}; col < sheet().number_of_columns(); ++col) {
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, is_date, this](nrow_t row) { return is_date(sheet().cell(row, col)); })) >= (antigen_rows_.size() / 2)) {
-            antigen_date_column_ = col;
-            break;
-        }
-    }
+    antigen_date_column_ = ::find_column(sheet(), antigen_rows_, is_date);
 
     if (antigen_date_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen date column: {}", *antigen_date_column_);
@@ -419,13 +432,14 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found wi
 
 void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found winf)
 {
-    for (ncol_t col{0}; col < sheet().number_of_columns(); ++col) {
-        // if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_passage(row, col); })) >= (antigen_rows_.size() / 2)) {
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return acmacs::virus::is_good_passage(fmt::format("{}", sheet().cell(row, col))); })) >= (antigen_rows_.size() / 2)) {
-            antigen_passage_column_ = col;
-            break;
-        }
-    }
+    antigen_passage_column_ = ::find_column(sheet(), antigen_rows_, [](const auto& cell) { return acmacs::virus::is_good_passage(fmt::format("{}", cell)); });
+    // for (ncol_t col{0}; col < sheet().number_of_columns(); ++col) {
+    //     // if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_passage(row, col); })) >= (antigen_rows_.size() / 2)) {
+    //     if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return acmacs::virus::is_good_passage(fmt::format("{}", sheet().cell(row, col))); })) >= (antigen_rows_.size() / 2)) {
+    //         antigen_passage_column_ = col;
+    //         break;
+    //     }
+    // }
 
     if (antigen_passage_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen passage column: {}", *antigen_passage_column_);
@@ -438,12 +452,13 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found
 
 void acmacs::sheet::v1::Extractor::find_antigen_lab_id_column(warn_if_not_found winf)
 {
-    for (ncol_t col{*antigen_name_column_ + ncol_t{1}}; col < ncol_t{6}; ++col) {
-        if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_lab_id(row, col); })) >= (antigen_rows_.size() / 2)) {
-            antigen_lab_id_column_ = col;
-            break;
-        }
-    }
+    antigen_lab_id_column_ = ::find_column(sheet(), antigen_rows_, [this](const auto& cell) { return is_lab_id(cell); });
+    // for (ncol_t col{*antigen_name_column_ + ncol_t{1}}; col < ncol_t{6}; ++col) {
+    //     if (static_cast<size_t>(ranges::count_if(antigen_rows_, [col, this](nrow_t row) { return is_lab_id(row, col); })) >= (antigen_rows_.size() / 2)) {
+    //         antigen_lab_id_column_ = col;
+    //         break;
+    //     }
+    // }
 
     if (antigen_lab_id_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen lab_id column: {}", *antigen_lab_id_column_);
@@ -521,9 +536,9 @@ std::string acmacs::sheet::v1::ExtractorCDC::titer(size_t ag_no, size_t sr_no) c
 
 // ----------------------------------------------------------------------
 
-bool acmacs::sheet::v1::ExtractorCDC::is_lab_id(nrow_t row, ncol_t col) const
+bool acmacs::sheet::v1::ExtractorCDC::is_lab_id(const cell_t& cell) const
 {
-    return sheet().matches(re_CDC_antigen_lab_id, row, col);
+    return sheet().matches(re_CDC_antigen_lab_id, cell);
 
 } // acmacs::sheet::v1::ExtractorCDC::is_lab_id
 
@@ -1198,6 +1213,14 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorVIDRL::serum(size_
     return serum;
 
 } // acmacs::sheet::v1::ExtractorVIDRL::serum
+
+// ----------------------------------------------------------------------
+
+bool acmacs::sheet::v1::ExtractorVIDRL::is_lab_id(const cell_t& cell) const
+{
+    return sheet().matches(re_VIDRL_antigen_lab_id, cell);
+
+} // acmacs::sheet::v1::ExtractorVIDRL::is_lab_id
 
 // ----------------------------------------------------------------------
 

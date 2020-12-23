@@ -103,7 +103,7 @@ namespace acmacs::sheet::inline v1
 
         virtual bool is_virus_name(nrow_t row, ncol_t col) const;
         // virtual bool is_passage(nrow_t row, ncol_t col) const;
-        virtual bool is_lab_id(nrow_t /*row*/, ncol_t /*col*/) const { return false; }
+        virtual bool is_lab_id(const cell_t& /*cell*/) const { return false; }
         virtual bool valid_titer_row(nrow_t /*row*/, const column_range& /*cr*/) const { return true; }
         virtual bool is_control_serum_cell(const cell_t& cell) const;
 
@@ -141,7 +141,7 @@ namespace acmacs::sheet::inline v1
         void check_export_possibility() const override; // throws Error if exporting is not possible
 
       protected:
-        bool is_lab_id(nrow_t row, ncol_t col) const override;
+        bool is_lab_id(const cell_t& cell) const override;
         void find_serum_rows(warn_if_not_found winf) override;
         void remove_redundant_antigen_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
@@ -256,6 +256,7 @@ namespace acmacs::sheet::inline v1
         serum_fields_t serum(size_t sr_no) const override;
 
       protected:
+        bool is_lab_id(const cell_t& cell) const override;
         void find_serum_rows(warn_if_not_found winf) override;
 
     };
