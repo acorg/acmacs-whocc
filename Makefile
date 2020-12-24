@@ -72,13 +72,6 @@ XLSX_LIBS = $(XLNT_LIBS)
 install: make-installation-dirs $(TARGETS)
 	$(call install_all,$(AD_PACKAGE_NAME))
 	$(call install_wildcard,$(abspath js)/*,$(AD_SHARE)/js/who)
-	# $(call install_py_lib,$(ACMACS_PY_LIB))
-	# ln -sf $(DIST)/* $(AD_BIN)
-	# ln -sf $(abspath bin)/* $(AD_BIN)
-	# $(call symbolic_link,$(abspath py)/acmacs_whocc,$(AD_PY)/acmacs_whocc)
-	# $(call make_dir,$(AD_SHARE)/js/who)
-	# ln -sf $(SRC_DIR)/acmacs-whocc/js/* $(AD_SHARE)/js/who
-	# for jd in clades vaccines; do if [ ! -f $(AD_SHARE)/conf/$${jd}.json ]; then ln -sf $(abspath conf/$${jd}.json) $(AD_SHARE)/conf; fi; done
 
 test: install
 	@#test/test
