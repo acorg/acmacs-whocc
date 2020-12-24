@@ -1,8 +1,12 @@
 #! /bin/bash
 
-export ACMACSD_ROOT=$HOME/AD
+if [[ ! -d ${ACMACSD_ROOT} ]]; then
+    echo "ACMACSD_ROOT not set or invalid (${ACMACSD_ROOT})" >&2
+    exit 1
+fi
+
 DB_DIR=$ACMACSD_ROOT/data
-export PATH="$ACMACSD_ROOT/bin:$HOME/bin:/usr/local/bin:$PATH"
+export PATH="${ACMACSD_ROOT}/bin:$HOME/bin:/usr/local/bin:$PATH"
 export TIME='<Time %E>'
 PROG=$(readlink -f $0)
 
