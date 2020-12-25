@@ -2,6 +2,9 @@ import sys, os, re, datetime, json
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
+sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("lib"))]
+import acmacs
+
 # ======================================================================
 
 sDefaultParameters =
@@ -36,19 +39,19 @@ def chain(source_tables, param, output_dir=Path("out")):
     load_state(source_tables, param)
     json.dump(sState, sys.stdout, indent=2, sort_keys=True)
     exit(1)
-    mrg = acmacs.Chart(str(source_tables[0]))
-    relax(mrg, 0, param)
-    for step, c1_name in enumerate(source_tables[1:], start=1):
-        mrg_incremental, report = acmacs.merge(mrg, acmacs.Chart(str(c1_name)), type="incremental")
-        mrg_scratch = mrg_incremental.clone("plot_spec")
-        relax_incremental(mrg_incremental, step, param)
-        relax(mrg_scratch, step, param)
-        if mrg_incremental.projection().stress() < mrg_scratch.projection().stress():
-            mrg = mrg_incremental
-            module_logger.info(f"{step:3d}: --> incremental {mrg.projection().stress():9.4f}")
-        else:
-            mrg = mrg_scratch
-            module_logger.info(f"{step:3d}: --> scratch {mrg.projection().stress():9.4f}")
+    # mrg = acmacs.Chart(str(source_tables[0]))
+    # relax(mrg, 0, param)
+    # for step, c1_name in enumerate(source_tables[1:], start=1):
+    #     mrg_incremental, report = acmacs.merge(mrg, acmacs.Chart(str(c1_name)), type="incremental")
+    #     mrg_scratch = mrg_incremental.clone("plot_spec")
+    #     relax_incremental(mrg_incremental, step, param)
+    #     relax(mrg_scratch, step, param)
+    #     if mrg_incremental.projection().stress() < mrg_scratch.projection().stress():
+    #         mrg = mrg_incremental
+    #         module_logger.info(f"{step:3d}: --> incremental {mrg.projection().stress():9.4f}")
+    #     else:
+    #         mrg = mrg_scratch
+    #         module_logger.info(f"{step:3d}: --> scratch {mrg.projection().stress():9.4f}")
 
 # ======================================================================
 
