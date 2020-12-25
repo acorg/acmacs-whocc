@@ -1,4 +1,4 @@
-from get_recent_merges import get_recent_merges
+from .get_recent_merges import get_recent_merges
 
 # ======================================================================
 ### Local Variables:
