@@ -65,6 +65,7 @@ def chain(source_tables, param):
 # self.state["steps"]:
 #   type: m(erge) i(ncremental) s(cratch)
 #   path: str
+#   depends: [step_id]
 #   src: [filename]
 #   out: [filename]
 #   stress: float
@@ -153,16 +154,25 @@ class State:
         table_date = table_dates[table_no - 1]
         data["out"] = self.make_output_filenames(table_no=table_no, step_type=data["type"], table_date=table_date)
         if data["type"] == "m":
-            pass
+            if table_no == 1:
+                raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
+            elif table_no == 2:
+                data["depends"] = [self.make_step_id(table_no=table_no-1, step_type="s", table_date=table_dates[table_no-2])]
+            else:
+                data["depends"] = [self.make_step_id(table_no=table_no-1, step_type=st, table_date=table_dates[table_no-2]) for st in ["s", "i"]]
         elif data["type"] == "s":
             if table_no == 1:
                 data["src"] = [source_tables[table_no - 1]]
             else:
-                data["src"] = self.state["steps"][self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)]["out"]
+                prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
+                data["depends"] = [prev_id]
+                data["src"] = self.state["steps"][prev_id]["out"]
         elif data["type"] == "i":
             if table_no == 1:
                 raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
-            data["src"] = self.state["steps"][self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)]["out"]
+            prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
+            data["depends"] = [prev_id]
+            data["src"] = self.state["steps"][prev_id]["out"]
         else:
             raise Error(f"""Unsupported step type {data["type"]!r}""")
         return data
