@@ -62,13 +62,67 @@ def chain(source_tables, param):
 
 # ======================================================================
 
-# self.state["steps"]:
-#   type: m(erge) i(ncremental) s(cratch)
-#   path: str
-#   depends: [step_id]
-#   src: [filename]
-#   out: [filename]
-#   stress: float
+#  type: m(erge) i(ncremental) s(cratch)
+#  path: str
+#  depends: [step_id]
+#  src: [filename]
+#  out: [filename]
+#  stress: float
+
+class Step:
+
+    def __init__(self, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
+        if read_from:
+            for key, val in read_from.items():
+                setattr(self, key, val)
+        else:
+            for key, val in args.items():
+                setattr(self, key, val)
+            self.table_date = table_dates[self.table_no]
+            self.make_output_filenames(output_dir)
+            try:
+                make_type = getattr(self, f"make_{self.type}")
+            except AttributeError:
+                raise Error(f"""Unsupported step type {self.type!r}""")
+            make_type(source_tables=source_tables, table_dates=table_dates, steps=steps)
+
+    def serialize(self):
+        return vars(self)
+
+    def make_output_filenames(self, output_dir):
+        self.out = [output_dir.joinpath(self.step_id() + ".ace")]
+
+    def step_id(self):
+        return self.make_step_id(table_no=self.table_no, type=self.type, table_date=self.table_date)
+
+    @classmethod
+    def make_step_id(cls, table_no, type, table_date):
+        return f"{table_no:03d}.{type}.{table_date}"
+
+    def make_m(self, source_tables, table_dates, steps):
+        if self.table_no == 1:
+            raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
+        elif self.table_no == 2:
+            self.depends = [self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1])]
+        else:
+            self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
+
+    def make_s(self, source_tables, table_dates, steps):
+        if self.table_no == 1:
+            self.src = [source_tables[self.table_no]]
+        else:
+            prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
+            self.depends = [prev_id]
+            self.src = steps[prev_id].out
+
+    def make_i(self, source_tables, table_dates, steps):
+        if self.table_no == 1:
+            raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
+        prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
+        self.depends = [prev_id]
+        self.src = steps[prev_id].out
+
+# ----------------------------------------------------------------------
 
 class State:
 
@@ -79,8 +133,12 @@ class State:
         self.load(source_tables, param)
 
     def load(self, source_tables, param):
+        self.steps = {}
         if self.state_file.exists():
             self.state = json.load(self.state_file.open())
+            for step_id, step_data in self.state["steps"]:
+                self.steps[step_id] = Step(read_from=step_data)
+            self.state.pop("steps")
         if self.update(source_tables, param):
             self.save()
 
@@ -90,9 +148,12 @@ class State:
                 self.state_file.rename(str(self.state_file) + "~")
             to = self.state_file.open("w")
         def serialize(obj):
+            if hasattr(obj, "serialize"):
+                return obj.serialize()
             if isinstance(obj, Path):
                 return str(obj)
             raise TypeError()
+        self.state["steps"] = self.steps
         json.dump(self.state, to, indent=2, sort_keys=True, default=serialize)
 
     def update(self, source_tables, param):
@@ -123,7 +184,7 @@ class State:
     def update_steps(self, source_tables):
         updated = False
         step_path = ""
-        table_dates = []
+        table_dates = [None]
         for table_no, table in enumerate((Path(tab) for tab in source_tables), start=1):
             if not table.exists():
                 raise Error(f"""Table {table} does not exist""")
@@ -138,47 +199,47 @@ class State:
                 substeps = ["m", "i", "s"]
                 step_path += f":{table_date}"
             for substep in substeps:
-                step_id = self.make_step_id(table_no=table_no, step_type=substep, table_date=table_date)
+                step = Step(output_dir=self.output_dir, table_no=table_no, type=substep, table_dates=table_dates, source_tables=source_tables, steps=self.steps)
+                step_id = step.step_id()
                 if step_id not in self.state["steps"]:
-                    self.state["steps"][step_id] = self.make_step({"type": substep, "path": step_path}, table_no=table_no, source_tables=source_tables, table_dates=table_dates)
+                    self.steps[step_id] = step
                     updated = True
-                elif self.state["steps"][step_id]["path"] != step_path:
-                    raise Error(f"""{step_id!r} already in steps has different path {self.state["steps"][step_id]["path"]!r} vs {step_path!r}""")
-            # print(table_no, table_date, table)
+                elif self.steps[step_id].path != step_path:
+                    raise Error(f"""{step_id!r} already in steps has different path {self.steps[step_id].path!r} vs {step_path!r}""")
         return updated
 
-    def make_step_id(self, table_no, step_type, table_date):
-        return f"{table_no:03d}.{step_type}.{table_date}"
+    # def make_step_id(self, table_no, step_type, table_date):
+    #     return f"{table_no:03d}.{step_type}.{table_date}"
 
-    def make_step(self, data, table_no, source_tables, table_dates):
-        table_date = table_dates[table_no - 1]
-        data["out"] = self.make_output_filenames(table_no=table_no, step_type=data["type"], table_date=table_date)
-        if data["type"] == "m":
-            if table_no == 1:
-                raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
-            elif table_no == 2:
-                data["depends"] = [self.make_step_id(table_no=table_no-1, step_type="s", table_date=table_dates[table_no-2])]
-            else:
-                data["depends"] = [self.make_step_id(table_no=table_no-1, step_type=st, table_date=table_dates[table_no-2]) for st in ["s", "i"]]
-        elif data["type"] == "s":
-            if table_no == 1:
-                data["src"] = [source_tables[table_no - 1]]
-            else:
-                prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
-                data["depends"] = [prev_id]
-                data["src"] = self.state["steps"][prev_id]["out"]
-        elif data["type"] == "i":
-            if table_no == 1:
-                raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
-            prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
-            data["depends"] = [prev_id]
-            data["src"] = self.state["steps"][prev_id]["out"]
-        else:
-            raise Error(f"""Unsupported step type {data["type"]!r}""")
-        return data
+    # def make_step(self, data, table_no, source_tables, table_dates):
+    #     table_date = table_dates[table_no - 1]
+    #     data["out"] = self.make_output_filenames(table_no=table_no, step_type=data["type"], table_date=table_date)
+    #     if data["type"] == "m":
+    #         if table_no == 1:
+    #             raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
+    #         elif table_no == 2:
+    #             data["depends"] = [self.make_step_id(table_no=table_no-1, step_type="s", table_date=table_dates[table_no-2])]
+    #         else:
+    #             data["depends"] = [self.make_step_id(table_no=table_no-1, step_type=st, table_date=table_dates[table_no-2]) for st in ["s", "i"]]
+    #     elif data["type"] == "s":
+    #         if table_no == 1:
+    #             data["src"] = [source_tables[table_no - 1]]
+    #         else:
+    #             prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
+    #             data["depends"] = [prev_id]
+    #             data["src"] = self.state["steps"][prev_id]["out"]
+    #     elif data["type"] == "i":
+    #         if table_no == 1:
+    #             raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
+    #         prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
+    #         data["depends"] = [prev_id]
+    #         data["src"] = self.state["steps"][prev_id]["out"]
+    #     else:
+    #         raise Error(f"""Unsupported step type {data["type"]!r}""")
+    #     return data
 
-    def make_output_filenames(self, table_no, step_type, table_date):
-        return [self.output_dir.joinpath(self.make_step_id(table_no=table_no, step_type=step_type, table_date=table_date) + ".ace")]
+    # def make_output_filenames(self, table_no, step_type, table_date):
+    #     return [self.output_dir.joinpath(self.make_step_id(table_no=table_no, step_type=step_type, table_date=table_date) + ".ace")]
 
 # ----------------------------------------------------------------------
 
