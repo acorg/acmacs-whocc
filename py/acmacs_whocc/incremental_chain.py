@@ -208,39 +208,6 @@ class State:
                     raise Error(f"""{step_id!r} already in steps has different path {self.steps[step_id].path!r} vs {step_path!r}""")
         return updated
 
-    # def make_step_id(self, table_no, step_type, table_date):
-    #     return f"{table_no:03d}.{step_type}.{table_date}"
-
-    # def make_step(self, data, table_no, source_tables, table_dates):
-    #     table_date = table_dates[table_no - 1]
-    #     data["out"] = self.make_output_filenames(table_no=table_no, step_type=data["type"], table_date=table_date)
-    #     if data["type"] == "m":
-    #         if table_no == 1:
-    #             raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
-    #         elif table_no == 2:
-    #             data["depends"] = [self.make_step_id(table_no=table_no-1, step_type="s", table_date=table_dates[table_no-2])]
-    #         else:
-    #             data["depends"] = [self.make_step_id(table_no=table_no-1, step_type=st, table_date=table_dates[table_no-2]) for st in ["s", "i"]]
-    #     elif data["type"] == "s":
-    #         if table_no == 1:
-    #             data["src"] = [source_tables[table_no - 1]]
-    #         else:
-    #             prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
-    #             data["depends"] = [prev_id]
-    #             data["src"] = self.state["steps"][prev_id]["out"]
-    #     elif data["type"] == "i":
-    #         if table_no == 1:
-    #             raise Error(f"""Cannot use step type {data["type"]!r} for table {table_no}""")
-    #         prev_id = self.make_step_id(table_no=table_no, step_type="m", table_date=table_date)
-    #         data["depends"] = [prev_id]
-    #         data["src"] = self.state["steps"][prev_id]["out"]
-    #     else:
-    #         raise Error(f"""Unsupported step type {data["type"]!r}""")
-    #     return data
-
-    # def make_output_filenames(self, table_no, step_type, table_date):
-    #     return [self.output_dir.joinpath(self.make_step_id(table_no=table_no, step_type=step_type, table_date=table_date) + ".ace")]
-
 # ----------------------------------------------------------------------
 
 # def relax(chart, step, param):
