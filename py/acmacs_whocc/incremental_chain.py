@@ -26,11 +26,6 @@ sDefaultParameters = {
 
 class Error (RuntimeError): pass
 
-# sState = {"setup": {"number_of_optimizations": 0}, "steps": {}}
-# sStateFile = Path("state.json")
-# sOutputDir = Path("out")
-# sOutputDir.mkdir(parents=True, exist_ok=True)
-
 # ======================================================================
 
 def main(source_tables, param):
@@ -51,22 +46,6 @@ def chain(source_tables, param):
         if not state.run_ready():
             module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
             time.sleep(param["sleep_interval_when_not_ready"])
-
-    # state.save(to=sys.stderr)
-    # exit(1)
-    # mrg = acmacs.Chart(str(source_tables[0]))
-    # relax(mrg, 0, param)
-    # for step, c1_name in enumerate(source_tables[1:], start=1):
-    #     mrg_incremental, report = acmacs.merge(mrg, acmacs.Chart(str(c1_name)), type="incremental")
-    #     mrg_scratch = mrg_incremental.clone("plot_spec")
-    #     relax_incremental(mrg_incremental, step, param)
-    #     relax(mrg_scratch, step, param)
-    #     if mrg_incremental.projection().stress() < mrg_scratch.projection().stress():
-    #         mrg = mrg_incremental
-    #         module_logger.info(f"{step:3d}: --> incremental {mrg.projection().stress():9.4f}")
-    #     else:
-    #         mrg = mrg_scratch
-    #         module_logger.info(f"{step:3d}: --> scratch {mrg.projection().stress():9.4f}")
 
 # ======================================================================
 
@@ -143,6 +122,9 @@ class Step:
 
 class StepMergeIncremental (Step):
 
+    def type_desc(self):
+        return "incremental merge"
+
     def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
             raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
@@ -153,14 +135,14 @@ class StepMergeIncremental (Step):
         self.src = [None, source_tables[self.table_no-1]]
 
     def run(self, chain_state):
-        module_logger.debug(f"{self.step_id()} deps: {self.depends}")
+        # module_logger.debug(f"{self.step_id()} deps: {self.depends}")
         candidates = [chain_state.step(dep) for dep in self.depends]
         if len(candidates) == 2:
             if candidates[0].stress < candidates[1].stress:
                 self.src[0] = candidates[0].out[0]
             else:
                 self.src[0] = candidates[1].out[0]
-            module_logger.info(f"choosing master for merge: {self.src[0]} <-- {self.depends[0]} {candidates[0].stress} vs. {self.depends[1]} {candidates[1].stress}")
+            module_logger.info(f"choosing master for merge: {self.src[0]} <-- {self.depends[0]} {candidates[0].stress:.4f} vs. {self.depends[1]} {candidates[1].stress:.4f}")
         elif len(candidates) == 1:
             self.src[0] = candidates[0].out[0]
         else:
@@ -170,6 +152,9 @@ class StepMergeIncremental (Step):
 # ----------------------------------------------------------------------
 
 class StepIncremental (Step):
+
+    def type_desc(self):
+        return "relax incremental"
 
     def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
@@ -184,6 +169,9 @@ class StepIncremental (Step):
 # ----------------------------------------------------------------------
 
 class StepScratch (Step):
+
+    def type_desc(self):
+        return "relax from scratch"
 
     def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
@@ -345,18 +333,20 @@ class ProcessorTimer:
 
     def __enter__(self):
         self.step.start = datetime.datetime.now()
-
+        return self
+    
     def __exit__(self, exc_type, exc_value, traceback):
         self.step.finish = datetime.datetime.now()
         self.step.runtime = str(self.step.finish - self.step.start)
+        module_logger.info(f"{self.step.step_id()} {self.step.type_desc()} {self.chart.make_name()}\n{'':30s}<{self.step.runtime}>")
 
 class Processor:
 
     def merge_incremental(self, chain_state, step):
-        with ProcessorTimer(step):
+        with ProcessorTimer(step) as pt:
             merge, report = acmacs.merge(acmacs.Chart(str(step.src[0])), acmacs.Chart(str(step.src[1])), type="incremental")
             self.export(chart=merge, out=Path(step.out[0]))
-        module_logger.info(f"{step.step_id()} incremental merge {merge.make_name():70s} [{step.runtime}]")
+            pt.chart = merge
 
     def export(self, chart, out :Path):
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -368,22 +358,22 @@ class ProcessorBuiltIn (Processor):
         return out.exists()
 
     def relax_from_scratch(self, chain_state, step):
-        with ProcessorTimer(step):
+        with ProcessorTimer(step) as pt:
             chart = acmacs.Chart(str(step.src[0]))
             chart.relax(number_of_dimensions=chain_state.setup()["number_of_dimensions"], number_of_optimizations=chain_state.setup()["number_of_optimizations"], minimum_column_basis=chain_state.setup()["minimum_column_basis"])
             chart.keep_projections(chain_state.setup()["projections_to_keep"])
             self.export(chart=chart, out=Path(step.out[0]))
             step.stress = chart.projection().stress()
-        module_logger.info(f"{step.step_id()} relax from scratch {chart.make_name():70s} [{step.runtime}]")
+            pt.chart = chart
 
     def relax_incremental(self, chain_state, step):
-        with ProcessorTimer(step):
+        with ProcessorTimer(step) as pt:
             chart = acmacs.Chart(str(step.src[0]))
             chart.relax_incremental(number_of_optimizations=chain_state.setup()["number_of_optimizations"])
             chart.keep_projections(chain_state.setup()["projections_to_keep"])
             self.export(chart=chart, out=Path(step.out[0]))
             step.stress = chart.projection().stress()
-        module_logger.info(f"{step.step_id()} relax incremental {chart.make_name():70s} [{step.runtime}]")
+            pt.chart = chart
 
 class ProcessorHTCondor (Processor):
 
@@ -391,29 +381,6 @@ class ProcessorHTCondor (Processor):
         return (out.stat().st_mtime - time.time()) > 2 # out was modified more than 2 seconds ago
 
 # ======================================================================
-
-# def relax(chart, step, param):
-#     start = datetime.datetime.now()
-#     chart.relax(number_of_dimensions=param["number_of_dimensions"], number_of_optimizations=param["number_of_optimizations"], minimum_column_basis=param["minimum_column_basis"])
-#     chart.keep_projections(10)
-#     module_logger.info(f"{step:3d}:s: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
-#     export(chart, step=step, type="s", param=param)
-
-# # ----------------------------------------------------------------------
-
-# def relax_incremental(chart, step, param):
-#     start = datetime.datetime.now()
-#     chart.relax_incremental(number_of_optimizations=param["number_of_optimizations"])
-#     chart.keep_projections(10)
-#     module_logger.info(f"{step:3d}:i: {chart.projection().stress():9.4f}  {chart.make_name():70s} [{datetime.datetime.now() - start}]")
-#     export(chart, step=step, type="i", param=param)
-
-# # ----------------------------------------------------------------------
-
-# def export(chart, step, type, param):
-#     chart.export(str(sOutputDir.joinpath(f"{step:03d}.{type}.{chart.lab().lower()}-{chart.subtype_short().lower()}-{chart.assay_hi_or_neut()}-{chart.date()}.ace")), sys.argv[0])
-
-# ----------------------------------------------------------------------
 
 def setup_logging(param):
     log_dir = Path(param["log"]["dir"])
