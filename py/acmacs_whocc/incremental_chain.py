@@ -426,7 +426,7 @@ class ProcessorHTCondor (Processor):
             "--remove-original-projections",
             "--threads", chain_state.threads,
         ]
-        program_args = [[common_args + [str(Path(step.src[0]).resolve()), f"{run_no:04d}.ace"]] for run_no in range(queue_size)]
+        program_args = [common_args + [str(Path(step.src[0]).resolve()), f"{run_no:04d}.ace"] for run_no in range(queue_size)]
         desc_filename, step.condor_log = htcondor.prepare_submission(
             program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
             program_args=program_args,
@@ -444,8 +444,6 @@ class ProcessorHTCondor (Processor):
         #     self.export(chart=chart, out=Path(step.out[0]))
         #     step.stress = chart.projection().stress()
         #     pt.chart = chart
-
-# ----------------------------------------------------------------------
 
 # ======================================================================
 
