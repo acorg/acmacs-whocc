@@ -141,7 +141,7 @@ class Step:
 
 # ----------------------------------------------------------------------
 
-class StepMerge (Step):
+class StepMergeIncremental (Step):
 
     def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
@@ -150,9 +150,22 @@ class StepMerge (Step):
             self.depends = [self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1])]
         else:
             self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
+        self.src = [None, source_tables[self.table_no-1]]
 
     def run(self, chain_state):
-        chain_state.processor.merge(chain_state, self)
+        module_logger.debug(f"{self.step_id()} deps: {self.depends}")
+        candidates = [chain_state.step(dep) for dep in self.depends]
+        if len(candidates) == 2:
+            if candidates[0].stress < candidates[1].stress:
+                self.src[0] = candidates[0].out[0]
+            else:
+                self.src[0] = candidates[1].out[0]
+            module_logger.info(f"choosing master for merge: {self.src[0]} <-- {self.depends[0]} {candidates[0].stress} vs. {self.depends[1]} {candidates[1].stress}")
+        elif len(candidates) == 1:
+            self.src[0] = candidates[0].out[0]
+        else:
+            raise RuntimeError(f"""{self.__class__}: unsupported "depends": {self.depends}""")
+        chain_state.processor.merge_incremental(chain_state, self)
 
 # ----------------------------------------------------------------------
 
@@ -187,7 +200,7 @@ class StepScratch (Step):
 
 def step_factory(type, **args):
     if type == "m":
-        return StepMerge(type=type, **args)
+        return StepMergeIncremental(type=type, **args)
     elif type == "i":
         return StepIncremental(type=type, **args)
     elif type == "s":
@@ -235,6 +248,9 @@ class State:
                 self.save()
                 run = True
         return run
+
+    def step(self, step_id):
+        return self.steps[step_id]
 
     # ----------------------------------------------------------------------
 
@@ -322,10 +338,25 @@ class State:
 
 # ======================================================================
 
+class ProcessorTimer:
+
+    def __init__(self, step):
+        self.step = step
+
+    def __enter__(self):
+        self.step.start = datetime.datetime.now()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.step.finish = datetime.datetime.now()
+        self.step.runtime = str(self.step.finish - self.step.start)
+
 class Processor:
 
-    def merge(self, state, step):
-        pass
+    def merge_incremental(self, chain_state, step):
+        with ProcessorTimer(step):
+            merge, report = acmacs.merge(acmacs.Chart(str(step.src[0])), acmacs.Chart(str(step.src[1])), type="incremental")
+            self.export(chart=merge, out=Path(step.out[0]))
+        module_logger.info(f"{step.step_id()} incremental merge {merge.make_name():70s} [{step.runtime}]")
 
     def export(self, chart, out :Path):
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -336,19 +367,23 @@ class ProcessorBuiltIn (Processor):
     def output_ready(self, out :Path):
         return out.exists()
 
-    def relax_from_scratch(self, state, step):
-        step.start = datetime.datetime.now()
-        chart = acmacs.Chart(str(step.src[0]))
-        chart.relax(number_of_dimensions=state.setup()["number_of_dimensions"], number_of_optimizations=state.setup()["number_of_optimizations"], minimum_column_basis=state.setup()["minimum_column_basis"])
-        chart.keep_projections(state.setup()["projections_to_keep"])
-        self.export(chart=chart, out=Path(step.out[0]))
-        step.finish = datetime.datetime.now()
-        step.runtime = str(step.finish - step.start)
-        step.stress = chart.projection().stress()
+    def relax_from_scratch(self, chain_state, step):
+        with ProcessorTimer(step):
+            chart = acmacs.Chart(str(step.src[0]))
+            chart.relax(number_of_dimensions=chain_state.setup()["number_of_dimensions"], number_of_optimizations=chain_state.setup()["number_of_optimizations"], minimum_column_basis=chain_state.setup()["minimum_column_basis"])
+            chart.keep_projections(chain_state.setup()["projections_to_keep"])
+            self.export(chart=chart, out=Path(step.out[0]))
+            step.stress = chart.projection().stress()
         module_logger.info(f"{step.step_id()} relax from scratch {chart.make_name():70s} [{step.runtime}]")
 
-    def relax_incremental(self, state, step):
-        pass
+    def relax_incremental(self, chain_state, step):
+        with ProcessorTimer(step):
+            chart = acmacs.Chart(str(step.src[0]))
+            chart.relax_incremental(number_of_optimizations=chain_state.setup()["number_of_optimizations"])
+            chart.keep_projections(chain_state.setup()["projections_to_keep"])
+            self.export(chart=chart, out=Path(step.out[0]))
+            step.stress = chart.projection().stress()
+        module_logger.info(f"{step.step_id()} relax incremental {chart.make_name():70s} [{step.runtime}]")
 
 class ProcessorHTCondor (Processor):
 
