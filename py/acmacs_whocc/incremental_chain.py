@@ -429,6 +429,7 @@ class ProcessorHTCondor (Processor):
         program_args = [common_args + [str(Path(step.src[0]).resolve()), f"{run_no:04d}.ace"] for run_no in range(queue_size)]
         desc_filename, step.condor_log = htcondor.prepare_submission(
             program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
+            environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
             program_args=program_args,
             description=f"chart-relax {step.step_id()}",
             current_dir=step.processing_dir, capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
