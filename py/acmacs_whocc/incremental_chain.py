@@ -230,6 +230,7 @@ class State:
         run = False
         for step in self.steps.values():
             if step.is_ready(self):
+                module_logger.debug(f"running {step.step_id()}")
                 step.run(self)
                 self.save()
                 run = True
