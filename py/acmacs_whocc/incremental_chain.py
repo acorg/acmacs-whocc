@@ -11,6 +11,7 @@ sDefaultParameters = {
     "number_of_optimizations": 100,
     "number_of_dimensions": 2,
     "minimum_column_basis": "none",
+    "projections_to_keep": 10,
 
     "log": {
         "dir": Path("log"),
@@ -44,7 +45,7 @@ def main(source_tables, param):
 # ----------------------------------------------------------------------
 
 def chain(source_tables, param):
-    state = State(source_tables, param)
+    state = State(source_tables=source_tables, param=param, processor=ProcessorBuiltIn())
     while state.has_todo():
         state.check_running()
         if not state.run_ready():
@@ -95,7 +96,7 @@ class Step:
         return vars(self)
 
     def state(self, chain_state):
-        if self.is_completed():
+        if self.is_completed(chain_state):
             return "completed"
         if self.is_failed():
             return "FAILED"
@@ -105,13 +106,14 @@ class Step:
             return "ready"      # can be run
         return "not-ready"
 
-    def is_completed(self):
+    def is_completed(self, chain_state):
         if not self.out:
             module_logger.warning(f"step {self.step_id()} has not output, it is always completed")
             return True
         try:
-            now = time.time()
-            return all((Path(out).stat().st_mtime - now) > 2 for out in self.out) # out was modified more than 2 seconds ago
+            # now = time.time()
+            # return all((cPath(out).stat().st_mtime - now) > 2 for out in self.out) # out was modified more than 2 seconds ago
+            return all(chain_state.processor.output_ready(Path(out)) for out in self.out)
         except FileNotFoundError:
             return False
 
@@ -149,8 +151,8 @@ class StepMerge (Step):
         else:
             self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
 
-    def run(self):
-        module_logger.debug(f"merge {self.step_id}")
+    def run(self, chain_state):
+        chain_state.processor.merge(chain_state, self)
 
 # ----------------------------------------------------------------------
 
@@ -163,8 +165,8 @@ class StepIncremental (Step):
         self.depends = [prev_id]
         self.src = steps[prev_id].out
 
-    def run(self):
-        module_logger.debug(f"relax from incremental {self.step_id}")
+    def run(self, chain_state):
+        chain_state.processor.relax_incremental(chain_state, self)
 
 # ----------------------------------------------------------------------
 
@@ -178,8 +180,8 @@ class StepScratch (Step):
             self.depends = [prev_id]
             self.src = steps[prev_id].out
 
-    def run(self):
-        module_logger.debug(f"relax from scratch {self.step_id}")
+    def run(self, chain_state):
+        chain_state.processor.relax_from_scratch(chain_state, self)
 
 # ----------------------------------------------------------------------
 
@@ -197,14 +199,15 @@ def step_factory(type, **args):
 
 class State:
 
-    def __init__(self, source_tables, param):
+    def __init__(self, source_tables, param, processor):
         self.state = {"setup": {"number_of_optimizations": 0}, "steps": {}}
         self.state_file = Path(param["state_filename"])
         self.output_dir = Path(param["output_dir"])
         self.load(source_tables, param)
+        self.processor = processor
 
     def is_completed(self, step_id):
-        return self.steps[step_id].is_completed()
+        return self.steps[step_id].is_completed(self)
 
     def ready(self):            # returns list of step_id's in ready state
         return [step_id for step_id, step in self.steps.items() if step.is_ready(self)]
@@ -215,18 +218,20 @@ class State:
         if any(step.is_failed() for step in self.steps.values()):
             return False
         # nothing running and nothing failed
-        return not all(step.is_completed() for step in self.steps.values())
+        return not all(step.is_completed(self) for step in self.steps.values())
 
     def check_running(self):
         for step in self.steps.values():
             if step.is_running():
-                step.check()
+                if step.check():
+                    self.save()
 
     def run_ready(self):        # returns if anyone was ready
         run = False
         for step in self.steps.values():
             if step.is_ready(self):
-                step.run()
+                step.run(self)
+                self.save()
                 run = True
         return run
 
@@ -243,22 +248,28 @@ class State:
             self.save()
 
     def save(self, to=None):
+
+        def serialize(obj):
+            if hasattr(obj, "serialize"):
+                return obj.serialize()
+            if isinstance(obj, (Path, datetime.datetime)):
+                return str(obj)
+            raise TypeError(type(obj))
+
+        self.state["steps"] = self.steps
+        js = json.dumps(self.state, indent=2, sort_keys=True, default=serialize)
         if to is None:
             if self.state_file.exists():
                 self.state_file.rename(str(self.state_file) + "~")
             to = self.state_file.open("w")
-        def serialize(obj):
-            if hasattr(obj, "serialize"):
-                return obj.serialize()
-            if isinstance(obj, Path):
-                return str(obj)
-            raise TypeError()
-        self.state["steps"] = self.steps
-        json.dump(self.state, to, indent=2, sort_keys=True, default=serialize)
+        to.write(js)
+
+    def setup(self):
+        return self.state["setup"]
 
     def update(self, source_tables, param):
         updated = False
-        for changeable_value in ["number_of_optimizations"]:
+        for changeable_value in ["number_of_optimizations", "projections_to_keep"]:
             updated = self.update_value(changeable_value, param[changeable_value], raise_if_changed=False)
         for readonly_value in ["number_of_dimensions", "minimum_column_basis"]:
             updated = self.update_value(readonly_value, param[readonly_value], raise_if_changed=True) or updated
@@ -308,7 +319,42 @@ class State:
                     raise Error(f"""{step_id!r} already in steps has different path {self.steps[step_id].path!r} vs {step_path!r}""")
         return updated
 
-# ----------------------------------------------------------------------
+# ======================================================================
+
+class Processor:
+
+    def merge(self, state, step):
+        pass
+
+    def export(self, chart, out :Path):
+        out.parent.mkdir(parents=True, exist_ok=True)
+        chart.export(str(out), sys.argv[0])
+
+class ProcessorBuiltIn (Processor):
+
+    def output_ready(self, out :Path):
+        return out.exists()
+
+    def relax_from_scratch(self, state, step):
+        step.start = datetime.datetime.now()
+        chart = acmacs.Chart(str(step.src[0]))
+        chart.relax(number_of_dimensions=state.setup()["number_of_dimensions"], number_of_optimizations=state.setup()["number_of_optimizations"], minimum_column_basis=state.setup()["minimum_column_basis"])
+        chart.keep_projections(state.setup()["projections_to_keep"])
+        self.export(chart=chart, out=Path(step.out[0]))
+        step.finish = datetime.datetime.now()
+        step.runtime = str(step.finish - step.start)
+        step.stress = chart.projection().stress()
+        module_logger.info(f"{step.step_id()} relax from scratch {chart.make_name():70s} [{step.runtime}]")
+
+    def relax_incremental(self, state, step):
+        pass
+
+class ProcessorHTCondor (Processor):
+
+    def output_ready(self, out :Path):
+        return (out.stat().st_mtime - time.time()) > 2 # out was modified more than 2 seconds ago
+
+# ======================================================================
 
 # def relax(chart, step, param):
 #     start = datetime.datetime.now()
