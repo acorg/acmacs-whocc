@@ -46,12 +46,8 @@ def main(source_tables, param):
 def chain(source_tables, param):
     state = State(source_tables, param)
     while state.has_todo():
-        ready = state.ready()
-        if ready:
-            for step_id in ready:
-                module_logger.info(f"ready to run: {step_id}")
-            break
-        else:
+        state.check_running()
+        if not state.run_ready():
             module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
             time.sleep(param["sleep_interval_when_not_ready"])
 
@@ -82,7 +78,8 @@ def chain(source_tables, param):
 
 class Step:
 
-    def __init__(self, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
+    def __init__(self, type=None, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
+        self._type = type
         self.depends = None
         if read_from:
             for key, val in read_from.items():
@@ -102,7 +99,7 @@ class Step:
             return "completed"
         if self.is_failed():
             return "FAILED"
-        if self._is_running():
+        if self.is_running():
             return "running"
         if self._is_ready(chain_state):
             return "ready"      # can be run
@@ -124,7 +121,7 @@ class Step:
     def is_ready(self, chain_state):
         return self.state(chain_state) == "ready"
 
-    def _is_running(self):
+    def is_running(self):
         return False
 
     def _is_ready(self, chain_state):
@@ -134,34 +131,11 @@ class Step:
         self.out = [output_dir.joinpath(self.step_id() + ".ace")]
 
     def step_id(self):
-        return self.make_step_id(table_no=self.table_no, type=self.type, table_date=self.table_date)
+        return self.make_step_id(table_no=self.table_no, type=self._type, table_date=self.table_date)
 
     @classmethod
     def make_step_id(cls, table_no, type, table_date):
         return f"{table_no:03d}.{type}.{table_date}"
-
-    # def make_m(self, source_tables, table_dates, steps):
-    #     if self.table_no == 1:
-    #         raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
-    #     elif self.table_no == 2:
-    #         self.depends = [self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1])]
-    #     else:
-    #         self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
-
-    # def make_s(self, source_tables, table_dates, steps):
-    #     if self.table_no == 1:
-    #         self.src = [source_tables[self.table_no]]
-    #     else:
-    #         prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
-    #         self.depends = [prev_id]
-    #         self.src = steps[prev_id].out
-
-    # def make_i(self, source_tables, table_dates, steps):
-    #     if self.table_no == 1:
-    #         raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
-    #     prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
-    #     self.depends = [prev_id]
-    #     self.src = steps[prev_id].out
 
 # ----------------------------------------------------------------------
 
@@ -169,11 +143,14 @@ class StepMerge (Step):
 
     def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
-            raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
+            raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
         elif self.table_no == 2:
             self.depends = [self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1])]
         else:
             self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
+
+    def run(self):
+        module_logger.debug(f"merge {self.step_id}")
 
 # ----------------------------------------------------------------------
 
@@ -181,10 +158,13 @@ class StepIncremental (Step):
 
     def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
-            raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
+            raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
         prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
         self.depends = [prev_id]
         self.src = steps[prev_id].out
+
+    def run(self):
+        module_logger.debug(f"relax from incremental {self.step_id}")
 
 # ----------------------------------------------------------------------
 
@@ -197,6 +177,9 @@ class StepScratch (Step):
             prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
             self.depends = [prev_id]
             self.src = steps[prev_id].out
+
+    def run(self):
+        module_logger.debug(f"relax from scratch {self.step_id}")
 
 # ----------------------------------------------------------------------
 
@@ -227,7 +210,25 @@ class State:
         return [step_id for step_id, step in self.steps.items() if step.is_ready(self)]
 
     def has_todo(self):
-        return not any(step.is_failed() for step in self.steps.values()) and not all(step.is_completed() for step in self.steps.values())
+        if any(step.is_running() for step in self.steps.values()):
+            return True
+        if any(step.is_failed() for step in self.steps.values()):
+            return False
+        # nothing running and nothing failed
+        return not all(step.is_completed() for step in self.steps.values())
+
+    def check_running(self):
+        for step in self.steps.values():
+            if step.is_running():
+                step.check()
+
+    def run_ready(self):        # returns if anyone was ready
+        run = False
+        for step in self.steps.values():
+            if step.is_ready(self):
+                step.run()
+                run = True
+        return run
 
     # ----------------------------------------------------------------------
 
@@ -236,7 +237,7 @@ class State:
         if self.state_file.exists():
             self.state = json.load(self.state_file.open())
             for step_id, step_data in self.state["steps"].items():
-                self.steps[step_id] = step_factory(step_data["type"], read_from=step_data)
+                self.steps[step_id] = step_factory(step_data["_type"], read_from=step_data)
             self.state.pop("steps")
         if self.update(source_tables, param):
             self.save()
