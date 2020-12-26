@@ -334,7 +334,7 @@ class ProcessorTimer:
     def __enter__(self):
         self.step.start = datetime.datetime.now()
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.step.finish = datetime.datetime.now()
         self.step.runtime = str(self.step.finish - self.step.start)
