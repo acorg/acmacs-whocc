@@ -16,7 +16,7 @@ sDefaultParameters = {
     "log": {
         "dir": Path("log"),
         "level": logging.DEBUG,
-        "format": "%(levelname)s %(asctime)s: %(message)s",
+        "format": "%(levelname)s %(asctime)s: %(message)s @@ %(pathname)s:%(lineno)d", # https://docs.python.org/3.9/library/logging.html#logrecord-attributes
     },
 
     "state_filename": Path("state.json"),
@@ -243,7 +243,7 @@ class State:
         run = False
         for step in self.steps.values():
             if step.is_ready(self):
-                module_logger.debug(f"running {step.step_id()}")
+                # module_logger.debug(f"running {step.step_id()}")
                 step.run(self)
                 self.save()
                 run = True
