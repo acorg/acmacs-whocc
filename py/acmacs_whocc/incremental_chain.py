@@ -157,6 +157,13 @@ class StepMergeIncremental (Step):
             raise RuntimeError(f"""{self.__class__}: unsupported "depends": {self.depends}""")
         chain_state.processor.merge_incremental(chain_state, self)
 
+    def check(self, chain_state):
+        if chain_state.processor.check(chain_state, self):
+            chain_state.processor.merge_results(chain_state, self)
+            return True
+        else:
+            return False
+
 # ----------------------------------------------------------------------
 
 class StepIncremental (Step):
@@ -235,7 +242,7 @@ class State:
     def check_running(self):
         for step in self.steps.values():
             if step.is_running():
-                if step.check():
+                if step.check(self):
                     self.save()
 
     def run_ready(self):        # returns if anyone was ready
@@ -445,6 +452,14 @@ class ProcessorHTCondor (Processor):
         #     self.export(chart=chart, out=Path(step.out[0]))
         #     step.stress = chart.projection().stress()
         #     pt.chart = chart
+
+    def check(self, chain_state, step):
+        module_logger.error(f"ProcessorHTCondor.check not implemented")
+        return False
+
+    def merge_results(self, chain_state, step):
+        module_logger.error(f"ProcessorHTCondor.merge_results not implemented")
+        pass
 
 # ======================================================================
 
