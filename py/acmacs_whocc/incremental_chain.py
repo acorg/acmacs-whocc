@@ -20,6 +20,7 @@ sDefaultParameters = {
 
     "state_filename": Path("state.json"),
     "output_dir": Path("out"),
+    "sleep_interval_when_not_ready": 10, # in seconds
 }
 
 class Error (RuntimeError): pass
@@ -44,8 +45,16 @@ def main(source_tables, param):
 
 def chain(source_tables, param):
     state = State(source_tables, param)
+    while state.has_todo():
+        ready = state.ready()
+        if ready:
+            for step_id in ready:
+                module_logger.info(f"ready to run: {step_id}")
+            break
+        else:
+            module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
+            time.sleep(param["sleep_interval_when_not_ready"])
 
-    
     # state.save(to=sys.stderr)
     # exit(1)
     # mrg = acmacs.Chart(str(source_tables[0]))
@@ -74,6 +83,7 @@ def chain(source_tables, param):
 class Step:
 
     def __init__(self, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
+        self.depends = None
         if read_from:
             for key, val in read_from.items():
                 setattr(self, key, val)
@@ -82,11 +92,7 @@ class Step:
                 setattr(self, key, val)
             self.table_date = table_dates[self.table_no]
             self.make_output_filenames(output_dir)
-            try:
-                make_type = getattr(self, f"make_{self.type}")
-            except AttributeError:
-                raise Error(f"""Unsupported step type {self.type!r}""")
-            make_type(source_tables=source_tables, table_dates=table_dates, steps=steps)
+            self.make(source_tables=source_tables, table_dates=table_dates, steps=steps)
 
     def serialize(self):
         return vars(self)
@@ -134,7 +140,34 @@ class Step:
     def make_step_id(cls, table_no, type, table_date):
         return f"{table_no:03d}.{type}.{table_date}"
 
-    def make_m(self, source_tables, table_dates, steps):
+    # def make_m(self, source_tables, table_dates, steps):
+    #     if self.table_no == 1:
+    #         raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
+    #     elif self.table_no == 2:
+    #         self.depends = [self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1])]
+    #     else:
+    #         self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
+
+    # def make_s(self, source_tables, table_dates, steps):
+    #     if self.table_no == 1:
+    #         self.src = [source_tables[self.table_no]]
+    #     else:
+    #         prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
+    #         self.depends = [prev_id]
+    #         self.src = steps[prev_id].out
+
+    # def make_i(self, source_tables, table_dates, steps):
+    #     if self.table_no == 1:
+    #         raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
+    #     prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
+    #     self.depends = [prev_id]
+    #     self.src = steps[prev_id].out
+
+# ----------------------------------------------------------------------
+
+class StepMerge (Step):
+
+    def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
             raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
         elif self.table_no == 2:
@@ -142,7 +175,22 @@ class Step:
         else:
             self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
 
-    def make_s(self, source_tables, table_dates, steps):
+# ----------------------------------------------------------------------
+
+class StepIncremental (Step):
+
+    def make(self, source_tables, table_dates, steps):
+        if self.table_no == 1:
+            raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
+        prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
+        self.depends = [prev_id]
+        self.src = steps[prev_id].out
+
+# ----------------------------------------------------------------------
+
+class StepScratch (Step):
+
+    def make(self, source_tables, table_dates, steps):
         if self.table_no == 1:
             self.src = [source_tables[self.table_no]]
         else:
@@ -150,12 +198,17 @@ class Step:
             self.depends = [prev_id]
             self.src = steps[prev_id].out
 
-    def make_i(self, source_tables, table_dates, steps):
-        if self.table_no == 1:
-            raise Error(f"""Cannot use step type {self.type!r} for table {self.table_no}""")
-        prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
-        self.depends = [prev_id]
-        self.src = steps[prev_id].out
+# ----------------------------------------------------------------------
+
+def step_factory(type, **args):
+    if type == "m":
+        return StepMerge(type=type, **args)
+    elif type == "i":
+        return StepIncremental(type=type, **args)
+    elif type == "s":
+        return StepScratch(type=type, **args)
+    else:
+        raise RuntimeError(f"""Unsupported step type {type!r}""")
 
 # ----------------------------------------------------------------------
 
@@ -173,6 +226,9 @@ class State:
     def ready(self):            # returns list of step_id's in ready state
         return [step_id for step_id, step in self.steps.items() if step.is_ready(self)]
 
+    def has_todo(self):
+        return not any(step.is_failed() for step in self.steps.values()) and not all(step.is_completed() for step in self.steps.values())
+
     # ----------------------------------------------------------------------
 
     def load(self, source_tables, param):
@@ -180,7 +236,7 @@ class State:
         if self.state_file.exists():
             self.state = json.load(self.state_file.open())
             for step_id, step_data in self.state["steps"].items():
-                self.steps[step_id] = Step(read_from=step_data)
+                self.steps[step_id] = step_factory(step_data["type"], read_from=step_data)
             self.state.pop("steps")
         if self.update(source_tables, param):
             self.save()
@@ -242,7 +298,7 @@ class State:
                 substeps = ["m", "i", "s"]
                 step_path += f":{table_date}"
             for substep in substeps:
-                step = Step(output_dir=self.output_dir, path=step_path, table_no=table_no, type=substep, table_dates=table_dates, source_tables=source_tables, steps=self.steps)
+                step = step_factory(substep, output_dir=self.output_dir, path=step_path, table_no=table_no, table_dates=table_dates, source_tables=source_tables, steps=self.steps)
                 step_id = step.step_id()
                 if step_id not in self.steps:
                     self.steps[step_id] = step
