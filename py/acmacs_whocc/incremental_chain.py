@@ -126,6 +126,13 @@ class Step:
     def make_step_id(cls, table_no, type, table_date):
         return f"{table_no:03d}.{type}.{table_date}"
 
+    def check(self, chain_state):
+        if chain_state.processor.check(chain_state, self):
+            chain_state.processor.merge_results(chain_state, self)
+            return True
+        else:
+            return False
+
 # ----------------------------------------------------------------------
 
 class StepMergeIncremental (Step):
@@ -156,13 +163,6 @@ class StepMergeIncremental (Step):
         else:
             raise RuntimeError(f"""{self.__class__}: unsupported "depends": {self.depends}""")
         chain_state.processor.merge_incremental(chain_state, self)
-
-    def check(self, chain_state):
-        if chain_state.processor.check(chain_state, self):
-            chain_state.processor.merge_results(chain_state, self)
-            return True
-        else:
-            return False
 
 # ----------------------------------------------------------------------
 
