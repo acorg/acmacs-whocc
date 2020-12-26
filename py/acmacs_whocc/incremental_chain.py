@@ -1,4 +1,4 @@
-import sys, os, re, datetime, json
+import sys, os, re, json, datetime, time
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
@@ -44,8 +44,10 @@ def main(source_tables, param):
 
 def chain(source_tables, param):
     state = State(source_tables, param)
-    state.save(to=sys.stderr)
-    exit(1)
+
+    
+    # state.save(to=sys.stderr)
+    # exit(1)
     # mrg = acmacs.Chart(str(source_tables[0]))
     # relax(mrg, 0, param)
     # for step, c1_name in enumerate(source_tables[1:], start=1):
@@ -88,6 +90,39 @@ class Step:
 
     def serialize(self):
         return vars(self)
+
+    def state(self, chain_state):
+        if self.is_completed():
+            return "completed"
+        if self.is_failed():
+            return "FAILED"
+        if self._is_running():
+            return "running"
+        if self._is_ready(chain_state):
+            return "ready"      # can be run
+        return "not-ready"
+
+    def is_completed(self):
+        if not self.out:
+            module_logger.warning(f"step {self.step_id()} has not output, it is always completed")
+            return True
+        try:
+            now = time.time()
+            return all((Path(out).stat().st_mtime - now) > 2 for out in self.out) # out was modified more than 2 seconds ago
+        except FileNotFoundError:
+            return False
+
+    def is_failed(self):
+        return False
+
+    def is_ready(self, chain_state):
+        return self.state(chain_state) == "ready"
+
+    def _is_running(self):
+        return False
+
+    def _is_ready(self, chain_state):
+        return not self.depends or all(chain_state.is_completed(dep) for dep in self.depends)
 
     def make_output_filenames(self, output_dir):
         self.out = [output_dir.joinpath(self.step_id() + ".ace")]
@@ -132,11 +167,19 @@ class State:
         self.output_dir = Path(param["output_dir"])
         self.load(source_tables, param)
 
+    def is_completed(self, step_id):
+        return self.steps[step_id].is_completed()
+
+    def ready(self):            # returns list of step_id's in ready state
+        return [step_id for step_id, step in self.steps.items() if step.is_ready(self)]
+
+    # ----------------------------------------------------------------------
+
     def load(self, source_tables, param):
         self.steps = {}
         if self.state_file.exists():
             self.state = json.load(self.state_file.open())
-            for step_id, step_data in self.state["steps"]:
+            for step_id, step_data in self.state["steps"].items():
                 self.steps[step_id] = Step(read_from=step_data)
             self.state.pop("steps")
         if self.update(source_tables, param):
@@ -199,9 +242,9 @@ class State:
                 substeps = ["m", "i", "s"]
                 step_path += f":{table_date}"
             for substep in substeps:
-                step = Step(output_dir=self.output_dir, table_no=table_no, type=substep, table_dates=table_dates, source_tables=source_tables, steps=self.steps)
+                step = Step(output_dir=self.output_dir, path=step_path, table_no=table_no, type=substep, table_dates=table_dates, source_tables=source_tables, steps=self.steps)
                 step_id = step.step_id()
-                if step_id not in self.state["steps"]:
+                if step_id not in self.steps:
                     self.steps[step_id] = step
                     updated = True
                 elif self.steps[step_id].path != step_path:
@@ -237,11 +280,11 @@ def setup_logging(param):
     log_dir = Path(param["log"]["dir"])
     log_dir.mkdir(parents=True, exist_ok=True)
     log_filename = log_dir.joinpath(f"{datetime.datetime.now().strftime('%Y-%m%d-%H%M')}.log")
-    # lh = logging.FileHandler(log_filename)
-    # lh.setLevel(param["loglevel"])
-    # lh.setFormatter(logging.Formatter(param["logformat"]))
-    # logging.getLogger().addHandler(lh)
-    logging.basicConfig(filename=log_filename, level=param["log"]["level"], format=param["log"]["format"])
+    logging.basicConfig(level=param["log"]["level"], format=param["log"]["format"])
+    lh = logging.FileHandler(log_filename)
+    lh.setLevel(param["log"]["level"])
+    lh.setFormatter(logging.Formatter(param["log"]["format"]))
+    logging.getLogger().addHandler(lh)
 
 # ======================================================================
 ### Local Variables:
