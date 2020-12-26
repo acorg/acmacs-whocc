@@ -111,7 +111,7 @@ class Step:
         return self.state(chain_state) == "ready"
 
     def is_running(self):
-        return False
+        return bool(getattr(self, "cluster", None))
 
     def _is_ready(self, chain_state):
         return not self.depends or all(chain_state.is_completed(dep) for dep in self.depends)
