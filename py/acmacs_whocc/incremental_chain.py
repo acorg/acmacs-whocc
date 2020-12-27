@@ -1,9 +1,10 @@
-import sys, os, re, json, datetime, time, subprocess, pprint
+import sys, os, re, json, datetime, time, subprocess, pprint, socket, traceback
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
-sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("lib"))]
+# sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("lib"))]
 import acmacs
+from acmacs_base import email
 
 # ======================================================================
 
@@ -43,13 +44,26 @@ class StepFailed (Error): pass
 # ======================================================================
 
 def main(source_tables, param):
+    exit_code = 0
     try:
         param = {**sDefaultParameters, **param}
-        setup_logging(param)
-        chain(source_tables, param)
+        log_filename = setup_logging(param)
+        if chain(source_tables, param):
+            exit_code = 1
+            email(to=param["email"], subject=f"""chain FAILED {socket.gethostname()} {os.getcwd()}""", body=f"""chain FAILED\n{socket.gethostname()}:{log_filename}""")
+        else:
+            email(to=param["email"], subject=f"""chain completed {socket.gethostname()} {os.getcwd()}""", body=f"""chain completed\n{socket.gethostname()}:{log_filename}""")
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt", file=sys.stderr)
     except Error as err:
         module_logger.error(f"{err}")
-        exit(1)
+        email(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
+        exit_code = 2
+    except Exception as err:
+        module_logger.error(f"{err}", exc_info=True)
+        email(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
+        exit_code = 3
+    exit(exit_code)
 
 # ----------------------------------------------------------------------
 
@@ -60,12 +74,7 @@ def chain(source_tables, param):
         if not state.run_ready():
             # module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
             time.sleep(param["sleep_interval_when_not_ready"])
-    if state.is_failed():
-        module_logger.error(f"chain FAILED")
-        # email
-    else:
-        module_logger.info(f"chain completed")
-        # email
+    return state.is_failed()
 
 # ======================================================================
 
@@ -237,7 +246,8 @@ class State:
         self.htcondor_dir = Path(param["htcondor_dir"])
         self.email = param["email"]
         self.threads = param["threads"]
-        self.load(source_tables, param)
+        self.source_tables = source_tables
+        self.load(param)
         self.processor = processor
 
     def is_step_completed(self, step_id):
@@ -250,12 +260,19 @@ class State:
         return [step_id for step_id, step in self.steps.items() if step.is_ready(self)]
 
     def has_todo(self):
-        if any(step.is_running(self) for step in self.steps.values()):
+        running = sum(1 if step.is_running(self) else 0 for step in self.steps.values())
+        completed = sum(1 if step.is_completed(self) else 0 for step in self.steps.values())
+        total = len(self.steps)
+        report = (total, completed)
+        if getattr(self, "has_todo_report", None) != report:
+            module_logger.info(f"Completed {completed} of {total} ({int(completed / total * 100.0)}%) tables: {len(self.source_tables)}  currently running: {running}")
+            self.has_todo_report = report
+        if running:
             return True
         if self.is_failed():
             return False
         # nothing running and nothing failed
-        return not all(step.is_completed(self) for step in self.steps.values())
+        return completed < total
 
     def check_running(self):
         for step in self.steps.values():
@@ -278,14 +295,14 @@ class State:
 
     # ----------------------------------------------------------------------
 
-    def load(self, source_tables, param):
+    def load(self, param):
         self.steps = {}
         if self.state_file.exists():
             self.state = json.load(self.state_file.open())
             for step_id, step_data in self.state["steps"].items():
                 self.steps[step_id] = step_factory(step_data["_type"], read_from=step_data)
             self.state.pop("steps")
-        if self.update(source_tables, param):
+        if self.update(param):
             self.save()
 
     def save(self, to=None):
@@ -310,13 +327,13 @@ class State:
     def setup(self):
         return self.state["setup"]
 
-    def update(self, source_tables, param):
+    def update(self, param):
         updated = False
         for changeable_value in ["number_of_optimizations", "projections_to_keep", "number_of_optimizations_per_run"]:
             updated = self.update_value(changeable_value, param[changeable_value], raise_if_changed=False)
         for readonly_value in ["number_of_dimensions", "minimum_column_basis"]:
             updated = self.update_value(readonly_value, param[readonly_value], raise_if_changed=True) or updated
-        updated = self.update_steps(source_tables) or updated
+        updated = self.update_steps() or updated
         return updated
 
     def update_value(self, name, value, raise_if_changed):
@@ -335,11 +352,11 @@ class State:
                 updated = True
         return updated
 
-    def update_steps(self, source_tables):
+    def update_steps(self):
         updated = False
         step_path = ""
         table_dates = [None]
-        for table_no, table in enumerate((Path(tab) for tab in source_tables), start=1):
+        for table_no, table in enumerate((Path(tab) for tab in self.source_tables), start=1):
             if not table.exists():
                 raise Error(f"""Table {table} does not exist""")
             table_date = re.search(r"-(\d+)\.", table.name, re.I).group(1)
@@ -353,7 +370,7 @@ class State:
                 substeps = ["m", "i", "s"]
                 step_path += f":{table_date}"
             for substep in substeps:
-                step = step_factory(substep, output_dir=self.output_dir, path=step_path, table_no=table_no, table_dates=table_dates, source_tables=source_tables, steps=self.steps)
+                step = step_factory(substep, output_dir=self.output_dir, path=step_path, table_no=table_no, table_dates=table_dates, source_tables=self.source_tables, steps=self.steps)
                 step_id = step.step_id()
                 if step_id not in self.steps:
                     self.steps[step_id] = step
@@ -534,6 +551,7 @@ def setup_logging(param):
     lh.setLevel(param["log"]["level"])
     lh.setFormatter(logging.Formatter(param["log"]["format"]))
     logging.getLogger().addHandler(lh)
+    return log_filename
 
 # ======================================================================
 ### Local Variables:
