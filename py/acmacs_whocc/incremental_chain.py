@@ -58,7 +58,7 @@ def chain(source_tables, param):
     while state.has_todo():
         state.check_running()
         if not state.run_ready():
-            module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
+            # module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
             time.sleep(param["sleep_interval_when_not_ready"])
     if state.is_failed():
         module_logger.error(f"chain FAILED")
@@ -78,13 +78,18 @@ def chain(source_tables, param):
 
 class Step:
 
+    sDateTimeFormat = "%Y-%m-%d %H:%M:%S"
+
     def __init__(self, type=None, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
         self._type = type
         self.depends = None
         self.FAILED = False
         if read_from:
             for key, val in read_from.items():
-                setattr(self, key, val)
+                if key in ["start", "finish"]:
+                    setattr(self, key, datetime.datetime.strptime(val, self.sDateTimeFormat))
+                else:
+                    setattr(self, key, val)
         else:
             for key, val in args.items():
                 setattr(self, key, val)
@@ -290,8 +295,10 @@ class State:
         def serialize(obj):
             if hasattr(obj, "serialize"):
                 return obj.serialize()
-            if isinstance(obj, (Path, datetime.datetime)):
+            if isinstance(obj, Path):
                 return str(obj)
+            if isinstance(obj, datetime.datetime):
+                return obj.strftime(Step.sDateTimeFormat)
             raise TypeError(type(obj))
 
         self.state["steps"] = self.steps
