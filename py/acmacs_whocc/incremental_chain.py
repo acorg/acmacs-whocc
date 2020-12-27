@@ -433,6 +433,7 @@ class ProcessorHTCondor (Processor):
 
     def processing_dir(self, chain_state, step):
         pd = chain_state.htcondor_dir.joinpath(f"{step.step_id()}.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
+        # module_logger.debug(f"{step.step_id()} htcondor processing_dir {pd}", stack_info=True)
         pd.mkdir(parents=True, exist_ok=False)
         return pd
 
@@ -460,25 +461,36 @@ class ProcessorHTCondor (Processor):
         step.start = datetime.datetime.now()
 
     def relax_incremental(self, chain_state, step):
-        raise RuntimeError(f"""relax_incremental not implemented""")
         from acmacs_base import htcondor
-        step.htcondor = {"dir": self.processing_dir(chain_state, step)}
-        # with ProcessorTimer(step) as pt:
-        #     chart = acmacs.Chart(str(step.src[0]))
-        #     chart.relax_incremental(number_of_optimizations=chain_state.setup()["number_of_optimizations"])
-        #     chart.keep_projections(chain_state.setup()["projections_to_keep"])
-        #     self.export(chart=chart, out=Path(step.out[0]))
-        #     step.stress = chart.projection().stress()
-        #     pt.chart = chart
+        number_of_optimizations = chain_state.setup()["number_of_optimizations_per_run"]
+        queue_size = int(chain_state.setup()["number_of_optimizations"] / number_of_optimizations) + (1 if (chain_state.setup()["number_of_optimizations"] % number_of_optimizations) > 0 else 0)
+        common_args = [
+            "-n", number_of_optimizations,
+            "--keep-projections", chain_state.setup()["projections_to_keep"],
+            "--remove-source-projection",
+            "--threads", chain_state.threads,
+        ]
+        step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
+        program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
+        desc_filename, step.htcondor["log"] = htcondor.prepare_submission(
+            program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax-incremental"),
+            environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
+            program_args=program_args,
+            description=f"chart-relax-incremental {step.step_id()}",
+            current_dir=step.htcondor["dir"], capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
+        step.htcondor["cluster"] = htcondor.submit(desc_filename)
         step.start = datetime.datetime.now()
 
     def merge_results(self, chain_state, step):
-        Path(step.out[0]).parent.mkdir(parents=True, exist_ok=True)
-        cmd = ["chart-combine-projections", "-k", chain_state.setup()["projections_to_keep"], "-o", step.out[0]] + [Path(step.htcondor["dir"], fn) for fn in step.htcondor["out"]]
-        subprocess.check_call([str(en) for en in cmd])
-        chart = acmacs.Chart(str(step.out[0]))
-        step.stress = chart.projection().stress()
-        module_logger.info(f"{step.step_id()} {step.type_desc()} {chart.make_name()}\n{'':30s}<{step.runtime}>")
+        if step._type in ["s", "i"]:
+            Path(step.out[0]).parent.mkdir(parents=True, exist_ok=True)
+            cmd = ["chart-combine-projections", "-k", chain_state.setup()["projections_to_keep"], "-o", step.out[0]] + [Path(step.htcondor["dir"], fn) for fn in step.htcondor["out"]]
+            subprocess.check_call([str(en) for en in cmd])
+            chart = acmacs.Chart(str(step.out[0]))
+            step.stress = chart.projection().stress()
+            module_logger.info(f"{step.step_id()} {step.type_desc()} {chart.make_name()}\n{'':30s}<{step.runtime}>")
+        else:
+            raise RuntimeError(f"""ProcessorHTCondor.merge_results for step {step._type!r}: not implemented""")
 
     def is_running(self, chain_state, step):
         return bool(getattr(step, "htcondor", {}).get("cluster", None))
