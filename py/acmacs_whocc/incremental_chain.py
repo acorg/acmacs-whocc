@@ -105,7 +105,7 @@ class Step:
             return "completed"
         if self.is_failed():
             return "FAILED"
-        if self.is_running():
+        if self.is_running(chain_state):
             return "running"
         if self._is_ready(chain_state):
             return "ready"      # can be run
@@ -123,8 +123,8 @@ class Step:
     def is_ready(self, chain_state):
         return self.state(chain_state) == "ready"
 
-    def is_running(self):
-        return bool(getattr(self, "cluster", None))
+    def is_running(self, chain_state):
+        return chain_state.processor.is_running(chain_state, self)
 
     def _is_ready(self, chain_state):
         return not self.depends or all(chain_state.is_step_completed(dep) for dep in self.depends)
@@ -252,7 +252,7 @@ class State:
         return [step_id for step_id, step in self.steps.items() if step.is_ready(self)]
 
     def has_todo(self):
-        if any(step.is_running() for step in self.steps.values()):
+        if any(step.is_running(self) for step in self.steps.values()):
             return True
         if self.is_failed():
             return False
@@ -261,7 +261,7 @@ class State:
 
     def check_running(self):
         for step in self.steps.values():
-            if step.is_running():
+            if step.is_running(self):
                 if step.check(self):
                     self.save()
 
@@ -427,6 +427,9 @@ class ProcessorBuiltIn (Processor):
             step.stress = chart.projection().stress()
             pt.chart = chart
 
+    def is_running(self, chain_state, step):
+        return False
+
 # ----------------------------------------------------------------------
 
 class ProcessorHTCondor (Processor):
@@ -444,7 +447,7 @@ class ProcessorHTCondor (Processor):
 
     def relax_from_scratch(self, chain_state, step):
         from acmacs_base import htcondor
-        step.processing_dir = self.processing_dir(chain_state, step)
+        step.htcondor = {"dir": self.processing_dir(chain_state, step)}
         number_of_optimizations = chain_state.setup()["number_of_optimizations_per_run"]
         queue_size = int(chain_state.setup()["number_of_optimizations"] / number_of_optimizations) + (1 if (chain_state.setup()["number_of_optimizations"] % number_of_optimizations) > 0 else 0)
         common_args = [
@@ -456,18 +459,18 @@ class ProcessorHTCondor (Processor):
             "--threads", chain_state.threads,
         ]
         program_args = [common_args + [str(Path(step.src[0]).resolve()), f"{run_no:04d}.ace"] for run_no in range(queue_size)]
-        desc_filename, step.condor_log = htcondor.prepare_submission(
+        desc_filename, step.htcondor["log"] = htcondor.prepare_submission(
             program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
             environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
             program_args=program_args,
             description=f"chart-relax {step.step_id()}",
-            current_dir=step.processing_dir, capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
-        step.cluster = htcondor.submit(desc_filename)
+            current_dir=step.htcondor["dir"], capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
+        step.htcondor["cluster"] = htcondor.submit(desc_filename)
         step.start = datetime.datetime.now()
 
     def relax_incremental(self, chain_state, step):
         from acmacs_base import htcondor
-        processing_dir = self.processing_dir(chain_state, step)
+        step.htcondor = {"dir": self.processing_dir(chain_state, step)}
         # with ProcessorTimer(step) as pt:
         #     chart = acmacs.Chart(str(step.src[0]))
         #     chart.relax_incremental(number_of_optimizations=chain_state.setup()["number_of_optimizations"])
@@ -477,12 +480,19 @@ class ProcessorHTCondor (Processor):
         #     pt.chart = chart
         step.start = datetime.datetime.now()
 
+    def merge_results(self, chain_state, step):
+        module_logger.error(f"ProcessorHTCondor.merge_results not implemented")
+        pass
+
+    def is_running(self, chain_state, step):
+        return bool(getattr(step, "htcondor", {}).get("cluster", None))
+
     # returns if job completed
     # raises StepFailed if job failed
     def check(self, chain_state, step):
         from acmacs_base import htcondor
         now = datetime.datetime.now()
-        job = htcondor.Job(step.cluster, step.condor_log)
+        job = htcondor.Job(step.htcondor["cluster"], step.htcondor["log"])
         state = job.state()
         if state["FAILED"]:
             step.FAILED = True
@@ -493,20 +503,15 @@ class ProcessorHTCondor (Processor):
             self._done(step, now)
             step.runtime = str(step.finish - step.start)
             return True
-        elif (now - getattr(step, "check_reported", step.start)).seconds > 300:
-            step.check_reported = now
+        elif (now - step.htcondor.get("check_reported", step.start)).seconds > 300:
+            step.htcondor["check_reported"] = now
             module_logger.info(f"""{step.step_id()} {state["PERCENT"]}% done""")
         return False
 
     def _done(self, step, now):
         step.finish = now
-        for attr in ["cluster", "check_reported"]:
-            if hasattr(step, attr):
-                delattr(step, attr)
-
-    def merge_results(self, chain_state, step):
-        module_logger.error(f"ProcessorHTCondor.merge_results not implemented")
-        pass
+        for key in ["cluster", "check_reported", "log"]:
+            step.htcondor.pop(key, None)
 
 # ======================================================================
 
