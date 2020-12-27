@@ -1,4 +1,4 @@
-import sys, os, re, json, datetime, time, subprocess
+import sys, os, re, json, datetime, time, subprocess, pprint
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ sDefaultParameters = {
 }
 
 class Error (RuntimeError): pass
+class StepFailed (Error): pass
 
 # ======================================================================
 
@@ -59,6 +60,12 @@ def chain(source_tables, param):
         if not state.run_ready():
             module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
             time.sleep(param["sleep_interval_when_not_ready"])
+    if state.is_failed():
+        module_logger.error(f"chain FAILED")
+        # email
+    else:
+        module_logger.info(f"chain completed")
+        # email
 
 # ======================================================================
 
@@ -74,6 +81,7 @@ class Step:
     def __init__(self, type=None, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
         self._type = type
         self.depends = None
+        self.FAILED = False
         if read_from:
             for key, val in read_from.items():
                 setattr(self, key, val)
@@ -105,7 +113,7 @@ class Step:
         return all(chain_state.processor.output_ready(Path(out)) for out in self.out)
 
     def is_failed(self):
-        return False
+        return self.FAILED
 
     def is_ready(self, chain_state):
         return self.state(chain_state) == "ready"
@@ -114,7 +122,7 @@ class Step:
         return bool(getattr(self, "cluster", None))
 
     def _is_ready(self, chain_state):
-        return not self.depends or all(chain_state.is_completed(dep) for dep in self.depends)
+        return not self.depends or all(chain_state.is_step_completed(dep) for dep in self.depends)
 
     def make_output_filenames(self, output_dir):
         self.out = [output_dir.joinpath(self.step_id() + ".ace")]
@@ -126,12 +134,16 @@ class Step:
     def make_step_id(cls, table_no, type, table_date):
         return f"{table_no:03d}.{type}.{table_date}"
 
+    # returns if step state changed
     def check(self, chain_state):
-        if chain_state.processor.check(chain_state, self):
-            chain_state.processor.merge_results(chain_state, self)
+        try:
+            if chain_state.processor.check(chain_state, self):
+                chain_state.processor.merge_results(chain_state, self)
+                return True
+            else:
+                return False
+        except StepFailed:
             return True
-        else:
-            return False
 
 # ----------------------------------------------------------------------
 
@@ -225,8 +237,11 @@ class State:
         self.load(source_tables, param)
         self.processor = processor
 
-    def is_completed(self, step_id):
+    def is_step_completed(self, step_id):
         return self.steps[step_id].is_completed(self)
+
+    def is_failed(self):
+        return any(step.is_failed() for step in self.steps.values())
 
     def ready(self):            # returns list of step_id's in ready state
         return [step_id for step_id, step in self.steps.items() if step.is_ready(self)]
@@ -234,7 +249,7 @@ class State:
     def has_todo(self):
         if any(step.is_running() for step in self.steps.values()):
             return True
-        if any(step.is_failed() for step in self.steps.values()):
+        if self.is_failed():
             return False
         # nothing running and nothing failed
         return not all(step.is_completed(self) for step in self.steps.values())
@@ -441,6 +456,7 @@ class ProcessorHTCondor (Processor):
             description=f"chart-relax {step.step_id()}",
             current_dir=step.processing_dir, capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
         step.cluster = htcondor.submit(desc_filename)
+        step.start = datetime.datetime.now()
 
     def relax_incremental(self, chain_state, step):
         from acmacs_base import htcondor
@@ -452,10 +468,34 @@ class ProcessorHTCondor (Processor):
         #     self.export(chart=chart, out=Path(step.out[0]))
         #     step.stress = chart.projection().stress()
         #     pt.chart = chart
+        step.start = datetime.datetime.now()
 
+    # returns if job completed
+    # raises StepFailed if job failed
     def check(self, chain_state, step):
-        module_logger.error(f"ProcessorHTCondor.check not implemented")
+        from acmacs_base import htcondor
+        now = datetime.datetime.now()
+        job = htcondor.Job(step.cluster, step.condor_log)
+        state = job.state()
+        if state["FAILED"]:
+            step.FAILED = True
+            self._done(step, now)
+            module_logger.error(f"""{step.step_id()} FAILED""")
+            raise StepFailed()
+        elif state["DONE"]:
+            self._done(step, now)
+            step.runtime = str(step.finish - step.start)
+            return True
+        elif (now - getattr(step, "check_reported", step.start)).seconds > 300:
+            step.check_reported = now
+            module_logger.info(f"""{step.step_id()} {state["PERCENT"]}% done""")
         return False
+
+    def _done(self, step, now):
+        step.finish = now
+        for attr in ["cluster", "check_reported"]:
+            if hasattr(step, attr):
+                delattr(step, attr)
 
     def merge_results(self, chain_state, step):
         module_logger.error(f"ProcessorHTCondor.merge_results not implemented")
