@@ -486,6 +486,7 @@ class ProcessorHTCondor (Processor):
             subprocess.check_call([str(en) for en in cmd])
             chart = acmacs.Chart(str(step.out[0]))
             step.stress = chart.projection().stress()
+            step.htcondor.pop("out", None)
             module_logger.info(f"{step.step_id()} {step.type_desc()} {chart.make_name()}\n{'':30s}<{step.runtime}>")
         else:
             raise RuntimeError(f"""ProcessorHTCondor.merge_results for step {step._type!r}: not implemented""")
