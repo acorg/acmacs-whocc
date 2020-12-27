@@ -69,7 +69,7 @@ def chain(source_tables, param):
 
 # ======================================================================
 
-#  type: m(erge) i(ncremental) s(cratch)
+#  _type: m(erge) i(ncremental) s(cratch)
 #  path: str
 #  depends: [step_id]
 #  src: [filename]
@@ -82,8 +82,6 @@ class Step:
 
     def __init__(self, type=None, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
         self._type = type
-        self.depends = None
-        self.FAILED = False
         if read_from:
             for key, val in read_from.items():
                 if key in ["start", "finish"]:
@@ -118,7 +116,7 @@ class Step:
         return all(Path(out).exists() for out in self.out)
 
     def is_failed(self):
-        return self.FAILED
+        return getattr(self, "FAILED", False)
 
     def is_ready(self, chain_state):
         return self.state(chain_state) == "ready"
@@ -127,7 +125,7 @@ class Step:
         return chain_state.processor.is_running(chain_state, self)
 
     def _is_ready(self, chain_state):
-        return not self.depends or all(chain_state.is_step_completed(dep) for dep in self.depends)
+        return not getattr(self, "depends", None) or all(chain_state.is_step_completed(dep) for dep in self.depends)
 
     def make_output_filenames(self, output_dir):
         self.out = [output_dir.joinpath(self.step_id() + ".ace")]
