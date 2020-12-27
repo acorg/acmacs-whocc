@@ -115,7 +115,7 @@ class Step:
         if not self.out:
             module_logger.warning(f"step {self.step_id()} has not output, it is always completed")
             return True
-        return all(chain_state.processor.output_ready(Path(out)) for out in self.out)
+        return all(Path(out).exists() for out in self.out)
 
     def is_failed(self):
         return self.FAILED
@@ -406,9 +406,6 @@ class Processor:
 
 class ProcessorBuiltIn (Processor):
 
-    def output_ready(self, out :Path):
-        return out.exists()
-
     def relax_from_scratch(self, chain_state, step):
         with ProcessorTimer(step) as pt:
             chart = acmacs.Chart(str(step.src[0]))
@@ -433,12 +430,6 @@ class ProcessorBuiltIn (Processor):
 # ----------------------------------------------------------------------
 
 class ProcessorHTCondor (Processor):
-
-    def output_ready(self, out :Path = None):
-        try:
-            return (out.stat().st_mtime - time.time()) > 2 # out was modified more than 2 seconds ago
-        except FileNotFoundError:
-            return False
 
     def processing_dir(self, chain_state, step):
         pd = chain_state.htcondor_dir.joinpath(f"{step.step_id()}.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
@@ -469,6 +460,7 @@ class ProcessorHTCondor (Processor):
         step.start = datetime.datetime.now()
 
     def relax_incremental(self, chain_state, step):
+        raise RuntimeError(f"""relax_incremental not implemented""")
         from acmacs_base import htcondor
         step.htcondor = {"dir": self.processing_dir(chain_state, step)}
         # with ProcessorTimer(step) as pt:
@@ -481,7 +473,12 @@ class ProcessorHTCondor (Processor):
         step.start = datetime.datetime.now()
 
     def merge_results(self, chain_state, step):
-        raise RuntimeError(f"""ProcessorHTCondor.merge_results not implemented""")
+        Path(step.out[0]).parent.mkdir(parents=True, exist_ok=True)
+        cmd = ["chart-combine-projections", "-k", chain_state.setup()["projections_to_keep"], "-o", step.out[0]] + [Path(step.htcondor["dir"], fn) for fn in step.htcondor["out"]]
+        subprocess.check_call([str(en) for en in cmd])
+        chart = acmacs.Chart(str(step.out[0]))
+        step.stress = chart.projection().stress()
+        module_logger.info(f"{step.step_id()} {step.type_desc()} {chart.make_name()}\n{'':30s}<{step.runtime}>")
 
     def is_running(self, chain_state, step):
         return bool(getattr(step, "htcondor", {}).get("cluster", None))
