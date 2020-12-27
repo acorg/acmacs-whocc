@@ -447,7 +447,6 @@ class ProcessorHTCondor (Processor):
 
     def relax_from_scratch(self, chain_state, step):
         from acmacs_base import htcondor
-        step.htcondor = {"dir": self.processing_dir(chain_state, step)}
         number_of_optimizations = chain_state.setup()["number_of_optimizations_per_run"]
         queue_size = int(chain_state.setup()["number_of_optimizations"] / number_of_optimizations) + (1 if (chain_state.setup()["number_of_optimizations"] % number_of_optimizations) > 0 else 0)
         common_args = [
@@ -458,7 +457,8 @@ class ProcessorHTCondor (Processor):
             "--remove-original-projections",
             "--threads", chain_state.threads,
         ]
-        program_args = [common_args + [str(Path(step.src[0]).resolve()), f"{run_no:04d}.ace"] for run_no in range(queue_size)]
+        step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
+        program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
         desc_filename, step.htcondor["log"] = htcondor.prepare_submission(
             program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
             environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
@@ -481,8 +481,7 @@ class ProcessorHTCondor (Processor):
         step.start = datetime.datetime.now()
 
     def merge_results(self, chain_state, step):
-        module_logger.error(f"ProcessorHTCondor.merge_results not implemented")
-        pass
+        raise RuntimeError(f"""ProcessorHTCondor.merge_results not implemented""")
 
     def is_running(self, chain_state, step):
         return bool(getattr(step, "htcondor", {}).get("cluster", None))
