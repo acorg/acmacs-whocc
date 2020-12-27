@@ -457,6 +457,7 @@ class ProcessorHTCondor (Processor):
             current_dir=step.htcondor["dir"], capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
         step.htcondor["cluster"] = htcondor.submit(desc_filename)
         step.start = datetime.datetime.now()
+        module_logger.info(f"""{step.step_id()} {step.type_desc()} htcondor submitted: {step.htcondor["cluster"]}""")
 
     def relax_incremental(self, chain_state, step):
         from acmacs_base import htcondor
@@ -478,6 +479,7 @@ class ProcessorHTCondor (Processor):
             current_dir=step.htcondor["dir"], capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
         step.htcondor["cluster"] = htcondor.submit(desc_filename)
         step.start = datetime.datetime.now()
+        module_logger.info(f"""{step.step_id()} {step.type_desc()} htcondor submitted: {step.htcondor["cluster"]}""")
 
     def merge_results(self, chain_state, step):
         if step._type in ["s", "i"]:
@@ -503,10 +505,11 @@ class ProcessorHTCondor (Processor):
         state = job.state()
         if state["FAILED"]:
             step.FAILED = True
+            module_logger.error(f"""{step.step_id()} htcondor jobs {step.htcondor["cluster"]} FAILED""")
             self._done(step, now)
-            module_logger.error(f"""{step.step_id()} FAILED""")
             raise StepFailed()
         elif state["DONE"]:
+            module_logger.info(f"""{step.step_id()} htcondor jobs {step.htcondor["cluster"]} done""")
             self._done(step, now)
             step.runtime = str(step.finish - step.start)
             return True
