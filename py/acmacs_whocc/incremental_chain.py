@@ -485,7 +485,7 @@ class ProcessorHTCondor (Processor):
             "--incremental",
             "-n", number_of_optimizations,
             "--keep-projections", chain_state.setup()["projections_to_keep"],
-            "--remove-source-projection",
+            "--remove-original-projections",
             "--threads", chain_state.threads,
             "--grid",
         ]
