@@ -50,18 +50,18 @@ def main(source_tables, param):
         log_filename = setup_logging(param)
         if chain(source_tables, param):
             exit_code = 1
-            email(to=param["email"], subject=f"""chain FAILED {socket.gethostname()} {os.getcwd()}""", body=f"""chain FAILED\n{socket.gethostname()}:{log_filename}""")
+            email.send(to=param["email"], subject=f"""chain FAILED {socket.gethostname()} {os.getcwd()}""", body=f"""chain FAILED\n{socket.gethostname()}:{log_filename}""")
         else:
-            email(to=param["email"], subject=f"""chain completed {socket.gethostname()} {os.getcwd()}""", body=f"""chain completed\n{socket.gethostname()}:{log_filename}""")
+            email.send(to=param["email"], subject=f"""chain completed {socket.gethostname()} {os.getcwd()}""", body=f"""chain completed\n{socket.gethostname()}:{log_filename}""")
     except KeyboardInterrupt:
         print("KeyboardInterrupt", file=sys.stderr)
     except Error as err:
         module_logger.error(f"{err}")
-        email(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
+        email.send(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
         exit_code = 2
     except Exception as err:
         module_logger.error(f"{err}", exc_info=True)
-        email(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
+        email.send(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
         exit_code = 3
     exit(exit_code)
 
@@ -463,6 +463,7 @@ class ProcessorHTCondor (Processor):
             "--keep-projections", chain_state.setup()["projections_to_keep"],
             "--remove-original-projections",
             "--threads", chain_state.threads,
+            "--grid",
         ]
         step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
         program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
@@ -470,7 +471,7 @@ class ProcessorHTCondor (Processor):
             program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
             environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
             program_args=program_args,
-            description=f"chart-relax {step.step_id()}",
+            description=f"chart-relax grid {step.step_id()}",
             current_dir=step.htcondor["dir"], capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
         step.htcondor["cluster"] = htcondor.submit(desc_filename)
         step.start = datetime.datetime.now()
@@ -481,18 +482,20 @@ class ProcessorHTCondor (Processor):
         number_of_optimizations = chain_state.setup()["number_of_optimizations_per_run"]
         queue_size = int(chain_state.setup()["number_of_optimizations"] / number_of_optimizations) + (1 if (chain_state.setup()["number_of_optimizations"] % number_of_optimizations) > 0 else 0)
         common_args = [
+            "--incremental",
             "-n", number_of_optimizations,
             "--keep-projections", chain_state.setup()["projections_to_keep"],
             "--remove-source-projection",
             "--threads", chain_state.threads,
+            "--grid",
         ]
         step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
         program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
         desc_filename, step.htcondor["log"] = htcondor.prepare_submission(
-            program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax-incremental"),
+            program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
             environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
             program_args=program_args,
-            description=f"chart-relax-incremental {step.step_id()}",
+            description=f"chart-relax incremental grid {step.step_id()}",
             current_dir=step.htcondor["dir"], capture_stdout=True, email=chain_state.email, notification="Error", request_cpus=chain_state.threads)
         step.htcondor["cluster"] = htcondor.submit(desc_filename)
         step.start = datetime.datetime.now()
