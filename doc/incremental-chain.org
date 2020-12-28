@@ -1,5 +1,10 @@
-Time-stamp: <2020-12-28 11:45:42 eu>
+Time-stamp: <2020-12-28 13:02:37 eu>
 * Reorient
+
+#+BEGIN_SRC bash
+chart-reorient reorient.ace out/*.ace
+#+END_SRC
+
 
 * Make index page
 
