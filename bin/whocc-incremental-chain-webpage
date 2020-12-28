@@ -82,8 +82,8 @@ def make_grid(group, out_dir):
 
     def make_ace_link(fn):
         ace_name = out_dir.joinpath(fn.stem + ".ace")
-        return f"""<a href="{ace_name}">{ace_name.name}</a>"""
-    
+        return f"""<a target="_blank" href="{ace_name}?acv=html">Interactive viewer</a><span style="padding-left: 2em"></span><a href="{ace_name}">Download {ace_name.name}</a>"""
+
     return {"title": "", "columns": [[{"T": "title", "text": make_pdf_title(fn)}, {"T": "text", "html": make_ace_link(fn)}, {"T": "pdf", "file": str(fn)}] for fn in group]}
 
 # ----------------------------------------------------------------------
