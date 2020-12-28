@@ -1,0 +1,22 @@
+Time-stamp: <2020-12-28 11:00:46 eu>
+* Reorient
+
+* Make index page
+
+* Making new incremental chain
+
+#+BEGIN_SRC bash
+whocc-incremental-chain-make /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-lab>/$(date +%Y-%m%d)
+
+#+END_SRC
+
+
+* -- local vars --------------------------------------------------
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+#+STARTUP: showall indent
+
+Local Variables:
+eval: (add-hook 'before-save-hook 'time-stamp)
+End:

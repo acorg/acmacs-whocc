@@ -1,0 +1,44 @@
+#! /bin/bash
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-lab>/$(date +%Y-%m%d)" >&2
+    exit 1
+fi
+
+SUBTYPE_ASSAY_LAB="$(basename $(dirname $1))"
+
+mkdir -p "$1"
+cd "$1"
+if [[ ! -e run ]]; then
+    cat >run <<EOF
+#! /usr/bin/env python3
+import sys, os, re, datetime, json
+from pathlib import Path
+import logging; module_logger = logging.getLogger(__name__)
+import acmacs
+
+WHOCC_TABLES = Path(os.environ["HOME"], "ac", "whocc-tables")
+SOURCE_DIR = WHOCC_TABLES.joinpath("${SUBTYPE_ASSAY_LAB}")
+
+sReInclude = re.compile(r"-(20)", re.I)
+sReExclude = re.compile(r"exclude", re.I)
+
+def sources():
+    return sorted(pathname for pathname in SOURCE_DIR.iterdir()
+                  if pathname.suffix == ".ace"
+                  and sReInclude.search(pathname.name)
+                  and not sReExclude.search(pathname.name))
+
+def setup():
+    return {
+        "number_of_optimizations": 1000,
+        "number_of_optimizations_per_run": 56,
+        "number_of_dimensions": 2,
+        "minimum_column_basis": "none",
+        }
+
+from acmacs_whocc.incremental_chain import main
+main(sources(), setup())
+EOF
+else
+    echo ">> WARNING: $(pwd)/run already exists" >&2
+fi

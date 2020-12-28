@@ -97,6 +97,7 @@ class Step:
                     setattr(self, key, datetime.datetime.strptime(val, self.sDateTimeFormat))
                 else:
                     setattr(self, key, val)
+            self.htcondor.pop("check_reported", None)
         else:
             for key, val in args.items():
                 setattr(self, key, val)
@@ -464,6 +465,7 @@ class ProcessorHTCondor (Processor):
             "--remove-original-projections",
             "--threads", chain_state.threads,
             "--grid",
+            "--export-pre-grid",
         ]
         step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
         program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
@@ -488,6 +490,7 @@ class ProcessorHTCondor (Processor):
             "--remove-original-projections",
             "--threads", chain_state.threads,
             "--grid",
+            "--export-pre-grid",
         ]
         step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
         program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
@@ -535,7 +538,7 @@ class ProcessorHTCondor (Processor):
             return True
         elif (now - step.htcondor.get("check_reported", step.start)).seconds > 300:
             step.htcondor["check_reported"] = now
-            module_logger.info(f"""{step.step_id()} {state["PERCENT"]}% done""")
+            module_logger.info(f"""{step.step_id()}   {state["PERCENT"]}%          """)
         return False
 
     def _done(self, step, now):
