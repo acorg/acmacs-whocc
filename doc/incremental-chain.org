@@ -1,7 +1,12 @@
-Time-stamp: <2020-12-28 11:00:46 eu>
+Time-stamp: <2020-12-28 11:45:42 eu>
 * Reorient
 
 * Make index page
+
+#+BEGIN_SRC bash
+whocc-incremental-chain-webpage /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-lab>/<date>
+#+END_SRC
+
 
 * Making new incremental chain
 

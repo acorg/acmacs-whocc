@@ -1,0 +1,59 @@
+#! /usr/bin/env python3
+import sys, os, re, subprocess, pprint
+from pathlib import Path
+import logging; module_logger = logging.getLogger(__name__)
+
+# ----------------------------------------------------------------------
+
+def main():
+    pdf_dir = Path("pdf")
+    out_dir = Path("out")
+    pdf_dir.mkdir(exist_ok=True)
+    ace_files = scan(out_dir)
+    pdf_files = make_pdfs(ace_files, pdf_dir)
+    pprint.pprint(pdf_files)
+    
+# ----------------------------------------------------------------------
+
+sRe_i_s_file = re.compile(r"\.[is]\.")
+
+def scan(out_dir):
+    files = []
+    for table_no in range(1, 1000):
+        ace = sorted(fn for fn in out_dir.glob(f"{table_no:03d}.*") if sRe_i_s_file.search(fn.name))
+        # print(ace)
+        if ace:
+            files.append(ace)
+        else:
+            break
+    return files
+
+# ----------------------------------------------------------------------
+
+def make_pdfs(ace_files, pdf_dir):
+    pdfs = []
+    for group in ace_files:
+        pdf_group = []
+        for ace_file in group:
+            pdf_file = pdf_dir.joinpath(ace_file.name.replace(".ace", ".pdf"))
+            if not pdf_file.exists() or pdf_file.stat().st_mtime < ace_file.stat().st_mtime:
+                subprocess.check_call(["mapi", "-a", "//clades", str(ace_file), str(pdf_file)])
+            pdf_group.append(pdf_file)
+
+        if len(group) == 2:
+            pc_pdf_file = pdf_dir.joinpath(f"{group[0].name[:3]}.pc.{group[0].name[4]}-vs-{group[1].name[4]}.pdf")
+            if not pc_pdf_file.exists() or pc_pdf_file.stat().st_mtime < group[0].stat().st_mtime or pc_pdf_file.stat().st_mtime < group[1].stat().st_mtime:
+                subprocess.check_call(["mapi", "-a", "//clades,/pc", str(group[0]), str(group[1]), str(pc_pdf_file)])
+            pdf_group.append(pc_pdf_file)
+
+        pdfs.append(pdf_group)
+    return pdfs
+
+# ----------------------------------------------------------------------
+
+if len(sys.argv) != 2:
+    print(f"""> Usage: {sys.argv[0]} /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-lab>/<date>""", file=sys.stderr)
+    exit(1)
+
+os.chdir(sys.argv[1])
+main()
