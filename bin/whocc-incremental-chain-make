@@ -5,6 +5,7 @@ if [[ $# -ne 1 ]]; then
 fi
 
 SUBTYPE_ASSAY_LAB="$(basename $(dirname $1))"
+echo "SUBTYPE_ASSAY_LAB=${SUBTYPE_ASSAY_LAB}"
 
 mkdir -p "$1"
 cd "$1"

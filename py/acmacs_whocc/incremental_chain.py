@@ -373,7 +373,11 @@ class State:
         for table_no, table in enumerate((Path(tab) for tab in self.source_tables), start=1):
             if not table.exists():
                 raise Error(f"""Table {table} does not exist""")
-            table_date = re.search(r"-(\d+)\.", table.name, re.I).group(1)
+            try:
+                table_date = re.search(r"-([\d_]+)\.", table.name, re.I).group(1)
+            except:
+                module_logger.error(f"table.name: {table.name}")
+                raise
             if table_date in table_dates:
                 raise Error(f"""{table_date} {table} already in the chain?""")
             table_dates.append(table_date)
