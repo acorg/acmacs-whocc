@@ -20,6 +20,8 @@ sDefaultParameters = {
     "number_of_dimensions": 2,
     "minimum_column_basis": "none",
     "projections_to_keep": 10,
+    "incremental": True,        # make incremetal merge map at each step
+    "scratch": True,            # make map from scratch at each step
 
     "log": {
         "dir": Path("log"),
@@ -330,7 +332,7 @@ class State:
 
     def update(self, param):
         updated = False
-        for changeable_value in ["number_of_optimizations", "projections_to_keep", "number_of_optimizations_per_run"]:
+        for changeable_value in ["number_of_optimizations", "projections_to_keep", "number_of_optimizations_per_run", "incremental", "scratch"]:
             updated = self.update_value(changeable_value, param[changeable_value], raise_if_changed=False)
         for readonly_value in ["number_of_dimensions", "minimum_column_basis"]:
             updated = self.update_value(readonly_value, param[readonly_value], raise_if_changed=True) or updated
@@ -356,6 +358,13 @@ class State:
     def update_steps(self):
         updated = False
         step_path = ""
+        substeps_for_table_2 = ["m"]
+        if self.setup()["incremental"]:
+            substeps_for_table_2.append("i")
+        if self.setup()["scratch"]:
+            substeps_for_table_2.append("s")
+        if len(substeps_for_table_2) == 1:
+            raise Error(f"""Both "incremental" and "scratch" are False in the settings""")
         table_dates = [None]
         for table_no, table in enumerate((Path(tab) for tab in self.source_tables), start=1):
             if not table.exists():
@@ -368,7 +377,7 @@ class State:
                 substeps = ["s"]
                 step_path = table_date
             else:
-                substeps = ["m", "i", "s"]
+                substeps = substeps_for_table_2
                 step_path += f":{table_date}"
             for substep in substeps:
                 step = step_factory(substep, output_dir=self.output_dir, path=step_path, table_no=table_no, table_dates=table_dates, source_tables=self.source_tables, steps=self.steps)
