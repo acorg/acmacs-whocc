@@ -9,7 +9,7 @@ async function main()
     const response = await fetch("gridage.json");
     if (response.ok) {
         let data = await response.json();
-        console.log(data);
+        // console.log(data);
 
         make_title(data);
         make_image_resizer();
@@ -82,13 +82,16 @@ function make_page(data)
         }
         li.append(make_element("div", {klass: "section-title-separator"}));
         if (row_entry.columns?.length) {
-            const max_columns = Math.max(... row_entry.columns.map(col => col.length))
-            const div_grid = make_element("div", {append_to: li, klass: ["grid", `grid-${max_columns}`]});
+            const max_rows = Math.max(... row_entry.columns.map(col => col.length))
+            const div_grid = make_element("div", {append_to: li, klass: ["grid", `grid-${max_rows}`]});
             for (let column_entry of row_entry.columns) {
                 for (let row of column_entry) {
                     switch (row.T) {
                     case "title":
                         make_element("div", {append_to: div_grid, content: row.text, klass: "title"});
+                        break;
+                    case "text":
+                        make_element("div", {append_to: div_grid, content: row.text, html: row.html, klass: "text"});
                         break;
                     case "pdf":
                         make_pdf({append_to: div_grid, src: row.file});
@@ -113,11 +116,13 @@ function make_pdf({append_to, src})
     }
 }
 
-function make_element(type, {content, append_to, klass, attrs} = {})
+function make_element(type, {content, html, append_to, klass, attrs} = {})
 {
     let elt = document.createElement(type);
     if (content)
         elt.append(content);
+    if (html)
+        elt.innerHTML = html;
     if (append_to)
         append_to.append(elt);
     if (Array.isArray(klass)) {

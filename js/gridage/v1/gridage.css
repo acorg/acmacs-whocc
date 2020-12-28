@@ -41,6 +41,10 @@ ol.main > li:before {
 }
 .grid .title {
     align-self: end;
+    font-weight: bold;
+}
+.grid .text {
+    align-self: end;
 }
 .grid .pdf {
     align-self: begin;
@@ -57,6 +61,16 @@ ol.main > li:before {
 
 .grid-2 {
     grid-template-rows: auto calc(var(--grid-image-size) * 1.0425);
+    grid-column-gap: 2em;
+}
+
+.grid-3 {
+    grid-template-rows: auto auto calc(var(--grid-image-size) * 1.0425);
+    grid-column-gap: 2em;
+}
+
+.grid-4 {
+    grid-template-rows: auto auto auto calc(var(--grid-image-size) * 1.0425);
     grid-column-gap: 2em;
 }
 
