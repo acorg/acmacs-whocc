@@ -97,7 +97,7 @@ class Step:
                     setattr(self, key, datetime.datetime.strptime(val, self.sDateTimeFormat))
                 else:
                     setattr(self, key, val)
-            self.htcondor.pop("check_reported", None)
+            getattr(self, "htcondor", {}).pop("check_reported", None) # temp value, must not be really saved
         else:
             for key, val in args.items():
                 setattr(self, key, val)
