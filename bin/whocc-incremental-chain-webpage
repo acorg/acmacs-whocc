@@ -39,13 +39,13 @@ def make_pdfs(ace_files, pdf_dir):
         for ace_file in group:
             pdf_file = pdf_dir.joinpath(ace_file.name.replace(".ace", ".pdf"))
             if not pdf_file.exists() or pdf_file.stat().st_mtime < ace_file.stat().st_mtime:
-                subprocess.check_call(["mapi", "-a", "//clades", str(ace_file), str(pdf_file)])
+                subprocess.check_call(["mapi", "-a", "//clades", str(ace_file), str(pdf_file), "--export", str(ace_file)])
             pdf_group.append(pdf_file)
 
         if len(group) == 2:
             pc_pdf_file = pdf_dir.joinpath(f"{group[0].name[:3]}.pc.{group[0].name[4]}-vs-{group[1].name[4]}.pdf")
             if not pc_pdf_file.exists() or pc_pdf_file.stat().st_mtime < group[0].stat().st_mtime or pc_pdf_file.stat().st_mtime < group[1].stat().st_mtime:
-                subprocess.check_call(["mapi", "-a", "//clades,/pc", "-D", "pc-arrows-threshold=0.2", str(group[0]), str(group[1]), str(pc_pdf_file)])
+                subprocess.check_call(["mapi", "-a", "/pc", "-D", "pc-arrows-threshold=0.2", str(group[0]), str(group[1]), str(pc_pdf_file)])
             pdf_group.append(pc_pdf_file)
 
         pdfs.append(pdf_group)
