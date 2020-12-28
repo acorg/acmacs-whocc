@@ -91,7 +91,7 @@ class Step:
 
     sDateTimeFormat = "%Y-%m-%d %H:%M:%S"
 
-    def __init__(self, type=None, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, **args):
+    def __init__(self, type=None, read_from=None, output_dir=None, table_dates=None, source_tables=None, steps=None, setup=None, **args):
         self._type = type
         if read_from:
             for key, val in read_from.items():
@@ -105,7 +105,7 @@ class Step:
                 setattr(self, key, val)
             self.table_date = table_dates[self.table_no]
             self.make_output_filenames(output_dir)
-            self.make(source_tables=source_tables, table_dates=table_dates, steps=steps)
+            self.make(source_tables=source_tables, table_dates=table_dates, steps=steps, setup=setup)
 
     def serialize(self):
         return vars(self)
@@ -167,13 +167,17 @@ class StepMergeIncremental (Step):
     def type_desc(self):
         return "incremental merge"
 
-    def make(self, source_tables, table_dates, steps):
+    def make(self, source_tables, table_dates, steps, setup):
+        self.depends = []
         if self.table_no == 1:
             raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
         elif self.table_no == 2:
-            self.depends = [self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1])]
+            self.depends.append(self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1]))
         else:
-            self.depends = [self.make_step_id(table_no=self.table_no-1, type=st, table_date=table_dates[self.table_no-1]) for st in ["s", "i"]]
+            if setup["scratch"]:
+                self.depends.append(self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1]))
+            if setup["incremental"]:
+                self.depends.append(self.make_step_id(table_no=self.table_no-1, type="i", table_date=table_dates[self.table_no-1]))
         self.src = [None, source_tables[self.table_no-1]]
 
     def run(self, chain_state):
@@ -198,7 +202,7 @@ class StepIncremental (Step):
     def type_desc(self):
         return "relax incremental"
 
-    def make(self, source_tables, table_dates, steps):
+    def make(self, source_tables, table_dates, steps, setup):
         if self.table_no == 1:
             raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
         prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
@@ -215,7 +219,7 @@ class StepScratch (Step):
     def type_desc(self):
         return "relax from scratch"
 
-    def make(self, source_tables, table_dates, steps):
+    def make(self, source_tables, table_dates, steps, setup):
         if self.table_no == 1:
             self.src = [source_tables[self.table_no]]
         else:
@@ -380,7 +384,7 @@ class State:
                 substeps = substeps_for_table_2
                 step_path += f":{table_date}"
             for substep in substeps:
-                step = step_factory(substep, output_dir=self.output_dir, path=step_path, table_no=table_no, table_dates=table_dates, source_tables=self.source_tables, steps=self.steps)
+                step = step_factory(substep, output_dir=self.output_dir, path=step_path, table_no=table_no, table_dates=table_dates, source_tables=self.source_tables, steps=self.steps, setup=self.setup())
                 step_id = step.step_id()
                 if step_id not in self.steps:
                     self.steps[step_id] = step

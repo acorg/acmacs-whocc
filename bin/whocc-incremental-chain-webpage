@@ -13,7 +13,7 @@ def main():
     ace_files = scan(out_dir)
     pdf_files = make_pdfs(ace_files, pdf_dir)
     # pprint.pprint(pdf_files)
-    make_gridage(pdf_files)
+    make_gridage(pdf_files, out_dir)
 
 # ----------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ def make_pdfs(ace_files, pdf_dir):
 
 # ----------------------------------------------------------------------
 
-def make_gridage(pdf_files):
+def make_gridage(pdf_files, out_dir):
     name = Path(".").resolve().parent.name
     data = {
         "!generated": f"by {sys.argv[0]}",
@@ -62,13 +62,13 @@ def make_gridage(pdf_files):
             "long": f"{name}",
             "date": datetime.date.today().strftime("%Y-%m-%d")
         },
-        "page": [make_grid(group) for group in pdf_files]
+        "page": [make_grid(group, out_dir) for group in pdf_files]
     }
     json.write(Path("gridage.json"), data)
 
 # ----------------------------------------------------------------------
 
-def make_grid(group):
+def make_grid(group, out_dir):
 
     def make_pdf_title(fn):
         if ".i." in fn.name:
@@ -80,7 +80,11 @@ def make_grid(group):
         else:
             return ""
 
-    return {"title": "", "columns": [[{"T": "title", "text": make_pdf_title(fn)}, {"T": "pdf", "file": str(fn)}] for fn in group]}
+    def make_ace_link(fn):
+        ace_name = out_dir.joinpath(fn.stem + ".ace")
+        return f"""<a href="{ace_name}">{ace_name.name}</a>"""
+    
+    return {"title": "", "columns": [[{"T": "title", "text": make_pdf_title(fn)}, {"T": "text", "html": make_ace_link(fn)}, {"T": "pdf", "file": str(fn)}] for fn in group]}
 
 # ----------------------------------------------------------------------
 
