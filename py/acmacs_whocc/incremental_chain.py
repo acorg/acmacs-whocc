@@ -47,23 +47,26 @@ class StepFailed (Error): pass
 
 def main(source_tables, param):
     exit_code = 0
+    email_subject = f"""{socket.gethostname()} {Path.cwd().parents[0].name}"""
+    email_body = ""
     try:
         param = {**sDefaultParameters, **param}
         log_filename = setup_logging(param)
+        email_body = f"""{Path.cwd()}\n/scp:{socket.gethostname()}:{log_filename.resolve()}\n/scp:{socket.gethostname()}:{Path("state.json").resolve()}"""
         if chain(source_tables, param):
             exit_code = 1
-            email.send(to=param["email"], subject=f"""chain FAILED {socket.gethostname()} {os.getcwd()}""", body=f"""chain FAILED\n{socket.gethostname()}:{log_filename}""")
+            email.send(to=param["email"], subject=f"""chain FAILED {email_subject}""", body=f"""chain FAILED\n{email_body}""")
         else:
-            email.send(to=param["email"], subject=f"""chain completed {socket.gethostname()} {os.getcwd()}""", body=f"""chain completed\n{socket.gethostname()}:{log_filename}""")
+            email.send(to=param["email"], subject=f"""chain completed {email_subject}""", body=f"""chain completed\n{email_body}""")
     except KeyboardInterrupt:
         print("KeyboardInterrupt", file=sys.stderr)
     except Error as err:
         module_logger.error(f"{err}")
-        email.send(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
+        email.send(to=param["email"], subject=f"""chain EXCEPTION {email_subject}""", body=f"""chain EXCEPTION\n{email_body}\n\n{traceback.format_exc()}""")
         exit_code = 2
     except Exception as err:
         module_logger.error(f"{err}", exc_info=True)
-        email.send(to=param["email"], subject=f"""chain EXCEPTION {socket.gethostname()} {os.getcwd()}""", body=f"""chain EXCEPTION\n{socket.gethostname()}:{log_filename}\n\n{traceback.format_exc()}""")
+        email.send(to=param["email"], subject=f"""chain EXCEPTION {email_subject}""", body=f"""chain EXCEPTION\n{email_body}\n\n{traceback.format_exc()}""")
         exit_code = 3
     exit(exit_code)
 
@@ -401,8 +404,9 @@ class State:
 
 class ProcessorTimer:
 
-    def __init__(self, step):
+    def __init__(self, step, chart):
         self.step = step
+        self.chart = chart
 
     def __enter__(self):
         self.step.start = datetime.datetime.now()
@@ -426,10 +430,11 @@ def processor_factory(processor_type):
 class Processor:
 
     def merge_incremental(self, chain_state, step):
-        with ProcessorTimer(step) as pt:
-            merge, report = acmacs.merge(acmacs.Chart(str(step.src[0])), acmacs.Chart(str(step.src[1])), type="incremental")
-            self.export(chart=merge, out=Path(step.out[0]))
+        master = acmacs.Chart(str(step.src[0]))
+        with ProcessorTimer(step, master) as pt:
+            merge, report = acmacs.merge(master, acmacs.Chart(str(step.src[1])), type="incremental")
             pt.chart = merge
+            self.export(chart=merge, out=Path(step.out[0]))
 
     def export(self, chart, out :Path):
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -440,22 +445,20 @@ class Processor:
 class ProcessorBuiltIn (Processor):
 
     def relax_from_scratch(self, chain_state, step):
-        with ProcessorTimer(step) as pt:
-            chart = acmacs.Chart(str(step.src[0]))
+        chart = acmacs.Chart(str(step.src[0]))
+        with ProcessorTimer(step, chart) as pt:
             chart.relax(number_of_dimensions=chain_state.setup()["number_of_dimensions"], number_of_optimizations=chain_state.setup()["number_of_optimizations"], minimum_column_basis=chain_state.setup()["minimum_column_basis"])
             chart.keep_projections(chain_state.setup()["projections_to_keep"])
             self.export(chart=chart, out=Path(step.out[0]))
             step.stress = chart.projection().stress()
-            pt.chart = chart
 
     def relax_incremental(self, chain_state, step):
-        with ProcessorTimer(step) as pt:
-            chart = acmacs.Chart(str(step.src[0]))
+        chart = acmacs.Chart(str(step.src[0]))
+        with ProcessorTimer(step, chart) as pt:
             chart.relax_incremental(number_of_optimizations=chain_state.setup()["number_of_optimizations"])
             chart.keep_projections(chain_state.setup()["projections_to_keep"])
             self.export(chart=chart, out=Path(step.out[0]))
             step.stress = chart.projection().stress()
-            pt.chart = chart
 
     def is_running(self, chain_state, step):
         return False
