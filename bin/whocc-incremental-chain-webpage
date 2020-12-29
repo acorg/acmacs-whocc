@@ -10,51 +10,55 @@ def main():
     pdf_dir = Path("pdf")
     out_dir = Path("out")
     pdf_dir.mkdir(exist_ok=True)
-    ace_files = scan(out_dir)
-    pdf_files = make_pdfs(ace_files, pdf_dir)
-    # pprint.pprint(pdf_files)
-    make_gridage(pdf_files, out_dir)
+    groups = scan(out_dir, pdf_dir)
+    make_pdfs(groups)
+    # pprint.pprint(groups)
+    make_gridage(groups)
     make_index_html()
 
 # ----------------------------------------------------------------------
 
-sRe_i_s_file = re.compile(r"\.[is]\.")
+sRe_i_s_file = re.compile(r"\.([is])\.")
 
-def scan(out_dir):
-    files = []
-    for table_no in range(1, 1000):
-        ace = sorted(fn for fn in out_dir.glob(f"{table_no:03d}.*") if sRe_i_s_file.search(fn.name))
-        # print(ace)
-        if ace:
-            files.append(ace)
-        else:
-            break
-    return reversed(files)
+def scan(out_dir, pdf_dir):
 
-# ----------------------------------------------------------------------
+    def make_group(table_no):
+        table_no_s = f"{table_no:03d}"
+        group = {"n": table_no}
+        for fn in out_dir.glob(f"{table_no_s}.*.ace"):
+            mm = sRe_i_s_file.search(fn.name)
+            if mm:
+                for i_s in ["i", "s"]:
+                    if mm.group(1) == i_s:
+                        group[i_s] = {"ace": fn, "pdf": pdf_dir.joinpath(fn.name.replace(".ace", ".pdf"))}
+                if group.get("i") and group.get("s"):
+                    fn_fields = group["i"]["ace"].name.split(".") # 092 i 20201002 ace
+                    group["pc_i_s"] = {"pdf": pdf_dir.joinpath(f"""{table_no_s}.pc.{fn_fields[2]}.{fn_fields[1]}-vs-{group["s"]["ace"].name[4]}.pdf""")}
+        return group
 
-def make_pdfs(ace_files, pdf_dir):
-    pdfs = []
-    for group in ace_files:
-        pdf_group = []
-        for ace_file in group:
-            pdf_file = pdf_dir.joinpath(ace_file.name.replace(".ace", ".pdf"))
-            if not pdf_file.exists() or pdf_file.stat().st_mtime < ace_file.stat().st_mtime:
-                subprocess.check_call(["mapi", "-a", "//clades", str(ace_file), str(pdf_file), "--export", str(ace_file)])
-            pdf_group.append(pdf_file)
-
-        if len(group) == 2:
-            pc_pdf_file = pdf_dir.joinpath(f"{group[0].name[:3]}.pc.{group[0].name[4]}-vs-{group[1].name[4]}.pdf")
-            if not pc_pdf_file.exists() or pc_pdf_file.stat().st_mtime < group[0].stat().st_mtime or pc_pdf_file.stat().st_mtime < group[1].stat().st_mtime:
-                subprocess.check_call(["mapi", "-a", "/pc", "-D", "pc-arrows-threshold=0.2", str(group[0]), str(group[1]), str(pc_pdf_file)])
-            pdf_group.append(pc_pdf_file)
-
-        pdfs.append(pdf_group)
-    return pdfs
+    return [group for group in (make_group(table_no) for table_no in range(999, 0, -1)) if len(group) > 1]
 
 # ----------------------------------------------------------------------
 
-def make_gridage(pdf_files, out_dir):
+def make_pdfs(groups):
+    for group in groups:
+        for i_s in ["i", "s"]:
+            if group.get(i_s) and group[i_s]["ace"].exists():
+                if not group[i_s]["pdf"].exists() or group[i_s]["pdf"].stat().st_mtime < group[i_s]["ace"].stat().st_mtime:
+                    print(f""">>> {group[i_s]["ace"]} pdf:{group[i_s]["pdf"].stat().st_mtime} ace:{group[i_s]["ace"].stat().st_mtime}""")
+                    subprocess.check_call(["mapi", "-a", "//clades", str(group[i_s]["ace"]), str(group[i_s]["pdf"]), "--export", str(group[i_s]["ace"])])
+                    subprocess.check_call(["touch", str(group[i_s]["pdf"])]) # make pdf more recent than exported ace
+            else:
+                if group.get(i_s):
+                    group[i_s].pop("pdf", None)
+                group.pop("pc_i_s", None)
+        if group.get("pc_i_s") and (not group["pc_i_s"]["pdf"].exists() or group["pc_i_s"]["pdf"].stat().st_size < 1000 or group["pc_i_s"]["pdf"].stat().st_mtime < group["i"]["ace"].stat().st_mtime or group["pc_i_s"]["pdf"].stat().st_mtime < group["s"]["ace"].stat().st_mtime):
+            print(f""">>> pc {group["pc_i_s"]["pdf"]}""")
+            subprocess.check_call(["mapi", "-a", "/pc", "-D", "pc-arrows-threshold=0.2", str(group["i"]["ace"]), str(group["s"]["ace"]), str(group["pc_i_s"]["pdf"])])
+
+# ----------------------------------------------------------------------
+
+def make_gridage(groups):
     name = Path(".").resolve().parent.name
     data = {
         "!generated": f"by {sys.argv[0]}",
@@ -63,9 +67,46 @@ def make_gridage(pdf_files, out_dir):
             "long": f"{name}",
             "date": datetime.date.today().strftime("%Y-%m-%d")
         },
-        "page": [make_grid(group, out_dir) for group in pdf_files]
+        "page": [make_grid(group) for group in groups]
     }
     json.write(Path("gridage.json"), data)
+
+# ----------------------------------------------------------------------
+
+sReTableDate = re.compile(r"-([\d_]{8,})")
+
+def make_grid(group):
+
+    def make_pdf_title(i_s):
+        if i_s == "i":
+            return "incremental"
+        elif i_s == "s":
+            return "from scratch"
+        elif i_s == "pc_i_s":
+            return "procrustes incremental against from scratch"
+        else:
+            return ""
+
+    def make_ace_link(files):
+        if files.get("ace"):
+            return f"""<a target="_blank" href="{files["ace"]}?acv=html">Interactive viewer</a><span style="padding-left: 2em"></span><a href="{files["ace"]}">Download {files["ace"].name}</a>"""
+        else:
+            return ""
+
+    m_table_date = sReTableDate.search((group.get("i") or group.get("s"))["ace"].name)
+    if m_table_date:
+        table_date = m_table_date.group(1)
+    else:
+        table_date = ""
+
+    ace_file_date = time.strftime("%Y-%m-%d", time.localtime((group.get("i") or group.get("s"))["ace"].stat().st_mtime))
+    return {
+        "title": "{table_date} [{ace_file_date}]",
+        "columns": [[
+            {"T": "title", "text": make_pdf_title(i_s)},
+            {"T": "text", "html": make_ace_link(group[i_s])},
+            {"T": "pdf", "file": str(group[i_s]["pdf"])}
+        ] for i_s in ["i", "s", "pc_i_s"] if group.get(i_s)]}
 
 # ----------------------------------------------------------------------
 
@@ -83,35 +124,6 @@ def make_index_html():
     </body>
 </html>
 """)
-
-# ----------------------------------------------------------------------
-
-sReTableDate = re.compile(r"-([\d_]{8,})")
-
-def make_grid(group, out_dir):
-
-    def make_pdf_title(fn):
-        if ".i." in fn.name:
-            return "incremental"
-        elif ".s." in fn.name:
-            return "from scratch"
-        elif ".pc." in fn.name:
-            return "procrustes incremental against from scratch"
-        else:
-            return ""
-
-    def make_ace_link(fn):
-        ace_name = out_dir.joinpath(fn.stem + ".ace")
-        return f"""<a target="_blank" href="{ace_name}?acv=html">Interactive viewer</a><span style="padding-left: 2em"></span><a href="{ace_name}">Download {ace_name.name}</a>"""
-
-    m_table_date = sReTableDate.search(group[0])
-    if m_table_date:
-        table_date = m_table_date.group(1)
-    else:
-        table_date = ""
-
-    ace_file_date = time.strftime("%Y-%m-%d", out_dir.joinpath(group[0].stem + ".ace").stat.st_mtime)
-    return {"title": "{table_date} [{ace_file_date}]", "columns": [[{"T": "title", "text": make_pdf_title(fn)}, {"T": "text", "html": make_ace_link(fn)}, {"T": "pdf", "file": str(fn)}] for fn in group]}
 
 # ----------------------------------------------------------------------
 
