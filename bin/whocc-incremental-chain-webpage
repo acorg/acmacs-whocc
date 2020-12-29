@@ -73,7 +73,7 @@ def make_gridage(groups):
 
 # ----------------------------------------------------------------------
 
-sReTableDate = re.compile(r"-([\d_]{8,})")
+sReTableDate = re.compile(r"\.([\d_]{8,})")
 
 def make_grid(group):
 
@@ -101,7 +101,7 @@ def make_grid(group):
 
     ace_file_date = time.strftime("%Y-%m-%d", time.localtime((group.get("i") or group.get("s"))["ace"].stat().st_mtime))
     return {
-        "title": "{table_date} [{ace_file_date}]",
+        "title": f"{table_date} <generated on {ace_file_date}>",
         "columns": [[
             {"T": "title", "text": make_pdf_title(i_s)},
             {"T": "text", "html": make_ace_link(group[i_s])},
