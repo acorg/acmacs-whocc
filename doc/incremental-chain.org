@@ -1,16 +1,25 @@
-Time-stamp: <2020-12-28 13:02:37 eu>
+Time-stamp: <2020-12-29 12:54:23 eu>
 * Reorient
 
 #+BEGIN_SRC bash
-chart-reorient reorient.ace out/*.ace
+chart-reorient *reorient.ace out/*.ace
 #+END_SRC
 
 
 * Make index page
 
 #+BEGIN_SRC bash
-whocc-incremental-chain-webpage /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-lab>/<date>
+ad-run whocc-incremental-chain-webpage /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-lab>/<date>
+ad-run whocc-incremental-chain-webpage .
 #+END_SRC
+
+
+* Run
+
+#+BEGIN_SRC bash
+ad-run ACMACSD_ROOT=/syn/eu/AD.chain ./run
+#+END_SRC
+
 
 
 * Making new incremental chain
