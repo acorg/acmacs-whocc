@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-import sys, os, re, subprocess, datetime, pprint
+import sys, os, re, subprocess, time, datetime, pprint
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 from acmacs_base import json
@@ -14,6 +14,7 @@ def main():
     pdf_files = make_pdfs(ace_files, pdf_dir)
     # pprint.pprint(pdf_files)
     make_gridage(pdf_files, out_dir)
+    make_index_html()
 
 # ----------------------------------------------------------------------
 
@@ -28,7 +29,7 @@ def scan(out_dir):
             files.append(ace)
         else:
             break
-    return files
+    return reversed(files)
 
 # ----------------------------------------------------------------------
 
@@ -68,6 +69,25 @@ def make_gridage(pdf_files, out_dir):
 
 # ----------------------------------------------------------------------
 
+def make_index_html():
+    index_html = Path("index.html")
+    if not index_html.exists():
+        index_html.open("w").write("""<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" type="text/css" href="/js/acd/who/gridage/v1/gridage.css">
+        <script src="/js/acd/who/gridage/v1/gridage.js"></script>
+    </head>
+    <body>
+    </body>
+</html>
+""")
+
+# ----------------------------------------------------------------------
+
+sReTableDate = re.compile(r"-([\d_]{8,})")
+
 def make_grid(group, out_dir):
 
     def make_pdf_title(fn):
@@ -84,7 +104,14 @@ def make_grid(group, out_dir):
         ace_name = out_dir.joinpath(fn.stem + ".ace")
         return f"""<a target="_blank" href="{ace_name}?acv=html">Interactive viewer</a><span style="padding-left: 2em"></span><a href="{ace_name}">Download {ace_name.name}</a>"""
 
-    return {"title": "", "columns": [[{"T": "title", "text": make_pdf_title(fn)}, {"T": "text", "html": make_ace_link(fn)}, {"T": "pdf", "file": str(fn)}] for fn in group]}
+    m_table_date = sReTableDate.search(group[0])
+    if m_table_date:
+        table_date = m_table_date.group(1)
+    else:
+        table_date = ""
+
+    ace_file_date = time.strftime("%Y-%m-%d", out_dir.joinpath(group[0].stem + ".ace").stat.st_mtime)
+    return {"title": "{table_date} [{ace_file_date}]", "columns": [[{"T": "title", "text": make_pdf_title(fn)}, {"T": "text", "html": make_ace_link(fn)}, {"T": "pdf", "file": str(fn)}] for fn in group]}
 
 # ----------------------------------------------------------------------
 
