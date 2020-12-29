@@ -74,6 +74,7 @@ def main(source_tables, param):
 
 def chain(source_tables, param):
     state = State(source_tables=source_tables, param=param, processor=processor_factory(param["processor"]))
+    pprint.pprint(list(enumerate(st.src[0].name for id, st in state.steps.items() if ".s." in id)))
     while state.has_todo():
         state.check_running()
         if not state.run_ready():
@@ -150,7 +151,7 @@ class Step:
 
     @classmethod
     def make_step_id(cls, table_no, type, table_date):
-        return f"{table_no:03d}.{type}.{table_date}"
+        return f"{table_no + 1:03d}.{type}.{table_date}"
 
     # returns if step state changed
     def check(self, chain_state):
@@ -172,16 +173,16 @@ class StepMergeIncremental (Step):
 
     def make(self, source_tables, table_dates, steps, setup):
         self.depends = []
-        if self.table_no == 1:
+        if self.table_no == 0:
             raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
-        elif self.table_no == 2:
+        elif self.table_no == 1:
             self.depends.append(self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1]))
         else:
             if setup["scratch"]:
                 self.depends.append(self.make_step_id(table_no=self.table_no-1, type="s", table_date=table_dates[self.table_no-1]))
             if setup["incremental"]:
                 self.depends.append(self.make_step_id(table_no=self.table_no-1, type="i", table_date=table_dates[self.table_no-1]))
-        self.src = [None, source_tables[self.table_no-1]]
+        self.src = [None, source_tables[self.table_no]]
 
     def run(self, chain_state):
         # module_logger.debug(f"{self.step_id()} deps: {self.depends}")
@@ -206,7 +207,7 @@ class StepIncremental (Step):
         return "relax incremental"
 
     def make(self, source_tables, table_dates, steps, setup):
-        if self.table_no == 1:
+        if self.table_no == 0:
             raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
         prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
         self.depends = [prev_id]
@@ -223,7 +224,7 @@ class StepScratch (Step):
         return "relax from scratch"
 
     def make(self, source_tables, table_dates, steps, setup):
-        if self.table_no == 1:
+        if self.table_no == 0:
             self.src = [source_tables[self.table_no]]
         else:
             prev_id = self.make_step_id(table_no=self.table_no, type="m", table_date=self.table_date)
@@ -372,8 +373,8 @@ class State:
             substeps_for_table_2.append("s")
         if len(substeps_for_table_2) == 1:
             raise Error(f"""Both "incremental" and "scratch" are False in the settings""")
-        table_dates = [None]
-        for table_no, table in enumerate((Path(tab) for tab in self.source_tables), start=1):
+        table_dates = []
+        for table_no, table in enumerate((Path(tab) for tab in self.source_tables)):
             if not table.exists():
                 raise Error(f"""Table {table} does not exist""")
             try:
@@ -384,7 +385,7 @@ class State:
             if table_date in table_dates:
                 raise Error(f"""{table_date} {table} already in the chain?""")
             table_dates.append(table_date)
-            if table_no == 1:
+            if table_no == 0:
                 substeps = ["s"]
                 step_path = table_date
             else:
