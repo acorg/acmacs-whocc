@@ -46,7 +46,7 @@ def make_pdfs(groups):
             if group.get(i_s) and group[i_s]["ace"].exists():
                 if not group[i_s]["pdf"].exists() or group[i_s]["pdf"].stat().st_mtime < group[i_s]["ace"].stat().st_mtime:
                     print(f""">>> {group[i_s]["ace"]} pdf:{group[i_s]["pdf"].exists() and group[i_s]["pdf"].stat().st_mtime} ace:{group[i_s]["ace"].stat().st_mtime}""")
-                    subprocess.check_call(["mapi", "-a", "//clades", str(group[i_s]["ace"]), str(group[i_s]["pdf"]), "--export", str(group[i_s]["ace"])])
+                    subprocess.check_call(["mapi", "-a", "//clades,/vaccines", str(group[i_s]["ace"]), str(group[i_s]["pdf"]), "--export", str(group[i_s]["ace"])])
                     subprocess.check_call(["touch", str(group[i_s]["pdf"])]) # make pdf more recent than exported ace
             else:
                 if group.get(i_s):
