@@ -40,6 +40,7 @@ def setup():
 from acmacs_whocc.incremental_chain import main
 main(sources(), setup())
 EOF
+    chmod +x run
 else
     echo ">> WARNING: $(pwd)/run already exists" >&2
 fi
