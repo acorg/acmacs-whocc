@@ -74,7 +74,7 @@ def main(source_tables, param):
 
 def chain(source_tables, param):
     state = State(source_tables=source_tables, param=param, processor=processor_factory(param["processor"]))
-    pprint.pprint(list(enumerate(st.src[0].name for id, st in state.steps.items() if ".s." in id)))
+    pprint.pprint(list(enumerate(getattr(st.src[0], "name", st.src[0]) for id, st in state.steps.items() if ".s." in id)))
     while state.has_todo():
         state.check_running()
         if not state.run_ready():
