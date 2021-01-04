@@ -40,11 +40,16 @@ inline acmacs::chart::ChartClone::clone_data clone_type(const std::string& type)
 
 template <typename AgSr> struct AgSrIndexes
 {
+    AgSrIndexes() = default;
     AgSrIndexes(std::shared_ptr<AgSr> a_ag_sr) : ag_sr{a_ag_sr}, indexes{a_ag_sr->all_indexes()} {}
+    bool empty() const { return indexes.empty(); }
 
     std::shared_ptr<AgSr> ag_sr;
     acmacs::chart::Indexes indexes;
 };
+
+struct AntigenIndexes : public AgSrIndexes<acmacs::chart::Antigens> { using AgSrIndexes<acmacs::chart::Antigens>::AgSrIndexes; };
+struct SerumIndexes : public AgSrIndexes<acmacs::chart::Sera> { using AgSrIndexes<acmacs::chart::Sera>::AgSrIndexes; };
 
 // ----------------------------------------------------------------------
 
@@ -145,10 +150,21 @@ inline void py_chart(py::module_& mdl)
             [](ChartModify& chart, const std::string& filename, const std::string& program_name) { acmacs::chart::export_factory(chart, filename, program_name); }, //
             "filename"_a, "program_name"_a)                                                                                                                         //
 
-        .def("antigen_indexes",                                                                                           //
-             [](ChartModify& chart) { return std::make_shared<AgSrIndexes<acmacs::chart::Antigens>>(chart.antigens()); }) //
-        .def("serum_indexes",                                                                                             //
-             [](ChartModify& chart) { return std::make_shared<AgSrIndexes<acmacs::chart::Sera>>(chart.sera()); })         //
+        .def("antigen_indexes",                                                                     //
+             [](ChartModify& chart) { return std::make_shared<AntigenIndexes>(chart.antigens()); }) //
+        .def("serum_indexes",                                                                       //
+             [](ChartModify& chart) { return std::make_shared<SerumIndexes>(chart.sera()); })       //
+        .def(
+            "remove_antigens_sera",
+            [](ChartModify& chart, std::shared_ptr<AntigenIndexes> antigens, std::shared_ptr<SerumIndexes> sera, bool remove_projections) {
+                if (remove_projections)
+                    chart.projections_modify().remove_all();
+                if (!antigens->empty())
+                    chart.remove_antigens(acmacs::ReverseSortedIndexes{*antigens->indexes});
+                if (!sera->empty())
+                    chart.remove_sera(acmacs::ReverseSortedIndexes{*sera->indexes});
+            },                                                                          //
+            "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false) //
         ;
 
     // ----------------------------------------------------------------------
@@ -160,24 +176,26 @@ inline void py_chart(py::module_& mdl)
             "recalculate"_a = false)                                                                                                                                       //
         ;
 
-    py::class_<AgSrIndexes<acmacs::chart::Antigens>, std::shared_ptr<AgSrIndexes<acmacs::chart::Antigens>>>(mdl, "AntigenIndexes") //
-        .def("__str__", [](const AgSrIndexes<acmacs::chart::Antigens>& indexes) { return fmt::format("AntigenIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
+    py::class_<AntigenIndexes, std::shared_ptr<AntigenIndexes>>(mdl, "AntigenIndexes") //
+        .def("__str__", [](const AntigenIndexes& indexes) { return fmt::format("AntigenIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
+        .def("empty", &AntigenIndexes::empty)
 
         .def(
             "filter_lineage",
-            [](AgSrIndexes<acmacs::chart::Antigens>& indexes, const std::string& lineage) {
+            [](AntigenIndexes& indexes, const std::string& lineage) {
                 indexes.ag_sr->filter_lineage(indexes.indexes, acmacs::chart::BLineage{lineage});
                 return indexes;
             },           //
             "lineage"_a) //
         ;
 
-    py::class_<AgSrIndexes<acmacs::chart::Sera>, std::shared_ptr<AgSrIndexes<acmacs::chart::Sera>>>(mdl, "SerumIndexes") //
-        .def("__str__", [](const AgSrIndexes<acmacs::chart::Sera>& indexes) { return fmt::format("SerumIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
+    py::class_<SerumIndexes, std::shared_ptr<SerumIndexes>>(mdl, "SerumIndexes") //
+        .def("__str__", [](const SerumIndexes& indexes) { return fmt::format("SerumIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
+        .def("empty", &SerumIndexes::empty)
 
         .def(
             "filter_lineage",
-            [](AgSrIndexes<acmacs::chart::Sera>& indexes, const std::string& lineage) {
+            [](SerumIndexes& indexes, const std::string& lineage) {
                 indexes.ag_sr->filter_lineage(indexes.indexes, acmacs::chart::BLineage{lineage});
                 return indexes;
             },           //
