@@ -1,9 +1,9 @@
-Time-stamp: <2020-11-09 14:50:45 eu>
-* already downloaded from gisaid: ~/ac/sequences-2019
-ls -l ~/ac/sequences-2019/gis*.fas.xz
+Time-stamp: <2021-01-04 09:19:25 eu>
+* already downloaded from gisaid: ~/ac/sequences
+ls -l ~/ac/sequences/gis*.fas.xz
 
 * [[https://platform.gisaid.org/epi3/start][GISAID]]
-** SUBMISSION date (see last date in ~/ac/sequences-2019/)
+** SUBMISSION date (see last date in ~/ac/sequences/)
 ** Required Segments: HA (checkbox at the left of HA)
 ** Click Search
 ** Click leftmost checkbox in header to select all, number of slected must not exceed 20k (gisaid does not allow downloading more)
@@ -27,7 +27,7 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 ~albertine~ --> ~13m 23Mb
 ~/bin/ncbi-get
 
-cd ~/ac/sequences-2019/ncbi/ && scp -q i19:/syn/eu/ac/ncbi/$(date '+%Y-%m%d')/\* . && ls -la 
+cd ~/ac/sequences/ncbi/ && scp -q i19:/syn/eu/ac/ncbi/$(date '+%Y-%m%d')/\* . && ls -la 
 
 ** ncbi-get
 :PROPERTIES:
@@ -62,7 +62,7 @@ wget --recursive --relative --level=1 --cut-dirs=3 --no-directories --no-parent 
 ** check ncbi
 
 #+BEGIN_SRC bash
-seqdb3-scan --ncbi ~/ac/sequences-2019/ncbi
+seqdb3-scan --ncbi ~/ac/sequences/ncbi
 #+END_SRC
 
 
@@ -84,126 +84,13 @@ helm-x whocc-hidb5-update --> ssh albertine "whocc-update-ace-store && whocc-hid
 seqdb3-scan --gisaid --all-subtypes-messages -m --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
-* Install into ~/ac/sequences-2019/
-xz -9ecv /d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid- .fas.xz
+* Install into ~/ac/sequences/
+xz -9ecv /d/gisaid_epiflu_sequence.fasta >~/ac/sequences/gisaid- .fas.xz
 
 * generate seqdb
 [[elisp:(eu-process "make-seqdb -H")][make-seqdb -H]]
 [[elisp:(eu-process "make-seqdb")][make-seqdb]]
 [[elisp:(eu-process "locations-distribute" "~/ac/acmacs/scripts/locations-distribute")][locations-distribute]]
-
-* OLD before 2019-08-26
-:PROPERTIES:
-:VISIBILITY: folded
-:END:
-** already downloaded from gisaid: ~/ac/sequences-2019
-** visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
-*** (There is no C in gisaid at all: Hold Cmd and click A and B in the Type.)
-*** SUBMISSION date (see last date in ~/ac/sequences-2019/)
-*** Required Segments: HA (checkbox at the left of HA)
-*** Click Search
-*** Click leftmost checkbox in header to select all, number of slected must not exceed 20k (gisaid does not allow downloading more)
-*** Click Download
-*** Format: Sequences (DNA) as FASTA (second radio button)
-*** DNA: HA (checkbox to the left from HA)
-*** FASTA Header: Isolate name |  Collection date | Passage details/history |  Sample ID by submitting lab | Submitting lab | Type |  Lineage
-*** Date format: YYYY-MM-DD
-*** Click download
-*** dos2unix /d/gisaid_epiflu_sequence.fasta
-[[elisp:(eu-process "dos2unix /d/gisaid_epiflu_sequence.fasta" "dos2unix /d/gisaid_epiflu_sequence.fasta")][dos2unix /d/gisaid_epiflu_sequence.fasta]]
-*** Update hidb:
-ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
-[[elisp:(eu-process "Update ace-store and hidb" "ssh albertine \"whocc-update-ace-store && whocc-hidb5-update\" && hidb-get-from-albertine")][Update ace-store and hidb]]
-
-** Check downloaded fasta
-[[elisp:(eu-process "seqdb3-scan /d/gisaid_epiflu_sequence.fasta" "seqdb3-scan --all-subtypes-messages --print-not-aligned-for B /d/gisaid_epiflu_sequence.fasta")][seqdb3-scan /d/gisaid_epiflu_sequence.fasta]]
-
-** Install into ~/ac/sequences-2019/
-xz -9ec </d/gisaid_epiflu_sequence.fasta >~/ac/sequences-2019/gisaid-all- .fas.xz
-
-** generate seqdb
-[[elisp:(eu-process "~/bin/make-seqdb" "~/bin/make-seqdb")][~/bin/make-seqdb]]
-
-#+BEGIN_SRC sh
-ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
-if [[ -f ~/AD/data/seqdb.json.xz ]]; then DD=$(gstat -c %y ~/AD/data/seqdb.json.xz | cut -d ' ' -f 1); mv ~/AD/data/seqdb.json.xz ~/AD/data/seqdb-old/seqdb.${DD}.json.xz; mv ~/AD/data/seqdb-all.json.xz ~/AD/data/seqdb-old/seqdb-all.${DD}.json.xz; fi
-seqdb3-scan -o ~/AD/data ~/ac/sequences-2019/*.f*
-rsync -a --progress ~/AD/data/seqdb*.xz albertine:AD/data
-ssa
-#+END_SRC
-
-* OLD before 2019-06-19
-:PROPERTIES:
-:VISIBILITY: folded
-:END:
-:PROPERTIES:
-:VISIBILITY: folded
-:END:
-** previous fasta files downloaded from gisaid
-** visit [[https://platform.gisaid.org/epi3/start][gisaid]] and login
-** Hold Cmd and click A and B in the Type.
-** SUBMISSION date: 6 months ago(?) OR COLLECTION date: at least 1.5 years ago till 1 Feb next year (but gisaid does not allow downloading more than 20k sequences)
-** _Leave originating lab empty!_
-** Select **Submitting lab** them all using Cmd
-
-   (Change height of the submitting lab <select> 500px)
-
-        [Australia, North Melbourne] WHO CC ...
-        [United Kingdom, London] National Institute for Medical Research
-        [United Kingdom, London] Crick
-        [United states, Atlanta] CDC
-        [China, Bejing] WHO Chinese National Influenza Center
-
-*** Required segments: HA (checkbox to the left from HA)
-*** Click Search. Total must not exceed 20k isolates (gisaid does not allow downloading more)
-*** Click leftmost checkbox in header to select all
-*** Click Download
-*** Format: Sequences (DNA) as FASTA (second radio button)
-*** DNA: HA (checkbox to the left from HA)
-*** FASTA Header: Isolate name |  Collection date | Passage details/history |  Sample ID by submitting lab | Submitting lab | Type |  Lineage
-*** Date format: YYYY-MM-DD
-*** Click download
-*** Check for incorrect duplicates and perhaps fix them
-#+BEGIN_SRC sh
-gisaid-fasta-merge /d/gisaid_epiflu_sequence.fasta >/dev/null
-#+END_SRC
-*** make seqdb from newly downloaded fasta file only just to check file content and hidb matching
-#+BEGIN_SRC sh
-ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
-seqdb-create --no-save --db /d/seqdb.json.xz --match-hidb --clades --report-not-aligned-prefixes 32 --save-not-found-locations /d/not-found.txt /d/gisaid_epiflu_sequence.fasta; if [ -f /d/not-found.txt ]; then echo; echo 'WARNING: *** Not matched ***'; cat /d/not-found.txt; fi
-#+END_SRC
-**** check and fix wrong names
-#+BEGIN_SRC emacs-lisp
-(progn
-  (query-replace-regexp "\\(/201[78]\\)([^)]+)-" "\\1 " nil (point-min)(point-max))
-  (query-replace-regexp "\\(/201[78]\\)([^)]+)" "\\1" nil (point-min)(point-max))
-  (replace-string "bvr-1b (b/phuket/3073/2013)" "B/PHUKET/3073/2013 BVR-1B" nil (point-min)(point-max))
-  (replace-string "a/manitoba/rv27522017" "A/MANITOBA/RV2752/2017" nil (point-min)(point-max))
-  (replace-string "b/brisbane/62/20117" "B/BRISBANE/62/2017" nil (point-min)(point-max))
-  (replace-string "a/macau/601328/20178" "A/MACAU/601328/2018" nil (point-min)(point-max))
-  (replace-string "a/south africa/r07338/018" "A/SOUTH AFRICA/R07338/2018" nil (point-min)(point-max))
-)
-#+END_SRC
-*** CNIC sequences have passage after name (and in the passage field too)
-#+BEGIN_SRC emacs-lisp
-(progn
-  (query-replace-regexp "\\(/201[0-9]\\) *([HNv0-9,]+)" "\\1" nil (point-min)(point-max))
-  (query-replace-regexp "\\(/201[0-9]\\)_[CE0-9\\+]+" "\\1" nil (point-min)(point-max))
-)
-#+END_SRC
-
-*** Install file
-just run it without arguments:
-#+BEGIN_SRC sh
-~/AD/sources/ssm-report/bin/gisaid-fasta-install
-#+END_SRC
-** Update seqdb (5.5 min on dael)
-#+BEGIN_SRC sh
-ssh albertine "whocc-update-ace-store && whocc-hidb5-update" && hidb-get-from-albertine
-if [[ -f ~/AD/data/seqdb.json.xz ]]; then mv ~/AD/data/seqdb.json.xz ~/AD/data/seqdb.$(gstat -c %y ~/AD/data/seqdb.json.xz | cut -d ' ' -f 1).json.xz; fi
-seqdb-create --db ~/AD/data/seqdb.json.xz --match-hidb --clades --report-not-aligned-prefixes 32 --save-not-found-locations /d/not-found.txt ~/ac/tables-store/sequences/*.fas.*; if [ -f /d/not-found.txt ]; then echo; echo 'WARNING: *** Not matched ***'; cat /d/not-found.txt; fi
-rsync -av ~/AD/data/seqdb*.xz albertine:AD/data
-#+END_SRC
 
 * COMMENT ========== local vars
 :PROPERTIES:
