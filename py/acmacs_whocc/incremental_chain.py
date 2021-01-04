@@ -405,7 +405,7 @@ class State:
 
 class ProcessorTimer:
 
-    def __init__(self, step, chart):
+    def __init__(self, step, chart=None):
         self.step = step
         self.chart = chart
 
@@ -416,7 +416,11 @@ class ProcessorTimer:
     def __exit__(self, exc_type, exc_value, traceback):
         self.step.finish = datetime.datetime.now()
         self.step.runtime = str(self.step.finish - self.step.start)
-        module_logger.info(f"{self.step.step_id()} {self.step.type_desc()} {self.chart.make_name()}\n{'':30s}<{self.step.runtime}>")
+        if self.chart:
+            nm = self.chart.make_name()
+        else:
+            nm = ""
+        module_logger.info(f"{self.step.step_id()} {self.step.type_desc()} {nm}\n{'':30s}<{self.step.runtime}>")
 
 def processor_factory(processor_type):
     if processor_type == "built-in":
@@ -431,9 +435,11 @@ def processor_factory(processor_type):
 class Processor:
 
     def merge_incremental(self, chain_state, step):
-        master = acmacs.Chart(str(step.src[0]))
         with ProcessorTimer(step, master) as pt:
-            merge, report = acmacs.merge(master, acmacs.Chart(str(step.src[1])), type="incremental")
+            master = acmacs.Chart(str(step.src[0]))
+            pt.chart = master
+            to_merge = acmacs.Chart(str(step.src[1])
+            merge, report = acmacs.merge(master, to_merge), type="incremental")
             pt.chart = merge
             self.export(chart=merge, out=Path(step.out[0]))
 
@@ -446,8 +452,9 @@ class Processor:
 class ProcessorBuiltIn (Processor):
 
     def relax_from_scratch(self, chain_state, step):
-        chart = acmacs.Chart(str(step.src[0]))
-        with ProcessorTimer(step, chart) as pt:
+        with ProcessorTimer(step) as pt:
+            chart = acmacs.Chart(str(step.src[0]))
+            pt.chart = chart
             chart.relax(number_of_dimensions=chain_state.setup()["number_of_dimensions"], number_of_optimizations=chain_state.setup()["number_of_optimizations"], minimum_column_basis=chain_state.setup()["minimum_column_basis"])
             chart.keep_projections(chain_state.setup()["projections_to_keep"])
             self.export(chart=chart, out=Path(step.out[0]))
