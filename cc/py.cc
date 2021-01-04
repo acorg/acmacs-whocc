@@ -163,8 +163,9 @@ inline void py_chart(py::module_& mdl)
                     chart.remove_antigens(acmacs::ReverseSortedIndexes{*antigens->indexes});
                 if (!sera->empty())
                     chart.remove_sera(acmacs::ReverseSortedIndexes{*sera->indexes});
-            },                                                                          //
-            "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false) //
+            },                                                                                                                                                     //
+            "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false,                                                                            //
+            py::doc("Usage:\nchart.remove_antigens_sera(antigens=c.antigen_indexes().filter_lineage(\"yamagata\"), sera=c.serum_indexes().filter_lineage(\"yamagata\"))")) //
         ;
 
     // ----------------------------------------------------------------------
