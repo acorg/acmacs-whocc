@@ -1,11 +1,18 @@
-# Time-stamp: <2020-01-30 16:33:10 eu>
+# Time-stamp: <2021-01-04 15:06:06 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
 * [2019-12-02 Mon] raxml-ng
 https://github.com/amkozlov/raxml-ng/releases
 install as /syn/bin/raxml-ng
 
 * [2019-12-02 Mon] Albertine
-e ~/AD/bin/make-trees
+[[file:/scp:i19:~/AD/sources/acmacs-tree-maker/bin/make-trees][i19  ~/AD/sources/acmacs-tree-maker/bin/make-trees]]
+
+#+BEGIN_SRC bash
+sshcd i19 -c '~/AD/sources/acmacs-tree-maker' git status --porcelain
+sshcd i19 -c '~/AD/sources/acmacs-tree-maker' "git commit --short -am 'make-trees updated'; git push --porcelain; ad-copy"
+ssh i19 make-trees
+#+END_SRC
+
 make-trees
 # just h3
 make-trees h3
