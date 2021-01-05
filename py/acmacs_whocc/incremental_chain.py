@@ -367,7 +367,7 @@ class Processor:
             master = self.load_chart(step.src[0])
             pt.chart = master
             to_merge = self.load_chart(step.src[1])
-            merge, report = acmacs.merge(master, to_merge, type="incremental")
+            merge, report = acmacs.merge(master, to_merge, type="incremental", combine_cheating_assays=self.chain_data_.combine_cheating_assays())
             pt.chart = merge
             self.export(chart=merge, out=Path(step.out[0]))
 
