@@ -133,6 +133,9 @@ class StepIncremental (Step):
     def type_desc(self):
         return "relax incremental"
 
+    def is_completed(self, chain_state):
+        return super().is_completed(chain_state) and hasattr(self, "stress")
+
     def make(self, source_tables, table_dates, steps, setup):
         if self.table_no == 0:
             raise Error(f"""Cannot use step type {self._type!r} for table {self.table_no}""")
@@ -149,6 +152,9 @@ class StepScratch (Step):
 
     def type_desc(self):
         return "relax from scratch"
+
+    def is_completed(self, chain_state):
+        return super().is_completed(chain_state) and hasattr(self, "stress")
 
     def make(self, source_tables, table_dates, steps, setup):
         if self.table_no == 0:
@@ -593,7 +599,7 @@ class IncrementalChain:
         return 16
 
     def number_of_optimizations_per_run(self):
-        return 100
+        return 56
 
     def sleep_interval_when_not_ready(self):
         "in seconds (htcondor only)"
@@ -616,6 +622,97 @@ class IncrementalChain:
         lh.setLevel(level)
         lh.setFormatter(logging.Formatter(format))
         logging.getLogger().addHandler(lh)
+
+# ----------------------------------------------------------------------
+
+def make(target_dir):
+    target_dir = Path(target_dir)
+    from socket import gethostname
+    hostname = gethostname()
+    if re.match(r"^i\d", hostname):
+        number_of_optimizations = 1000
+        threads = 16
+    else:
+        number_of_optimizations = 100
+        threads = 4
+    if re.match(r"some h1", target_dir.name):
+        minimum_column_basis = "1280"
+    else:
+        minimum_column_basis = "none"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    run_script = target_dir.joinpath("run")
+    if not run_script.exists():
+        run_script.open("w").write(f"""#! /usr/bin/env python3
+
+import sys, os, re
+from pathlib import Path
+from acmacs_whocc.incremental_chain import IncrementalChain
+# import acmacs
+
+class ThisIncrementalChain (IncrementalChain):
+
+    sReInclude = re.compile(r"-(20)", re.I)
+    sReExclude = re.compile(r"exclude", re.I)
+
+    def source_tables(self):
+        "returns [Path]"
+        whocc_tables = Path(os.environ["HOME"], "ac", "whocc-tables")
+        source_dir = whocc_tables.joinpath("{target_dir.parent.name}")
+        return sorted(pathname for pathname in source_dir.iterdir()
+                      if pathname.suffix == ".ace"
+                      and self.sReInclude.search(pathname.name)
+                      and not self.sReExclude.search(pathname.name))
+
+    def number_of_optimizations(self):
+        return {number_of_optimizations}
+
+    def number_of_dimensions(self):
+        return 2
+
+    def minimum_column_basis(self):
+        return "{minimum_column_basis}"
+
+    def incremental(self):
+        "returns if making incremetal merge map at each step requested"
+        return True
+
+    def scratch(self):
+        "returns if making map from scratch at each step requested"
+        return True
+
+    # def threads(self):
+    #     return {threads}
+
+    # def number_of_optimizations_per_run(self):
+    #     return 56
+
+    # def email(self):
+    #     return "eu@antigenic-cartography.org"
+
+    # def projections_to_keep(self):
+    #     return 10
+
+    # def state_filename(self):
+    #     return Path("state.json")
+
+    # def output_dir(self):
+    #     return Path("out")
+
+    # def htcondor_dir(self):
+    #     return Path("htcondor")
+
+    # def sleep_interval_when_not_ready(self):
+    #     "in seconds (htcondor only)"
+    #     return 10 # in seconds
+
+# ----------------------------------------------------------------------
+
+exit(ThisIncrementalChain().run())
+"""
+                                   )
+    else:
+        print(f">> WARNING: {run_script} already exists", file=sys.stderr)
+    run_script.chmod(0o755)
 
 # ======================================================================
 # 2020 legacy
