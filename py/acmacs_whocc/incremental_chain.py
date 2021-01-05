@@ -577,6 +577,9 @@ class IncrementalChain:
         "returns [Path]"
         return []
 
+    def combine_cheating_assays(self):
+        return False
+
     def number_of_optimizations(self):
         return 100
 
@@ -712,6 +715,9 @@ class ThisIncrementalChain (IncrementalChain):
     {chart_loaded_comment}        wrong_lineage = {wrong_lineage!r}
     {chart_loaded_comment}        chart.remove_antigens_sera(antigens=chart.antigen_indexes().filter_lineage(wrong_lineage), sera=chart.serum_indexes().filter_lineage(wrong_lineage))
     {chart_loaded_comment}    return chart
+
+    # def combine_cheating_assays(self):
+    #     return False
 
     # def threads(self):
     #     return {threads}

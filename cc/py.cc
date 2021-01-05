@@ -213,7 +213,7 @@ inline void py_merge(py::module_& mdl)
 
     mdl.def(
         "merge",
-        [](std::shared_ptr<ChartModify> chart1, std::shared_ptr<ChartModify> chart2, const std::string& merge_type, const std::string& match, bool remove_distinct) {
+        [](std::shared_ptr<ChartModify> chart1, std::shared_ptr<ChartModify> chart2, const std::string& merge_type, const std::string& match, bool a_combine_cheating_assays, bool a_remove_distinct) {
             CommonAntigensSera::match_level_t match_level{CommonAntigensSera::match_level_t::automatic};
             if (match == "auto" || match == "automatic")
                 match_level = CommonAntigensSera::match_level_t::automatic;
@@ -240,17 +240,18 @@ inline void py_merge(py::module_& mdl)
             else
                 throw std::invalid_argument{fmt::format("Unrecognized \"merge_type\": \"{}\"", merge_type)};
 
-            return merge(*chart1, *chart2, MergeSettings{match_level, merge_typ, remove_distinct});
-        },                                                                                 //
-        "chart1"_a, "chart2"_a, "type"_a, "match"_a = "auto", "remove_distinct"_a = false, //
+            return merge(*chart1, *chart2,
+                         MergeSettings{match_level, merge_typ, a_combine_cheating_assays ? combine_cheating_assays::yes : combine_cheating_assays::no,
+                                       a_remove_distinct ? remove_distinct::yes : remove_distinct::no});
+        },                                                                                                                      //
+        "chart1"_a, "chart2"_a, "type"_a, "match"_a = "auto", "combine_cheating_assays"_a = false, "remove_distinct"_a = false, //
         py::doc(R"(merges two charts
 type: "type1" ("tables-only"), "type2" ("incremental"), "type3", "type4", "type5"
       see https://github.com/acorg/acmacs-chart-2/blob/master/doc/merge-types.org
 match: "strict", "relaxed", "ignored", "automatic" ("auto")
 )"));
 
-    py::class_<MergeReport>(mdl, "MergeReport")
-        ;
+    py::class_<MergeReport>(mdl, "MergeReport");
 
 } // py_merge
 
