@@ -646,14 +646,14 @@ def make(target_dir):
     else:
         number_of_optimizations = 100
         threads = 4
-    if re.match(r"some h1", target_dir.name):
+    if re.match(r"some h1", target_dir.parent.name):
         minimum_column_basis = "1280"
     else:
         minimum_column_basis = "none"
 
-    if "bvic" in target_dir.name:
+    if "bvic" in target_dir.parent.name:
         wrong_lineage = "yamagata"
-    elif "byam" in target_dir.name:
+    elif "byam" in target_dir.parent.name:
         wrong_lineage = "victoria"
     else:
         wrong_lineage = None
