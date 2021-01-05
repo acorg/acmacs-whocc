@@ -706,7 +706,7 @@ class ThisIncrementalChain (IncrementalChain):
     {chart_loaded_comment}def chart_loaded(self, chart):
     {chart_loaded_comment}    "hook to preprocess chart on loading, e.g. remove antigens/sera of wrong lineage"
     {chart_loaded_comment}    if chart.number_of_projections() == 0:
-    {chart_loaded_comment}        wrong_lineage = {wrong_lineage}
+    {chart_loaded_comment}        wrong_lineage = {wrong_lineage!r}
     {chart_loaded_comment}        chart.remove_antigens_sera(antigens=chart.antigen_indexes().filter_lineage(wrong_lineage), sera=chart.serum_indexes().filter_lineage(wrong_lineage))
     {chart_loaded_comment}    return chart
 
