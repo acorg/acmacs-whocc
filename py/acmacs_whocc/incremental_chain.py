@@ -359,11 +359,14 @@ class ProcessorTimer:
 
 class Processor:
 
+    def __init__(self, chain_data):
+        self.chain_data_ = chain_data
+
     def merge_incremental(self, chain_state, step):
         with ProcessorTimer(step) as pt:
-            master = acmacs.Chart(str(step.src[0]))
+            master = self.load_chart(step.src[0])
             pt.chart = master
-            to_merge = acmacs.Chart(str(step.src[1]))
+            to_merge = self.load_chart(step.src[1])
             merge, report = acmacs.merge(master, to_merge, type="incremental")
             pt.chart = merge
             self.export(chart=merge, out=Path(step.out[0]))
@@ -372,13 +375,17 @@ class Processor:
         out.parent.mkdir(parents=True, exist_ok=True)
         chart.export(str(out), sys.argv[0])
 
+    def load_chart(self, filename):
+        chart = self.chain_data_.chart_loaded(acmacs.Chart(str(filename)))
+        return chart
+
 # ----------------------------------------------------------------------
 
 class ProcessorBuiltIn (Processor):
 
     def relax_from_scratch(self, chain_state, step):
         with ProcessorTimer(step) as pt:
-            chart = acmacs.Chart(str(step.src[0]))
+            chart = self.load_chart(step.src[0])
             pt.chart = chart
             chart.relax(number_of_dimensions=chain_state.setup()["number_of_dimensions"], number_of_optimizations=chain_state.setup()["number_of_optimizations"], minimum_column_basis=chain_state.setup()["minimum_column_basis"])
             chart.keep_projections(chain_state.setup()["projections_to_keep"])
@@ -386,7 +393,7 @@ class ProcessorBuiltIn (Processor):
             step.stress = chart.projection().stress()
 
     def relax_incremental(self, chain_state, step):
-        chart = acmacs.Chart(str(step.src[0]))
+        chart = self.load_chart(step.src[0])
         with ProcessorTimer(step, chart) as pt:
             chart.relax_incremental(number_of_optimizations=chain_state.setup()["number_of_optimizations"])
             chart.keep_projections(chain_state.setup()["projections_to_keep"])
@@ -462,7 +469,7 @@ class ProcessorHTCondor (Processor):
             Path(step.out[0]).parent.mkdir(parents=True, exist_ok=True)
             cmd = ["chart-combine-projections", "-k", chain_state.setup()["projections_to_keep"], "-o", step.out[0]] + [Path(step.htcondor["dir"], fn) for fn in step.htcondor["out"]]
             subprocess.check_call([str(en) for en in cmd])
-            chart = acmacs.Chart(str(step.out[0]))
+            chart = self.load_chart(step.out[0])
             step.stress = chart.projection().stress()
             step.htcondor.pop("out", None)
             module_logger.info(f"{step.step_id()} {step.type_desc()} {chart.make_name()}\n{'':30s}<{step.runtime}>")
@@ -559,6 +566,10 @@ class IncrementalChain:
         tables_s = "\n   ".join(f"{no:3d} {tab}" for no, tab in enumerate(tables, start=1))
         print(f"Tables: {len(tables)}\n   {tables_s}")
 
+    def chart_loaded(self, chart):
+        """hook to preprocess chart on loading"""
+        return chart
+
     def source_tables(self):
         "returns [Path]"
         return []
@@ -609,9 +620,9 @@ class IncrementalChain:
         "returns processor instance to use"
         try:
             subprocess.check_output(["condor_version"])
-            return ProcessorHTCondor()
+            return ProcessorHTCondor(self)
         except (subprocess.SubprocessError, FileNotFoundError):
-            return ProcessorBuiltIn()
+            return ProcessorBuiltIn(self)
 
     def setup_logging(self, log_dir=Path("log"), level=logging.DEBUG, format="%(levelname)s %(asctime)s: %(message)s @@ %(pathname)s:%(lineno)d"):
         "format: https://docs.python.org/3.9/library/logging.html#logrecord-attributes"
@@ -679,6 +690,10 @@ class ThisIncrementalChain (IncrementalChain):
     def scratch(self):
         "returns if making map from scratch at each step requested"
         return True
+
+    # def chart_loaded(self, chart):
+    #     "hook to preprocess chart on loading, e.g. remove antigens/sera of wrong lineage"
+    #     return chart
 
     # def threads(self):
     #     return {threads}
