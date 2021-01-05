@@ -532,6 +532,9 @@ class IncrementalChain:
         except KeyboardInterrupt:
             print("KeyboardInterrupt", file=sys.stderr)
             return 0
+        except ConnectionRefusedError as err:
+            print(f">> {err} - cannot send email?", file=sys.stderr)
+            return 0
         except Error as err:
             module_logger.error(f"{err}")
             email.send(to=self.email(), subject=f"""chain EXCEPTION {self.email_subject_}""", body=f"""chain EXCEPTION\n{email_body}\n\n{traceback.format_exc()}""")
