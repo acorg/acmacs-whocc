@@ -650,6 +650,18 @@ def make(target_dir):
         minimum_column_basis = "1280"
     else:
         minimum_column_basis = "none"
+
+    if "bvic" in target_dir.name:
+        wrong_lineage = "yamagata"
+    elif "byam" in target_dir.name:
+        wrong_lineage = "victoria"
+    else:
+        wrong_lineage = None
+    if wrong_lineage:
+        chart_loaded_comment = ""
+    else:
+        chart_loaded_comment = "# "
+
     target_dir.mkdir(parents=True, exist_ok=True)
     run_script = target_dir.joinpath("run")
     if not run_script.exists():
@@ -691,9 +703,12 @@ class ThisIncrementalChain (IncrementalChain):
         "returns if making map from scratch at each step requested"
         return True
 
-    # def chart_loaded(self, chart):
-    #     "hook to preprocess chart on loading, e.g. remove antigens/sera of wrong lineage"
-    #     return chart
+    {chart_loaded_comment}def chart_loaded(self, chart):
+    {chart_loaded_comment}    "hook to preprocess chart on loading, e.g. remove antigens/sera of wrong lineage"
+    {chart_loaded_comment}    if chart.number_of_projections() == 0:
+    {chart_loaded_comment}        wrong_lineage = {wrong_lineage}
+    {chart_loaded_comment}        chart.remove_antigens_sera(antigens=chart.antigen_indexes().filter_lineage(wrong_lineage), sera=chart.serum_indexes().filter_lineage(wrong_lineage))
+    {chart_loaded_comment}    return chart
 
     # def threads(self):
     #     return {threads}
