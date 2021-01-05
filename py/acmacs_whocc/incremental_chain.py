@@ -1,86 +1,13 @@
-import sys, os, re, json, datetime, time, subprocess, pprint, socket, traceback
+import sys, os, re, json, datetime, time, subprocess, pprint, traceback
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
-# sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("lib"))]
 import acmacs
-from acmacs_base import email
 
 # ======================================================================
-
-def detect_processor():
-    try:
-        subprocess.check_output(["condor_version"])
-        return "htcondor"
-    except (subprocess.SubprocessError, FileNotFoundError):
-        return "built-in"
-
-sDefaultParameters = {
-    "number_of_optimizations": 100,
-    "number_of_dimensions": 2,
-    "minimum_column_basis": "none",
-    "projections_to_keep": 10,
-    "incremental": True,        # make incremetal merge map at each step
-    "scratch": True,            # make map from scratch at each step
-
-    "log": {
-        "dir": Path("log"),
-        "level": logging.DEBUG,
-        "format": "%(levelname)s %(asctime)s: %(message)s @@ %(pathname)s:%(lineno)d", # https://docs.python.org/3.9/library/logging.html#logrecord-attributes
-    },
-
-    "state_filename": Path("state.json"),
-    "output_dir": Path("out"),
-    "htcondor_dir": Path("htcondor"),
-    "email": "eu@antigenic-cartography.org",
-    "threads": 16,
-    "number_of_optimizations_per_run": 100,
-    "sleep_interval_when_not_ready": 10, # in seconds
-
-    "processor": detect_processor(),
-}
 
 class Error (RuntimeError): pass
 class StepFailed (Error): pass
-
-# ======================================================================
-
-def main(source_tables, param):
-    exit_code = 0
-    email_subject = f"""{socket.gethostname()} {Path.cwd().parents[0].name}"""
-    email_body = ""
-    try:
-        param = {**sDefaultParameters, **param}
-        log_filename = setup_logging(param)
-        email_body = f"""{Path.cwd()}\n/scp:{socket.gethostname()}:{log_filename.resolve()}\n/scp:{socket.gethostname()}:{Path("state.json").resolve()}"""
-        if chain(source_tables, param):
-            exit_code = 1
-            email.send(to=param["email"], subject=f"""chain FAILED {email_subject}""", body=f"""chain FAILED\n{email_body}""")
-        else:
-            email.send(to=param["email"], subject=f"""chain completed {email_subject}""", body=f"""chain completed\n{email_body}""")
-    except KeyboardInterrupt:
-        print("KeyboardInterrupt", file=sys.stderr)
-    except Error as err:
-        module_logger.error(f"{err}")
-        email.send(to=param["email"], subject=f"""chain EXCEPTION {email_subject}""", body=f"""chain EXCEPTION\n{email_body}\n\n{traceback.format_exc()}""")
-        exit_code = 2
-    except Exception as err:
-        module_logger.error(f"{err}", exc_info=True)
-        email.send(to=param["email"], subject=f"""chain EXCEPTION {email_subject}""", body=f"""chain EXCEPTION\n{email_body}\n\n{traceback.format_exc()}""")
-        exit_code = 3
-    exit(exit_code)
-
-# ----------------------------------------------------------------------
-
-def chain(source_tables, param):
-    state = State(source_tables=source_tables, param=param, processor=processor_factory(param["processor"]))
-    pprint.pprint(list(enumerate(getattr(st.src[0], "name", st.src[0]) for id, st in state.steps.items() if ".s." in id)))
-    while state.has_todo():
-        state.check_running()
-        if not state.run_ready():
-            # module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
-            time.sleep(param["sleep_interval_when_not_ready"])
-    return state.is_failed()
 
 # ======================================================================
 
@@ -250,16 +177,16 @@ def step_factory(type, **args):
 
 class State:
 
-    def __init__(self, source_tables, param, processor):
+    def __init__(self, chain_data): # source_tables, param, processor):
         self.state = {"setup": {"number_of_optimizations": 0}, "steps": {}}
-        self.state_file = Path(param["state_filename"])
-        self.output_dir = Path(param["output_dir"])
-        self.htcondor_dir = Path(param["htcondor_dir"])
-        self.email = param["email"]
-        self.threads = param["threads"]
-        self.source_tables = source_tables
-        self.load(param)
-        self.processor = processor
+        self.state_file = Path(chain_data.state_filename())
+        self.output_dir = Path(chain_data.output_dir())
+        self.htcondor_dir = Path(chain_data.htcondor_dir())
+        self.email = chain_data.email()
+        self.threads = chain_data.threads()
+        self.source_tables = chain_data.source_tables()
+        self.load(chain_data)
+        self.processor = chain_data.processor()
 
     def is_step_completed(self, step_id):
         return self.steps[step_id].is_completed(self)
@@ -306,14 +233,14 @@ class State:
 
     # ----------------------------------------------------------------------
 
-    def load(self, param):
+    def load(self, chain_data):
         self.steps = {}
         if self.state_file.exists():
             self.state = json.load(self.state_file.open())
             for step_id, step_data in self.state["steps"].items():
                 self.steps[step_id] = step_factory(step_data["_type"], read_from=step_data)
             self.state.pop("steps")
-        if self.update(param):
+        if self.update(chain_data):
             self.save()
 
     def save(self, to=None):
@@ -338,12 +265,12 @@ class State:
     def setup(self):
         return self.state["setup"]
 
-    def update(self, param):
+    def update(self, chain_data):
         updated = False
         for changeable_value in ["number_of_optimizations", "projections_to_keep", "number_of_optimizations_per_run", "incremental", "scratch"]:
-            updated = self.update_value(changeable_value, param[changeable_value], raise_if_changed=False)
+            updated = self.update_value(changeable_value, getattr(chain_data, changeable_value)(), raise_if_changed=False)
         for readonly_value in ["number_of_dimensions", "minimum_column_basis"]:
-            updated = self.update_value(readonly_value, param[readonly_value], raise_if_changed=True) or updated
+            updated = self.update_value(readonly_value, getattr(chain_data, readonly_value)(), raise_if_changed=True) or updated
         updated = self.update_steps() or updated
         return updated
 
@@ -422,24 +349,16 @@ class ProcessorTimer:
             nm = ""
         module_logger.info(f"{self.step.step_id()} {self.step.type_desc()} {nm}\n{'':30s}<{self.step.runtime}>")
 
-def processor_factory(processor_type):
-    if processor_type == "built-in":
-        return ProcessorBuiltIn()
-    elif processor_type == "htcondor":
-        return ProcessorHTCondor()
-    else:
-        raise Error(f"""unknown processor type {processor_type!r}""")
-
 # ----------------------------------------------------------------------
 
 class Processor:
 
     def merge_incremental(self, chain_state, step):
-        with ProcessorTimer(step, master) as pt:
+        with ProcessorTimer(step) as pt:
             master = acmacs.Chart(str(step.src[0]))
             pt.chart = master
-            to_merge = acmacs.Chart(str(step.src[1])
-            merge, report = acmacs.merge(master, to_merge), type="incremental")
+            to_merge = acmacs.Chart(str(step.src[1]))
+            merge, report = acmacs.merge(master, to_merge, type="incremental")
             pt.chart = merge
             self.export(chart=merge, out=Path(step.out[0]))
 
@@ -575,17 +494,194 @@ class ProcessorHTCondor (Processor):
             step.htcondor.pop(key, None)
 
 # ======================================================================
+# 2021
+# ----------------------------------------------------------------------
 
-def setup_logging(param):
-    log_dir = Path(param["log"]["dir"])
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_filename = log_dir.joinpath(f"{datetime.datetime.now().strftime('%Y-%m%d-%H%M')}.log")
-    logging.basicConfig(level=param["log"]["level"], format=param["log"]["format"])
-    lh = logging.FileHandler(log_filename)
-    lh.setLevel(param["log"]["level"])
-    lh.setFormatter(logging.Formatter(param["log"]["format"]))
-    logging.getLogger().addHandler(lh)
-    return log_filename
+class IncrementalChain:
+
+    def __init__(self):
+        from socket import gethostname
+        self.hostname_ = gethostname()
+        self.email_subject_ = f"""{self.hostname_} {Path.cwd().parents[0].name}"""
+
+    def run(self):
+        "returns exit code: 0 - success, 1,2,3 - failure"
+        from acmacs_base import email
+        try:
+            self.setup_logging()
+            email_body = f"""{Path.cwd()}\n/scp:{self.hostname_}:{self.log_filename_.resolve()}\n/scp:{self.hostname_}:{Path("state.json").resolve()}"""
+            if self.process():
+                email.send(to=self.email(), subject=f"""chain FAILED {self.email_subject_}""", body=f"""chain FAILED\n{email_body}""")
+                return 1
+            else:
+                email.send(to=self.email(), subject=f"""chain completed {self.email_subject_}""", body=f"""chain completed\n{email_body}""")
+                return 0
+        except KeyboardInterrupt:
+            print("KeyboardInterrupt", file=sys.stderr)
+            return 0
+        except Error as err:
+            module_logger.error(f"{err}")
+            email.send(to=self.email(), subject=f"""chain EXCEPTION {self.email_subject_}""", body=f"""chain EXCEPTION\n{email_body}\n\n{traceback.format_exc()}""")
+            return 2
+        except Exception as err:
+            module_logger.error(f"{err}", exc_info=True)
+            email.send(to=self.email(), subject=f"""chain EXCEPTION {self.email_subject_}""", body=f"""chain EXCEPTION\n{email_body}\n\n{traceback.format_exc()}""")
+            return 3
+
+    def process(self):
+        state = State(chain_data=self)
+        self.report_tables(state)
+        while state.has_todo():
+            state.check_running()
+            if not state.run_ready():
+                # module_logger.info(f"""nothing ready, sleeping for {param["sleep_interval_when_not_ready"]} seconds""")
+                time.sleep(self.sleep_interval_when_not_ready())
+        return state.is_failed()
+
+    sReTableExtract = re.compile(r"[\.\-](\d{8}(?:[\-_]\d+)?)")
+
+    def report_tables(self, state):
+
+        def table_date(stem):
+            m = self.sReTableExtract.search(stem)
+            if m:
+                return m.group(1)
+            else:
+                return stem
+
+        tables = [table_date(Path(getattr(st.src[0], "name", st.src[0])).stem) for id, st in state.steps.items() if ".s." in id]
+        tables_s = "\n   ".join(f"{no:3d} {tab}" for no, tab in enumerate(tables, start=1))
+        print(f"Tables: {len(tables)}\n   {tables_s}")
+
+    def source_tables(self):
+        "returns [Path]"
+        return []
+
+    def number_of_optimizations(self):
+        return 100
+
+    def number_of_dimensions(self):
+        return 2
+
+    def minimum_column_basis(self):
+        return "none"
+
+    def projections_to_keep(self):
+        return 10
+
+    def incremental(self):
+        "returns if making incremetal merge map at each step requested"
+        return True
+
+    def scratch(self):
+        "returns if making map from scratch at each step requested"
+        return True
+
+    def state_filename(self):
+        return Path("state.json")
+
+    def output_dir(self):
+        return Path("out")
+
+    def htcondor_dir(self):
+        return Path("htcondor")
+
+    def email(self):
+        return "eu@antigenic-cartography.org"
+
+    def threads(self):
+        return 16
+
+    def number_of_optimizations_per_run(self):
+        return 100
+
+    def sleep_interval_when_not_ready(self):
+        "in seconds (htcondor only)"
+        return 10 # in seconds
+
+    def processor(self):
+        "returns processor instance to use"
+        try:
+            subprocess.check_output(["condor_version"])
+            return ProcessorHTCondor()
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return ProcessorBuiltIn()
+
+    def setup_logging(self, log_dir=Path("log"), level=logging.DEBUG, format="%(levelname)s %(asctime)s: %(message)s @@ %(pathname)s:%(lineno)d"):
+        "format: https://docs.python.org/3.9/library/logging.html#logrecord-attributes"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        self.log_filename_ = log_dir.joinpath(f"{datetime.datetime.now().strftime('%Y-%m%d-%H%M')}.log")
+        logging.basicConfig(level=level, format=format)
+        lh = logging.FileHandler(self.log_filename_)
+        lh.setLevel(level)
+        lh.setFormatter(logging.Formatter(format))
+        logging.getLogger().addHandler(lh)
+
+# ======================================================================
+# 2020 legacy
+# ----------------------------------------------------------------------
+
+class IncrementalChain2020 (IncrementalChain):
+
+    def __init__(self, source_tables, param):
+        super().__init__()
+        self.source_tables_ = source_tables
+        self.param_ = param
+
+    def source_tables(self):
+        return self.source_tables_
+
+    def number_of_optimizations(self):
+        return self.param_.get("number_of_optimizations", super().number_of_optimizations())
+
+    def number_of_dimensions(self):
+        return self.param_.get("number_of_dimensions", super().number_of_dimensions())
+
+    def minimum_column_basis(self):
+        return self.param_.get("minimum_column_basis", super().minimum_column_basis())
+
+    def projections_to_keep(self):
+        return self.param_.get("projections_to_keep", super().projections_to_keep())
+
+    def incremental(self):
+        "returns if making incremetal merge map at each step requested"
+        return self.param_.get("incremental", super().incremental())
+
+    def scratch(self):
+        "returns if making map from scratch at each step requested"
+        return self.param_.get("scratch", super().scratch())
+
+    def state_filename(self):
+        return self.param_.get("state_filename", super().state_filename())
+
+    def output_dir(self):
+        return self.param_.get("output_dir", super().output_dir())
+
+    def htcondor_dir(self):
+        return self.param_.get("htcondor_dir", super().htcondor_dir())
+
+    def email(self):
+        return self.param_.get("email", super().email())
+
+    def threads(self):
+        return self.param_.get("threads", super().threads())
+
+    def number_of_optimizations_per_run(self):
+        return self.param_.get("number_of_optimizations_per_run", super().number_of_optimizations_per_run())
+
+    def sleep_interval_when_not_ready(self):
+        "in seconds (htcondor only)"
+        return self.param_.get("sleep_interval_when_not_ready", super().sleep_interval_when_not_ready())
+
+    def setup_logging(self):
+        param_log = {"dir": Path("log"), "level": logging.DEBUG, "format": "%(levelname)s %(asctime)s: %(message)s @@ %(pathname)s:%(lineno)d", **self.param_.get("log", {})}
+        super().setup_logging(log_dir=param_log["dir"], level=param_log["level"], format=param_log["format"])
+
+# ----------------------------------------------------------------------
+
+def main(source_tables, param):
+    chain = IncrementalChain2020(source_tables, param)
+    return chain.run()
 
 # ======================================================================
 ### Local Variables:
