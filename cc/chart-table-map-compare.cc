@@ -124,7 +124,7 @@ int main(int argc, char* const argv[])
             gen.generate(opt.output);
 
             if (opt.pdf_output)
-                acmacs::run_and_detach({"drawi", opt.output->data(), opt.pdf_output->data(), "--open"}, 0);
+                acmacs::run_and_detach("drawi", *opt.output, *opt.pdf_output, "--open");
         }
     }
     catch (std::exception& err) {
