@@ -1,11 +1,15 @@
 #! /usr/bin/env python3
 
 import sys, os, csv, json, re, datetime, lzma, pprint, subprocess
+from pathlib import Path
 
 # ----------------------------------------------------------------------
 
-def main(input_file, output_dir):
-    reader = csv.DictReader(open(input_file), dialect="excel-tab")
+def main(input_file :Path, output_dir :Path):
+    if input_file.suffix == ".xz":
+        reader = csv.DictReader(lzma.open(input_file, mode="rt"), dialect="excel-tab")
+    else:
+        reader = csv.DictReader(input_file.open(), dialect="excel-tab")
     tables = {}                 # table -> ace
     for row in reader:
         assay_date = get_date(row["assay_date"])
@@ -62,14 +66,14 @@ def main(input_file, output_dir):
 
         read_titer(table_name, tables[table_name], antigen=antigen, serum=serum, titer=row["titer"])
 
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir.mkdir(exist_ok=True)
     for table_name, ace in tables.items():
         merge_titers(table_name, ace["c"]["t"]["l"], ace)
         populate_missing_titers(table_name, ace["c"]["t"]["l"], number_of_sera=len(ace["c"]["s"]))
         print(f"""{table_name:25s}   a:{len(ace["c"]["a"]):3d}   s:{len(ace["c"]["s"]):3d}""")
-        orig_name = f"{output_dir}/{table_name}.orig.ace"
-        final_name = f"{output_dir}/{table_name}.ace"
-        with open(orig_name, "wb") as output:
+        orig_name = output_dir.joinpath(f"{table_name}.orig.ace")
+        final_name = output_dir.joinpath(f"{table_name}.ace")
+        with orig_name.open("wb") as output:
             output.write(lzma.compress(json_dumps(ace, indent=2).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
         subprocess.check_call(f"chart-fix-names-passages '{orig_name}' '{final_name}'", shell=True)
         subprocess.check_call(f"rm '{orig_name}'", shell=True)
@@ -79,7 +83,7 @@ def main(input_file, output_dir):
 def make_ace(input_file, lab, assay_date, subtype, assay, rbc, lineage):
     ace = {
         "  version": "acmacs-ace-v1",
-        "?created": f"imported from {os.path.basename(input_file)} by {os.path.basename(sys.argv[0])} on {datetime.date.today()}",
+        "?created": f"imported from {input_file.name} by {os.path.basename(sys.argv[0])} on {datetime.date.today()}",
         "c": {
             "i": {
                 "l": lab,
@@ -383,11 +387,11 @@ def json_dumps(data, indent=2, indent_increment=None, toplevel=True, one_line_ma
 # # ----------------------------------------------------------------------
 
 if len(sys.argv) != 3:
-    print("Usage:", sys.argv[0], "<input.tsv> <output-dir>", file=sys.stderr)
+    print("Usage:", sys.argv[0], "<input.tsv[.xz]> <output-dir>", file=sys.stderr)
     exit(1)
 
 try:
-    main(sys.argv[1], sys.argv[2])
+    main(Path(sys.argv[1]), Path(sys.argv[2]))
     exit(0)
 except Exception as err:
     print(f"ERROR: {err} @@ {sys.argv[1]}:1", file=sys.stderr)
