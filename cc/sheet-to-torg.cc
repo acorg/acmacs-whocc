@@ -109,6 +109,7 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
                            "#+STARTUP: showall indent\n"
                            "Local Variables:\n"
                            "eval: (if (fboundp 'eu-whocc-torg-to-ace) (add-hook 'after-save-hook 'eu-whocc-torg-to-ace nil 'local))\n"
+                           "eval: (if (fboundp 'eu-whocc-xlsx-torg-ace-hup) (add-hook 'after-save-hook 'eu-whocc-xlsx-torg-ace-hup nil 'local))\n"
                            "End:\n");
 
     return fmt::to_string(result);

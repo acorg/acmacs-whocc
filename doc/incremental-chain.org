@@ -1,4 +1,4 @@
-Time-stamp: <2020-12-29 12:54:23 eu>
+Time-stamp: <2021-01-08 13:08:14 eu>
 * Reorient
 
 #+BEGIN_SRC bash
@@ -28,6 +28,27 @@ ad-run ACMACSD_ROOT=/syn/eu/AD.chain ./run
 whocc-incremental-chain-make /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-lab>/$(date +%Y-%m%d)
 
 #+END_SRC
+
+
+* New excel sheet
+
+- Emacs: H-t
+  :PROPERTIES:
+  :VISIBILITY: folded
+  :END:
+
+  #+BEGIN_SRC bash
+  whocc-xlsx-torg-ace -e /r/*.xlsx
+  whocc-xlsx-torg-ace -h
+  #+END_SRC
+
+- ssa
+
+- albertine:
+  cd /syn/eu/ac/results/chains-2020/
+  ? ad-copy
+  ad-run ACMACSD_ROOT=/syn/eu/AD.chain ./run
+
 
 
 * -- local vars --------------------------------------------------
