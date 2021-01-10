@@ -34,6 +34,7 @@ chain_names = [
 # ----------------------------------------------------------------------
 
 def main():
+   print("-*- mode: Org; -*-\n#+STARTUP: showall indent\n")
    for chain_name in chain_names:
       report(chain_name)
       print("\n\n")
@@ -41,9 +42,11 @@ def main():
 # ----------------------------------------------------------------------
 
 def report(chain_name):
-   print(f">>> {chain_name}\n")
+   print(f"* {chain_name}\n")
    chain_dir = list(chain_root.joinpath(chain_name).glob("*"))[-1]
    print(f"https://notebooks.antigenic-cartography.org/{str(chain_dir).replace('/syn/eu/ac/', 'eu/')}")
+   print(f"""vr "!get-merge-from-chain {chain_name} {chain_dir} i" """)
+   print(f"""vr "!get-merge-from-chain {chain_name} {chain_dir} s" """)
    outputs = sorted(chain_dir.joinpath("out").glob("*.[is].*.ace"))
    # print("\n".join(str(p) for p in outputs))
    last_index = outputs[-1].name.split(".")[0]
