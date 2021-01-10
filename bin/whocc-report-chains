@@ -49,7 +49,7 @@ def report(chain_name):
    # print("\n".join(str(p) for p in outputs))
    last_index = outputs[-1].name.split(".")[0]
    last_outputs = list(chain_dir.joinpath("out").glob(f"{last_index}.[is].*.ace"))
-   print("\n".join(f"""vr "!get-merge-from-chain {chain_name} {fn}" """ for fn in last_outputs))
+   print("\n".join(f"vr \"!get-merge-from-chain {chain_name} {fn}\"" for fn in last_outputs))
 
 # ----------------------------------------------------------------------
 
