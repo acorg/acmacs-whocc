@@ -41,16 +41,21 @@ def main():
 # ----------------------------------------------------------------------
 
 def report(chain_name):
-   print(f"{chain_name}\n")
-   chain_dir = chain_root.joinpath(chain_name).glob("*")[-1]
+   print(f">>> {chain_name}\n")
+   chain_dir = list(chain_root.joinpath(chain_name).glob("*"))[-1]
    print(f"https://notebooks.antigenic-cartography.org/{str(chain_dir).replace('/syn/eu/ac/', 'eu/')}")
+   outputs = sorted(chain_dir.joinpath("out").glob("*.[is].*.ace"))
+   # print("\n".join(str(p) for p in outputs))
+   last_index = outputs[-1].name.split(".")[0]
+   last_outputs = list(chain_dir.joinpath("out").glob(f"{last_index}.[is].*.ace"))
+   print("\n".join(f"scp i19:{fn} {chain_name}.chain.ace" for fn in last_outputs))
 
 # ----------------------------------------------------------------------
 
 try:
    hostname = socket.gethostname()
    if hostname in ["dael"]:
-      to_execlp = ["ssh", "ssh", "i19", os.path.basename(sys.argv[0]), *sys.argv[1:]]
+      to_execlp = ["ssh", "ssh", "i19", "ad-run", os.path.basename(sys.argv[0]), *sys.argv[1:]]
       # print(f">>> execlp {' '.join(to_execlp)}")
       os.execlp(*to_execlp)
    elif hostname in ["i19"]:
