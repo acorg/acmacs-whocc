@@ -1,0 +1,66 @@
+#! /usr/bin/env python3
+
+import sys, os, socket, subprocess
+from pathlib import Path
+
+class Error (RuntimeError): pass
+
+# ----------------------------------------------------------------------
+
+chain_root = Path("/syn/eu/ac/results/chains-2020")
+
+chain_names = [
+   "h1pdm-hi-turkey-cdc",
+   "h1pdm-hi-turkey-crick",
+   "h1pdm-hi-turkey-niid",
+   "h1pdm-hi-turkey-vidrl",
+   "h3-hint-cdc",
+   "h3-hi-guinea-pig-crick",
+   "h3-hi-guinea-pig-vidrl",
+   "h3-fra-cdc",
+   "h3-prn-crick",
+   "h3-fra-niid",
+   "h3-fra-vidrl",
+   "bvic-hi-turkey-cdc",
+   "bvic-hi-turkey-crick",
+   "bvic-hi-chicken-niid",
+   "bvic-hi-turkey-vidrl",
+   "byam-hi-turkey-cdc",
+   "byam-hi-turkey-crick",
+   "byam-hi-chicken-niid",
+   "byam-hi-turkey-vidrl",
+]
+
+# ----------------------------------------------------------------------
+
+def main():
+   for chain_name in chain_names:
+      report(chain_name)
+      print("\n\n")
+
+# ----------------------------------------------------------------------
+
+def report(chain_name):
+   print(f"{chain_name}\n")
+   chain_dir = chain_root.joinpath(chain_name).glob("*")[-1]
+   print(f"https://notebooks.antigenic-cartography.org/{str(chain_dir).replace('/syn/eu/ac/', 'eu/')}")
+
+# ----------------------------------------------------------------------
+
+try:
+   hostname = socket.gethostname()
+   if hostname in ["dael"]:
+      to_execlp = ["ssh", "ssh", "i19", os.path.basename(sys.argv[0]), *sys.argv[1:]]
+      # print(f">>> execlp {' '.join(to_execlp)}")
+      os.execlp(*to_execlp)
+   elif hostname in ["i19"]:
+      main()
+   else:
+      raise Error(f"unsupported host {hostname}")
+except Error as err:
+   print(f"> ERROR: {err}", file=sys.stderr)
+   exit(1)
+except Exception as err:
+   import traceback
+   print(f"{traceback.format_exc()}\n> ERROR: {err}", file=sys.stderr)
+   exit(2)
