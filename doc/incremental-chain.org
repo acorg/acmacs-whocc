@@ -1,4 +1,4 @@
-Time-stamp: <2021-01-08 13:08:14 eu>
+Time-stamp: <2021-01-13 16:15:11 eu>
 * Reorient
 
 #+BEGIN_SRC bash
@@ -48,7 +48,7 @@ whocc-incremental-chain-make /syn/eu/ac/results/chains-2020/<subtype-assay-rbc-l
   cd /syn/eu/ac/results/chains-2020/
   ? ad-copy
   ad-run ACMACSD_ROOT=/syn/eu/AD.chain ./run
-
+  reorient
 
 
 * -- local vars --------------------------------------------------
