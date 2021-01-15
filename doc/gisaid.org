@@ -1,4 +1,4 @@
-Time-stamp: <2021-01-04 11:10:08 eu>
+Time-stamp: <2021-01-15 09:22:02 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -22,14 +22,15 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 - Select sequence type: Nucleotide
 - Segment: HA
 
-** helm-x ncbi-get
-
-~albertine~ --> ~13m 23Mb
-~/bin/ncbi-get
-
-cd ~/ac/sequences/ncbi/ && scp -q i19:/syn/eu/ac/ncbi/$(date '+%Y-%m%d')/\* . && ls -la 
-
 ** ncbi-get
+
+<H-9> ncbi-get --> ~13m 23Mb (~/bin/ncbi-get)
+
+#+BEGIN_SRC bash
+cd ~/ac/sequences/ncbi/ && scp -q i19:/syn/eu/ac/ncbi/$(date '+%Y-%m%d')/\* . && ls -la 
+#+END_SRC
+
+*** ncbi-get
 :PROPERTIES:
 :VISIBILITY: folded
 :END:
@@ -70,22 +71,31 @@ seqdb3-scan --ncbi ~/ac/sequences/ncbi
 
 #+BEGIN_SRC bash
 dos2unix /r/gisaid_epiflu_sequence.fasta
-# 2019
-(query-replace "\n/" "/") - fix broken names for Serbian lab
-(query-replace "\ntype:" " type:") - fix broken names for Serbian lab
-(query-replace "\n3" " 3") - fix broken names for Serbian lab
-# 2020
-(query-replace "?A8" "(")
-(query-replace "?A9" ")")
-(query-replace ">recombinant A/" ">A/")
-(query-replace-regexp "\\(/201[89]\\)_201[89]-[0-9][0-9]-[0-9][0-9]_|_a=" "\\1_|_a=")
+#+END_SRC
 
-helm-x whocc-hidb5-update --> ssh albertine whocc-hidb5-update && hidb-get-from-albertine
+#+BEGIN_SRC elisp
+  (progn 
+    (goto-char (point-min))
+    (save-excursion (query-replace "\n/" "/")) ; fix broken names for Serbian lab
+    (save-excursion (query-replace "\ntype:" " type:")) ; fix broken names for Serbian lab
+    (save-excursion (query-replace "\n3" " 3")) ; fix broken names for Serbian lab
+    (save-excursion (query-replace "?A8" "("))
+    (save-excursion (query-replace "?A9" ")"))
+    (save-excursion (query-replace ">recombinant A/" ">A/"))
+    (save-excursion (query-replace-regexp "\\(/201[89]\\)_201[89]-[0-9][0-9]-[0-9][0-9]_|_a=" "\\1_|_a="))
+    (save-excursion (query-replace-regexp "\\(/20[12][0-9]\\)[_ ]\\(oct\\|nov\\|(h1n2)v\\)_|_a=" "\\1_|_a=")) ; india
+    (save-excursion (query-replace-regexp "\\(/20[12][0-9]\\)-[0-9][0-9]-[0-9][0-9]\\((h[1-9]n[1-9])\\)?_|_a=" "\\1_|_a="))
+    )
+#+END_SRC
+
+<H-d> whocc-hidb5-update --> ssh albertine whocc-hidb5-update && hidb-get-from-albertine
+
+#+BEGIN_SRC bash
 seqdb3-scan --gisaid --all-subtypes-messages -m --print-not-aligned-for B /r/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
 * Install into ~/ac/sequences/
-xz -9ecv /r/gisaid_epiflu_sequence.fasta >~/ac/sequences/gisaid- .fas.xz
+xz -9ecv /r/gisaid_epiflu_sequence.fasta >~/ac/sequences/gisaid-.fas.xz
 
 * generate seqdb
 [[elisp:(eu-process "make-seqdb -H")][make-seqdb -H]]
