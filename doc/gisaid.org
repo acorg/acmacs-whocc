@@ -1,4 +1,4 @@
-Time-stamp: <2021-01-19 15:05:39 eu>
+Time-stamp: <2021-01-19 15:09:26 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -86,6 +86,7 @@ dos2unix /r/gisaid_epiflu_sequence.fasta
     (save-excursion (query-replace-regexp "\\(/20[12][0-9]\\)[_ ]\\(oct\\|nov\\|(h1n2)v\\)_|_a=" "\\1_|_a=")) ; india
     (save-excursion (query-replace-regexp "\\(/20[12][0-9]\\)-[0-9][0-9]-[0-9][0-9]\\((h[1-9]n[1-9])\\)?_|_a=" "\\1_|_a="))
     (save-excursion (query-replace "/Russia_Novosibirsk region/" "/Novosibirsk/"))
+    (save-excursion (query-replace ">AHubei-songzi" ">A/Hubei-songzi"))
     )
 #+END_SRC
 
