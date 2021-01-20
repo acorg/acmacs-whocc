@@ -113,17 +113,7 @@ class StepMergeIncremental (Step):
 
     def run(self, chain_state):
         # module_logger.debug(f"{self.step_id()} deps: {self.depends}")
-        candidates = [chain_state.step(dep) for dep in self.depends]
-        if len(candidates) == 2:
-            if candidates[0].stress < candidates[1].stress:
-                self.src[0] = candidates[0].out[0]
-            else:
-                self.src[0] = candidates[1].out[0]
-            module_logger.info(f"choosing master for merge: {self.src[0]} <-- {self.depends[0]} {candidates[0].stress:.4f} vs. {self.depends[1]} {candidates[1].stress:.4f}")
-        elif len(candidates) == 1:
-            self.src[0] = candidates[0].out[0]
-        else:
-            raise RuntimeError(f"""{self.__class__}: unsupported "depends": {self.depends}""")
+        self.src[0] = chain_state.choose_for_incremental_merge(self.depends)
         chain_state.processor.merge_incremental(chain_state, self)
 
 # ----------------------------------------------------------------------
@@ -184,6 +174,7 @@ def step_factory(type, **args):
 class State:
 
     def __init__(self, chain_data): # source_tables, param, processor):
+        self.chain_data = chain_data
         self.state = {"setup": {"number_of_optimizations": 0}, "steps": {}}
         self.state_file = Path(chain_data.state_filename())
         self.output_dir = Path(chain_data.output_dir())
@@ -333,6 +324,25 @@ class State:
                 elif self.steps[step_id].path != step_path:
                     raise Error(f"""{step_id!r} already in steps has different path {self.steps[step_id].path!r} vs {step_path!r}""")
         return updated
+
+    def choose_for_incremental_merge(self, depends):
+        prefer = self.chain_data.prefer_for_incremental_merge(depends)
+        if prefer:
+            candidates = [self.step(prefer)]
+            module_logger.info(f"preferred master for merge: {candidates[0].out[0]} in prefer_for_incremental_merge() in run script")
+        else:
+            candidates = [self.step(dep) for dep in depends]
+        if len(candidates) == 2:
+            if candidates[0].stress < candidates[1].stress:
+                chosen = candidates[0].out[0]
+            else:
+                chosen = candidates[1].out[0]
+            module_logger.info(f"choosing master for merge: {chosen} <-- {depends[0]} {candidates[0].stress:.4f} vs. {depends[1]} {candidates[1].stress:.4f}")
+            return chosen
+        elif len(candidates) == 1:
+            return candidates[0].out[0]
+        else:
+            raise RuntimeError(f"""{self.__class__}: unsupported "depends": {depends}""")
 
 # ======================================================================
 
@@ -600,6 +610,10 @@ class IncrementalChain:
         "returns if making map from scratch at each step requested"
         return True
 
+    def prefer_for_incremental_merge(self, depends):
+        "returns one of depends to force choosing incremental or from scratch merge from the previous step. returns None to choose based on stress"
+        return None
+
     def state_filename(self):
         return Path("state.json")
 
@@ -708,6 +722,11 @@ class ThisIncrementalChain (IncrementalChain):
     def scratch(self):
         "returns if making map from scratch at each step requested"
         return True
+
+    def prefer_for_incremental_merge(self, depends):
+        "returns one of depends to force choosing incremental or from scratch merge from the previous step. returns None to choose based on stress"
+        # print(f"prefer_for_incremental_merge: {depends}")
+        return None
 
     {chart_loaded_comment}def chart_loaded(self, chart):
     {chart_loaded_comment}    "hook to preprocess chart on loading, e.g. remove antigens/sera of wrong lineage"
