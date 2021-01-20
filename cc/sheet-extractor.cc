@@ -39,7 +39,7 @@ static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
-static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?\s*(F[0-9][0-9]/[0-2][0-9]|SH[\s\d,]+)(?:\*(\d)(?:,\d)?)?$)", acmacs::regex::icase};
+static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?\s*(F[0-9][0-9]/[0-2][0-9]|SH[\s\d,/]+)(?:\*(\d)(?:,\d)?)?$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_multi{R"(^\s*\d\s*<\s*=\s*<\d+\s*;)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_multi_entry{R"(^\s*(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
@@ -946,8 +946,11 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCrick::serum(size_
     else
         serum.name = "*no serum_name_[12]_row_*";
 
-    if (std::smatch match; std::regex_match(serum.serum_id, match, re_CRICK_serum_id))
-        serum.serum_id = match.str(1);
+    if (std::smatch match; std::regex_match(serum.serum_id, match, re_CRICK_serum_id)) {
+        // move to whocc-tables/*crick/whocc-xlsx-to-torg.py
+        serum.serum_id = ::string::upper(::string::replace(match.str(1), " ", "", ",", "/")); // remove spaces, replace , with /, e.g. "Sh  539, 540, 543, 544, 570, 571, 574" -> "SH539/540/543/544/570/571/574"
+    }
+
     return serum;
 
 } // acmacs::sheet::v1::ExtractorCrick::serum
