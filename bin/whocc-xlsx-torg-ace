@@ -131,9 +131,7 @@ def copy_xlsx(source, xlsx_name):
 # ----------------------------------------------------------------------
 
 def open_html(xlsx_name):
-    html_dir = "/tmp"
-    if os.path.isdir("/d"):
-        html_dir = "/d"
+    html_dir = os.environ["TMPDIR"]
     html_name = os.path.join(html_dir, os.path.basename(xlsx_name) + ".html")
     subprocess_check_call(f"xlsx2html '{xlsx_name}' '{html_name}' && open '{html_name}' && switch-back-to-emacs", shell=True)
 
