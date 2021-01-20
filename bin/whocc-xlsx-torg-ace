@@ -31,7 +31,11 @@ def main(args):
         check_output_names(names, output_dir=output_dir)
     xlsx_name = output_dir.joinpath("xlsx", make_xlsx_name(names))
     copy_xlsx(args.source[0], xlsx_name)
-    subprocess_check_call(["whocc-xlsx-to-torg", "-f", "{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}", "-s", detect_py(), "-s", output_dir.joinpath("whocc-xlsx-to-torg.py"), "-o", output_dir.joinpath("torg"), args.source[0]])
+    if args.loglevel == logging.DEBUG:
+        debug = ["-v", "all"]
+    else:
+        debug = []
+    subprocess_check_call(["whocc-xlsx-to-torg", "-f", "{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}", "-s", detect_py(), "-s", output_dir.joinpath("whocc-xlsx-to-torg.py"), "-o", output_dir.joinpath("torg"), args.source[0]] + debug)
     if len(names) == 1 and args.edit_torg:
         edit_torg_make_ace(names[0], output_dir=output_dir, stop_on_torg=args.stop_on_torg)
     elif not args.stop_on_torg:
@@ -214,7 +218,7 @@ import argparse, traceback
 
 try:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    parser.add_argument('-d', '-v', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
     parser.add_argument('-e', action='store_true', dest='edit_torg', default=False, help='Edit .torg and autogenerate ace on save.')
     parser.add_argument('-t', action='store_true', dest='stop_on_torg', default=False, help='Stop after generating torg file.')
     parser.add_argument('-f', action='store_true', dest='overwrite', default=False, help='overwrite exiting output files.')

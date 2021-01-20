@@ -50,7 +50,7 @@ PYBIND11_EMBEDDED_MODULE(data_fix_builtin_module, mdl)
     mdl.def(
         "titer_fix",
         [](std::string& rex, std::string& replacement) {
-            // AD_DEBUG("titer_fix \"{}\" \"{}\"", rex, repl);
+            // AD_DEBUG("titer_fix \"{}\" \"{}\"", rex, replacement);
             acmacs::data_fix::Set::update().add(std::make_unique<acmacs::data_fix::Titer>(std::move(rex), std::move(replacement)));
         },
         "rex"_a, "replacement"_a);

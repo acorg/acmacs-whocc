@@ -41,6 +41,8 @@ static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?(F[0-9][0-9]/[0-2][0-9])(?:\*(\d))?$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
+static const std::regex re_CRICK_less_than_multi{R"(^\s*\d\s*<\s*=\s*<\d+\s*;)", acmacs::regex::icase};
+static const std::regex re_CRICK_less_than_multi_entry{R"(^\s*(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
 static const std::regex re_CRICK_prn_read{"^read$", acmacs::regex::icase};
@@ -900,8 +902,20 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions(warn_
         if (const auto found = sheet().grep(re_CRICK_less_than, {antigen_rows_.back(), ncol_t{1}}, {sheet().number_of_rows(), ncol_t{2}}); !found.empty()) {
             for (const auto& cell_match : found)
                 footnote_index_subst_.emplace_not_replace(string::strip(fmt::format("{}", sheet().cell(cell_match.row, cell_match.col - ncol_t{1}))), cell_match.matches[1]);
-            AD_LOG(acmacs::log::xlsx, "[Crick]: less than subst: {}", footnote_index_subst_);
+        }
+        else if (const auto found2 = sheet().grep(re_CRICK_less_than_multi, {antigen_rows_.back(), ncol_t{1}}, {sheet().number_of_rows(), ncol_t{2}}); !found2.empty()) {
+            // AD_DEBUG("[Crick]: less than subst (multi): {}", sheet().cell(found2[0].row, found2[0].col));
+            const auto cell = fmt::format("{}", sheet().cell(found2[0].row, found2[0].col)); // do not move inside split below, cannot survive within loop
+            for (const auto& entry : acmacs::string::split(cell, ";")) {
+                if (std::cmatch match; acmacs::regex::search(entry, match, re_CRICK_less_than_multi_entry))
+                    footnote_index_subst_.emplace_not_replace(match[1], match[2]);
+            }
+        }
+        else
+            AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No less than substitution footnote");
 
+        if (!footnote_index_subst_.empty()) {
+            AD_LOG(acmacs::log::xlsx, "[Crick]: less than subst: {}", footnote_index_subst_);
             serum_less_than_substitutions_.resize(number_of_sera(), "<");
             if (serum_id_row_.has_value()) {
                 for (const auto sr_no : range_from_0_to(number_of_sera())) {
@@ -913,8 +927,6 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions(warn_
                 }
             }
         }
-        else
-            AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No less than substitution footnote");
     }
 
 } // acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions
@@ -942,7 +954,7 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCrick::serum(size_
 std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no) const
 {
     auto result = ExtractorWithSerumRowsAbove::titer(ag_no, sr_no);
-    if (result == "<")
+    if (result == "<" && sr_no < serum_less_than_substitutions_.size())
         result = serum_less_than_substitutions_[sr_no];
     return result;
 
