@@ -28,7 +28,7 @@ int main(int argc, char* const argv[])
         Options opt(argc, argv);
         acmacs::log::enable(opt.verbose);
 
-        const auto show_matches = [](const auto& hidb, const auto& hidb_ag_sr, size_t no, const auto& ag_sr) {
+        const auto show_matches = [](const auto& hidb, const auto& hidb_ag_sr, const auto& found_ag_sr, size_t no, const auto& ag_sr) {
             const auto make_field = [](const auto& value, const auto& to_compare) {
                 if (!value.empty() && value == to_compare)
                     return fmt::format("<{}>", value);
@@ -43,7 +43,8 @@ int main(int argc, char* const argv[])
 
             std::vector<std::pair<std::string, fmt::memory_buffer>> hidb_variants;
             bool full_name_match_present{false};
-            for (const auto& [hidb_antigen, hidb_index] : hidb_ag_sr) {
+            for (const auto hidb_index : found_ag_sr) {
+                auto hidb_antigen = hidb_ag_sr.at(hidb_index);
                 const auto hidb_full_name = hidb_antigen->full_name();
                 full_name_match_present |= hidb_full_name == full_name;
                 auto& variant = hidb_variants.emplace_back(hidb_full_name, fmt::memory_buffer{});
@@ -106,7 +107,7 @@ int main(int argc, char* const argv[])
                 if (!antigen->distinct()) {
                     const auto hidb_antigens = hidb.antigens()->find(antigen->name(), hidb::fix_location::no);
                     if (!hidb_antigens.empty())
-                        show_matches(hidb, hidb_antigens, ag_no, *antigen);
+                        show_matches(hidb, *hidb.antigens(), hidb_antigens, ag_no, *antigen);
                     fmt::print("\n");
                 }
             }
@@ -116,7 +117,7 @@ int main(int argc, char* const argv[])
             for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
                 const auto hidb_sera = hidb.sera()->find(serum->name(), hidb::fix_location::no);
                 // if (!hidb_sera.empty())
-                show_matches(hidb, hidb_sera, sr_no, *serum);
+                show_matches(hidb, *hidb.sera(), hidb_sera, sr_no, *serum);
                 fmt::print("\n");
             }
             fmt::print("\n\n");
