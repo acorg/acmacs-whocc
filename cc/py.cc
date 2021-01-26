@@ -159,9 +159,9 @@ inline void py_chart(py::module_& mdl)
             [](ChartModify& chart, std::shared_ptr<AntigenIndexes> antigens, std::shared_ptr<SerumIndexes> sera, bool remove_projections) {
                 if (remove_projections)
                     chart.projections_modify().remove_all();
-                if (!antigens->empty())
+                if (antigens && !antigens->empty())
                     chart.remove_antigens(acmacs::ReverseSortedIndexes{*antigens->indexes});
-                if (!sera->empty())
+                if (sera && !sera->empty())
                     chart.remove_sera(acmacs::ReverseSortedIndexes{*sera->indexes});
             },                                                                                                                                                             //
             "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false,                                                                                    //
