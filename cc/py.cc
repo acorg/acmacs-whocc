@@ -154,6 +154,7 @@ inline void py_chart(py::module_& mdl)
              [](ChartModify& chart) { return std::make_shared<AntigenIndexes>(chart.antigens()); }) //
         .def("serum_indexes",                                                                       //
              [](ChartModify& chart) { return std::make_shared<SerumIndexes>(chart.sera()); })       //
+
         .def(
             "remove_antigens_sera",
             [](ChartModify& chart, std::shared_ptr<AntigenIndexes> antigens, std::shared_ptr<SerumIndexes> sera, bool remove_projections) {
@@ -163,9 +164,29 @@ inline void py_chart(py::module_& mdl)
                     chart.remove_antigens(acmacs::ReverseSortedIndexes{*antigens->indexes});
                 if (sera && !sera->empty())
                     chart.remove_sera(acmacs::ReverseSortedIndexes{*sera->indexes});
-            },                                                                                                                                                             //
-            "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false,                                                                                    //
-            py::doc("Usage:\nchart.remove_antigens_sera(antigens=c.antigen_indexes().filter_lineage(\"yamagata\"), sera=c.serum_indexes().filter_lineage(\"yamagata\"))")) //
+            },                                                                          //
+            "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false, //
+            py::doc(R"(Usage:
+    chart.remove_antigens_sera(antigens=c.antigen_indexes().filter_lineage(\"yamagata\"), sera=c.serum_indexes().filter_lineage(\"yamagata\"))
+    chart.remove_antigens_sera(sera=chart.serum_indexes().filter_serum_id("A8658-14D"))
+)"))                                                                                    //
+
+        .def(
+            "modify_titers",
+            [](ChartModify& chart, const std::string& rex_from, const std::string& replacement) {
+                chart.titers_modify().replace_all(std::regex{rex_from}, replacement);
+            },                                                                          //
+            "rex_from"_a, "replacement"_a, //
+            py::doc(R"(rex_from is regular expression,
+replacement is replacement with substitutions:
+    $1 - match of the first subexpression
+    $2 - match of the second subexpression
+    ...
+    $` - prefix before match
+    $' - suffix after match
+Usage:
+    chart.modify_titers(rex_from=">", replacement="$`$'")
+)"))                                                                                    //
         ;
 
     // ----------------------------------------------------------------------
