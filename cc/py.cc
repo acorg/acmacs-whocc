@@ -179,7 +179,7 @@ inline void py_chart(py::module_& mdl)
                     if (!replacements.empty()) {
                         AD_INFO("{} titer replacements done", replacements.size());
                         for (const auto& rep : replacements)
-                            fmt::print(stderr, "    ag:{:04d} sr:{:03d} titer:{}", rep.antigen, rep.serum, rep.titer);
+                            fmt::print(stderr, "    ag:{:04d} sr:{:03d} titer:{}\n", rep.antigen, rep.serum, rep.titer);
                     }
                     else
                         AD_WARNING("No titer replacement performed: no titer match for \"{}\"", look_for);
