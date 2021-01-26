@@ -173,11 +173,20 @@ inline void py_chart(py::module_& mdl)
 
         .def(
             "modify_titers",
-            [](ChartModify& chart, const std::string& rex_from, const std::string& replacement) {
-                chart.titers_modify().replace_all(std::regex{rex_from}, replacement);
+            [](ChartModify& chart, const std::string& look_for, const std::string& replacement, bool verbose) {
+                const auto replacements = chart.titers_modify().replace_all(std::regex{look_for}, replacement);
+                if (verbose) {
+                    if (!replacements.empty()) {
+                        AD_INFO("{} titer replacements done", replacements.size());
+                        for (const auto& rep : replacements)
+                            fmt::print(stderr, "    ag:{:04d} sr:{:03d} titer:{}", rep.antigen, rep.serum, rep.titer);
+                    }
+                    else
+                        AD_WARNING("No titer replacement performed: no titer match for \"{}\"", look_for);
+                }
             },                                                                          //
-            "rex_from"_a, "replacement"_a, //
-            py::doc(R"(rex_from is regular expression,
+            "look_for"_a, "replacement"_a, "verbose"_a = false, //
+            py::doc(R"(look_for is regular expression,
 replacement is replacement with substitutions:
     $1 - match of the first subexpression
     $2 - match of the second subexpression
@@ -185,7 +194,7 @@ replacement is replacement with substitutions:
     $` - prefix before match
     $' - suffix after match
 Usage:
-    chart.modify_titers(rex_from=">", replacement="$`$'")
+    chart.modify_titers(look_for=">", replacement="$`$'", verbose=True)
 )"))                                                                                    //
         ;
 
