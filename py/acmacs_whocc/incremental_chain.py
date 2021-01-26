@@ -389,6 +389,10 @@ class Processor:
         chart = self.chain_data_.chart_loaded(acmacs.Chart(str(filename)))
         return chart
 
+    def preprocess_chart(self, source, target):
+        self.chain_data_.chart_loaded(acmacs.Chart(str(source))).export(str(target), "incremental_chain.py")
+        return target
+    
 # ----------------------------------------------------------------------
 
 class ProcessorBuiltIn (Processor):
@@ -437,8 +441,10 @@ class ProcessorHTCondor (Processor):
             "--grid",
             "--export-pre-grid",
         ]
-        step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
-        program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
+        processing_dir = self.processing_dir(chain_state, step)
+        step.htcondor = {"dir": processing_dir, "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
+        source_chart_name = self.preprocess_chart(Path(step.src[0]).resolve(), processing_dir.joinpath("src.ace")).resolve()
+        program_args = [common_args + [str(source_chart_name), out] for out in step.htcondor["out"]]
         desc_filename, step.htcondor["log"] = htcondor.prepare_submission(
             program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
             environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
@@ -462,8 +468,10 @@ class ProcessorHTCondor (Processor):
             "--grid",
             "--export-pre-grid",
         ]
-        step.htcondor = {"dir": self.processing_dir(chain_state, step), "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
-        program_args = [common_args + [str(Path(step.src[0]).resolve()), out] for out in step.htcondor["out"]]
+        processing_dir = self.processing_dir(chain_state, step)
+        step.htcondor = {"dir": processing_dir, "out": [f"{run_no:04d}.ace" for run_no in range(queue_size)]}
+        source_chart_name = self.preprocess_chart(Path(step.src[0]).resolve(), processing_dir.joinpath("src.ace")).resolve()
+        program_args = [common_args + [str(source_chart_name), out] for out in step.htcondor["out"]]
         desc_filename, step.htcondor["log"] = htcondor.prepare_submission(
             program=Path(os.environ["ACMACSD_ROOT"], "bin", "chart-relax"),
             environment={"ACMACSD_ROOT": os.environ["ACMACSD_ROOT"]},
