@@ -52,8 +52,8 @@ size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
 #include "acmacs-base/global-constructors-push.hh"
 
 // \xEF\xBC\x9C -> "<" unicode Fullwidth Less-Than Sign &#xFF1C; (NIID)
-// ">" - perhaps typo in Crick tables
-static const std::regex re_titer{R"(^(<|>|(?:<|>|\xEF\xBC\x9C)?\s*[1-9][0-9]{0,5}|N[DAT]|QNS|\*)$)", acmacs::regex::icase};
+// ">" and "," - perhaps typos in Crick tables
+static const std::regex re_titer{R"(^(<|>|,|(?:<|>|\xEF\xBC\x9C)?\s*[1-9][0-9]{0,5}|N[DAT]|QNS|\*)$)", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
