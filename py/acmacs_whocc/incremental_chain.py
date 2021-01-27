@@ -733,7 +733,7 @@ class ThisIncrementalChain (IncrementalChain):
 
     def prefer_for_incremental_merge(self, depends):
         "returns one of depends to force choosing incremental or from scratch merge from the previous step. returns None to choose based on stress"
-        # print(f"prefer_for_incremental_merge: {depends}")
+        # print(f"prefer_for_incremental_merge: {{depends}}")
         return None
 
     {chart_loaded_comment}def chart_loaded(self, chart):
