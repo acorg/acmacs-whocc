@@ -12,7 +12,7 @@ def main(input_file :Path, output_dir :Path):
         reader = csv.DictReader(input_file.open(), dialect="excel-tab")
     tables = {}                 # table -> ace
     for row in reader:
-        assay_date = get_date(row["assay_date"])
+        assay_date = get_date(row["assay_date"], month_first=True)
         # date_suffix = ""
         lineage = ""
         assay = (row.get("assay_type") or row.get("assay-type") or "HINT").upper()
@@ -53,7 +53,7 @@ def main(input_file :Path, output_dir :Path):
             antigen["P"] = normalize_passage(row["virus_strain_passage"])
 
         serum = {"N": row["serum_strain"], "I": f"CDC {row['lot #']}", "P": row["serum_antigen_passage"], }
-        if row.get("Boosted") and row["Boosted"].lower() != "false":
+        if row.get("Boosted") and row["Boosted"].lower() not in ["false", "0"]:
             serum["a"] = ["BOOSTED"]
         # row["ferret_id"] is unused
 
@@ -125,7 +125,7 @@ def read_titer(table_name, table, antigen, serum, titer): # cdc_id, date, antige
 
 # ----------------------------------------------------------------------
 
-def get_date(field, month_first=False, output_fmt="%Y%m%d"):
+def get_date(field, month_first, output_fmt="%Y%m%d"):
     date = None
     if month_first:
         fmts = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y", "%d/%m/%y"]
