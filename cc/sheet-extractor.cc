@@ -35,6 +35,7 @@ static const std::regex re_CDC_dilut_label{R"(^\s*DILUT\s*$)", acmacs::regex::ic
 static const std::regex re_CDC_passage_label{R"(^\s*PASSAGE\s*$)", acmacs::regex::icase};
 static const std::regex re_CDC_pool_label{R"(^\s*POOL\s*$)", acmacs::regex::icase};
 static const std::regex re_CDC_titer_label{R"(^\s*(BACK)?\s*TITER\b)", acmacs::regex::icase};
+static const std::regex re_CDC_ha_group_label{R"(^\s*HA\s*GROUP\b)", acmacs::regex::icase};
 static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
@@ -301,7 +302,7 @@ void acmacs::sheet::v1::Extractor::find_titers(warn_if_not_found winf)
     for (nrow_t row{0}; row < sheet().number_of_rows(); ++row) {
         auto titers = sheet().titer_range(row);
         adjust_titer_range(row, titers);
-        if (titers.valid() && titers.first > ncol_t{0} && valid_titer_row(row, titers))
+        if (titers.valid() && titers.length() > 2 && titers.first > ncol_t{0} && valid_titer_row(row, titers))
             rows.emplace_back(row, std::move(titers));
     }
 
@@ -735,6 +736,8 @@ void acmacs::sheet::v1::ExtractorCDC::adjust_titer_range(nrow_t row, column_rang
 {
     while (cr.second >= cr.first && !sheet().grep(re_CDC_titer_label, {nrow_t{0}, cr.second}, {row, cr.second + ncol_t{1}}).empty()) // ignore TITER and BACK TITER columns
         --cr.second;
+    if (cr.second >= cr.first && !sheet().grep(re_CDC_ha_group_label, {nrow_t{0}, cr.first}, {row, cr.first + ncol_t{1}}).empty()) // ignore HA GROUP looking like titer
+        ++cr.first;
 
 } // acmacs::sheet::v1::ExtractorCDC::adjust_titer_range
 
