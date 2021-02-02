@@ -1,0 +1,399 @@
+#! /usr/bin/env python3
+
+import sys, os, csv, json, re, datetime, lzma, pprint, subprocess
+from pathlib import Path
+
+# ----------------------------------------------------------------------
+
+def main(input_file :Path, output_dir :Path):
+    if input_file.suffix == ".xz":
+        reader = csv.DictReader(lzma.open(input_file, mode="rt"), dialect="excel-tab")
+    else:
+        reader = csv.DictReader(input_file.open(), dialect="excel-tab")
+    tables = {}                 # table -> ace
+    for row in reader:
+        assay_date = get_date(row["assay_date"], month_first=True)
+        # date_suffix = ""
+        lineage = ""
+        assay = (row.get("assay_type") or row.get("assay-type") or "HINT").upper()
+        assay_infix = f"{assay.lower()}"
+        if assay == "HI":
+            # assay_infix = ""
+            rbc = "-turkey"
+        else:
+            rbc = ""
+        if not row.get("subtype") or row["subtype"].lower() == "h3":
+            subtype = "A(H3N2)"
+            subtype_prefix = "h3"
+            if assay == "HI":
+                rbc = "-guinea-pig"
+        elif row["subtype"].lower() == "h1 swl":
+            subtype = "A(H1N1)"
+            subtype_prefix = "h1"
+            lineage = "2009pdm"
+        elif row["subtype"].lower() == "b vic":
+            subtype = "B"
+            subtype_prefix = "bvic"
+            lineage = "VICTORIA"
+        elif row["subtype"].lower() == "b yam":
+            subtype = "B"
+            subtype_prefix = "byam"
+            lineage = "YAMAGATA"
+            # date_suffix = "_002"
+        else:
+            raise RuntimeError(f"""unrecognized subtype: {row["subtype"]}""")
+        table_name = f"""{subtype_prefix}-{assay_infix}{rbc}-cdc-{assay_date}"""
+        if table_name not in tables:
+            tables[table_name] = make_ace(input_file, lab="CDC", assay_date=assay_date, subtype=subtype, assay=assay, rbc=rbc, lineage=lineage)
+
+        antigen = {"N": row["virus_strain"], "l": [f"CDC#{row['virus_cdc_id']}"], "D": row["virus_collection_date"].strip(), }
+        if row.get("virus_harvest_date") not in [None, "None"]:
+            antigen["P"] = normalize_passage(f"""{row["virus_strain_passage"]} ({row["virus_harvest_date"]})""")
+        else:
+            antigen["P"] = normalize_passage(row["virus_strain_passage"])
+
+        serum = {"N": row["serum_strain"], "I": f"CDC {row['lot #']}", "P": row["serum_antigen_passage"], }
+        if row.get("Boosted") and row["Boosted"].lower() not in ["false", "0"]:
+            serum["a"] = ["BOOSTED"]
+        # row["ferret_id"] is unused
+
+        for extra_field in ["reported_by_fra", "tested_by_fra"]:
+            if row.get(extra_field):
+                print(f">> WARNING extra field \"{extra_field}\" has value: \"{row[extra_field]}\"", file=sys.sdterr)
+
+        if subtype == "B" and lineage:
+            antigen["L"] = serum["L"] = lineage
+
+        read_titer(table_name, tables[table_name], antigen=antigen, serum=serum, titer=row["titer"])
+
+    output_dir.mkdir(exist_ok=True)
+    for table_name, ace in tables.items():
+        merge_titers(table_name, ace["c"]["t"]["l"], ace)
+        populate_missing_titers(table_name, ace["c"]["t"]["l"], number_of_sera=len(ace["c"]["s"]))
+        print(f"""{table_name:25s}   a:{len(ace["c"]["a"]):3d}   s:{len(ace["c"]["s"]):3d}""")
+        orig_name = output_dir.joinpath(f"{table_name}.orig.ace")
+        final_name = output_dir.joinpath(f"{table_name}.ace")
+        with orig_name.open("wb") as output:
+            output.write(lzma.compress(json_dumps(ace, indent=2).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
+        subprocess.check_call(f"chart-fix-names-passages '{orig_name}' '{final_name}'", shell=True)
+        subprocess.check_call(f"rm '{orig_name}'", shell=True)
+
+# ----------------------------------------------------------------------
+
+def make_ace(input_file, lab, assay_date, subtype, assay, rbc, lineage):
+    ace = {
+        "  version": "acmacs-ace-v1",
+        "?created": f"imported from {input_file.name} by {os.path.basename(sys.argv[0])} on {datetime.date.today()}",
+        "c": {
+            "i": {
+                "l": lab,
+                "D": assay_date,
+                "V": subtype,
+                "A": assay,
+            },
+            "a": [], "s": [], "t": {"l": []}
+        }
+    }
+    if rbc:
+        ace["c"]["i"]["r"] = rbc
+    if lineage:
+        ace["c"]["i"]["s"] = lineage
+        if lineage == "YAMAGATA":
+            ace["c"]["i"]["D"] += ".002"
+    return ace
+
+# ----------------------------------------------------------------------
+
+def read_titer(table_name, table, antigen, serum, titer): # cdc_id, date, antigen_name, antigen_passage, serum_name, ferret_id, serum_id, serum_passage, serum_boosted :bool, titer):
+    ag_no = antigen_index(table=table, antigen=antigen) # _name=antigen_name, antigen_passage=antigen_passage, cdc_id=cdc_id, date=date)
+    sr_no = serum_index(table=table, serum=serum) # serum_name=serum_name, serum_id=serum_id, serum_passage=serum_passage, serum_boosted=serum_boosted)
+    titer = check_titer(titer, ag_no, sr_no)
+    titers = table["c"]["t"]["l"]
+    while len(titers) <= ag_no:
+        titers.append([])
+    row = titers[ag_no]
+    while len(row) <= sr_no:
+        row.append("*")
+    if row[sr_no] != "*":
+        if isinstance(row[sr_no], list):
+            row[sr_no].append(titer)
+        else:
+            row[sr_no] = [row[sr_no], titer]
+        # print(f">> WARNING: {table_name}: titer mismatch [AG {ag_no} {antigen_name} {antigen_passage} {cdc_id}   SR {sr_no} {serum_name} {serum_id}]: new: {titer}, old: {row[sr_no]}", file=sys.stderr)
+    else:
+        row[sr_no] = titer
+
+# ----------------------------------------------------------------------
+
+def get_date(field, month_first, output_fmt="%Y%m%d"):
+    date = None
+    if month_first:
+        fmts = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y", "%d/%m/%y"]
+    else:
+        fmts = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"]
+    for fmt in fmts:
+        try:
+            date = datetime.datetime.strptime(field, fmt)
+            break
+        except:
+            pass
+    if not date:
+        raise RuntimeError(f"Cannot parse date from {field!r}")
+    return date.strftime(output_fmt)
+
+# ----------------------------------------------------------------------
+
+sRePassage1 = re.compile(r"^([^\(\s]+)\s*\(([^\)]+)\)[A-Z]{0,3}$", re.I)
+
+def normalize_passage(passage):
+    m = sRePassage1.match(passage)
+    if m:
+        passage = f"{m.group(1)} ({get_date(m.group(2), month_first=True, output_fmt='%Y-%m-%d')})"
+    return passage
+
+# ----------------------------------------------------------------------
+
+def merge_titers(table_name, titers, ace):
+    for ag_no, row in enumerate(titers):
+        for sr_no in range(len(row)):
+            if isinstance(row[sr_no], list):
+                row[sr_no] = subprocess.check_output(["chart-titer-merge"] + row[sr_no]).decode("utf-8").strip()
+
+# ----------------------------------------------------------------------
+
+def populate_missing_titers(table_name, titers, number_of_sera):
+    for row in titers:
+        while len(row) < number_of_sera:
+            row.append("*")
+
+# ----------------------------------------------------------------------
+
+def antigen_index(table, antigen):
+    for no, entry in enumerate(table["c"]["a"]):
+        if entry["N"] == antigen["N"] and entry["P"] == antigen["P"] and entry["l"] == antigen["l"]:
+            if antigen["D"] and entry["D"] != antigen["D"]:
+                print(f">> WARNING: antigen date mismatch: new: {antigen['D']!r}, old: {entry!r}", file=sys.stderr)
+            return no
+    table["c"]["a"].append(antigen)
+    return len(table["c"]["a"]) - 1
+
+# ----------------------------------------------------------------------
+
+def serum_index(table, serum):
+    for no, entry in enumerate(table["c"]["s"]):
+        if entry["N"] == serum["N"] and entry["I"] == serum["I"] and entry.get("a") == serum.get("a"):
+            if entry["P"] != serum["P"]:
+                print(f">> WARNING: serum passage mismatch: new: {serum['P']}, old: {entry}", file=sys.stderr)
+            return no
+    table["c"]["s"].append(serum)
+    return len(table["c"]["s"]) - 1
+
+# ----------------------------------------------------------------------
+
+sReTiter = re.compile(r"^([><])?(\d+(?:\.\d*)?)$", re.I)
+
+def check_titer(titer, row_no, column_no):
+    if titer == "5":
+        return "<10"
+    m = sReTiter.match(titer)
+    if m:
+        if m.group(1):
+            return f"{m.group(1)}{round(float(m.group(2)))}"
+        else:
+            return str(round(float(m.group(2))))
+    else:
+        raise RuntimeError(f"Unrecognized titer \"{titer}\" at {row_no}:{column_no}")
+
+# ----------------------------------------------------------------------
+
+def json_dumps(data, indent=2, indent_increment=None, toplevel=True, one_line_max_width=200, object_fields_sorting_key=None):
+    """More compact dumper with wide lines."""
+
+    def simple(d):
+        r = True
+        if isinstance(d, dict):
+            r = not any(isinstance(v, (list, tuple, set, dict)) for v in d.values()) and len(d) < 17
+        elif isinstance(d, (tuple, list)):
+            r = not any(isinstance(v, (list, tuple, set, dict)) for v in d)
+        return r
+
+    def end(symbol, indent):
+        if indent > indent_increment:
+            r = "{:{}s}{}".format("", indent - indent_increment, symbol)
+        else:
+            r = symbol
+        return r
+
+    def make_one_line(data):
+        if isinstance(data, set):
+            s = json.dumps(sorted(data, key=object_fields_sorting_key))
+        elif isinstance(data, dict):
+            s = "{"
+            for no, k in enumerate(sorted(data, key=object_fields_sorting_key), start=1):
+                comma = ", " if no < len(data) else ""
+                s += "{}: {}{}".format(json.dumps(k), json_dumps(data[k], indent=0, indent_increment=None, toplevel=False, object_fields_sorting_key=object_fields_sorting_key), comma)
+            s += "}"
+        else:
+            s = json.dumps(data, sort_keys=True)
+        return s
+
+    def make_object(data):
+        if toplevel:
+            r = ["{{{:<{}s}\"_\":\"-*- js-indent-level: {} -*-\",".format("", indent_increment - 1, indent_increment)]
+        else:
+            r = ["{"]
+        for no, k in enumerate(sorted(data, key=object_fields_sorting_key), start=1):
+            comma = "," if no < len(data) else ""
+            r.append("{:{}s}{}: {}{}".format("", indent, json.dumps(k), json_dumps(data[k], indent + indent_increment, indent_increment, toplevel=False, object_fields_sorting_key=object_fields_sorting_key), comma))
+        r.append(end("}", indent))
+        return r
+
+    # --------------------------------------------------
+
+    if indent_increment is None:
+        indent_increment = indent
+    if indent == 0 or simple(data):
+        s = make_one_line(data)
+    else:
+        r = []
+        if isinstance(data, dict):
+            r.extend(make_object(data))
+        elif isinstance(data, (tuple, list)):
+            r.append("[")
+            for no, v in enumerate(data, start=1):
+                comma = "," if no < len(data) else ""
+                r.append("{:{}s}{}{}".format("", indent, json_dumps(v, indent + indent_increment, indent_increment, toplevel=False, object_fields_sorting_key=object_fields_sorting_key), comma))
+            r.append(end("]", indent))
+        else:
+            raise ValueError("Cannot serialize: {!r}".format(data))
+        s = "\n".join(r)
+        if "\n" in s and len(s) < one_line_max_width:
+            s = make_one_line(data)
+    return s
+
+# ----------------------------------------------------------------------
+
+# ======================================================================
+
+# def x():
+#     lines = [line.strip() for line in open(input_file) if line and line[0] in ["-", "|"]]
+#     num_antigens = 0
+#     num_sera = 0
+
+#     rows = [[cell.strip() for cell in line[1:-1].split("|")] for line in lines if line[0] == "|"]
+#     if not rows:
+#         raise RuntimeError("no table present")
+#     # pprint.pprint(rows)
+#     ace_antigen_fields = {}
+#     serum_columns = []
+#     for no, cell in enumerate(rows[0][1:], start=1):
+#         if not cell:
+#             serum_columns.append(no)
+#         else:
+#             k, v = antigen_field(no, cell.lower())
+#             if k:
+#                 ace_antigen_fields[k] = v
+#     ace_serum_fields = {}
+#     antigen_rows = []
+#     for no, row in enumerate(rows[1:], start=1):
+#         cell = row[0]
+#         if not cell:
+#             antigen_rows.append(no)
+#         else:
+#             k, v = serum_field(no, cell.lower())
+#             if k:
+#                 ace_serum_fields[k] = v
+#     # print(f"antigens: {ace_antigen_fields} {len(antigen_rows)} {antigen_rows}")
+#     # print(f"sera: {ace_serum_fields} {len(serum_columns)} {serum_columns}")
+#     # pprint.pprint(ace_antigen_fields)
+
+#     for column_no in serum_columns:
+#         entry = {}
+#         for field, row_no in ace_serum_fields.items():
+#             value = make_antigen_serum_field(field, rows[row_no][column_no])
+#             if value is not None:
+#                 entry[field] = value
+#         ace["c"]["s"].append(entry)
+#     for row_no in antigen_rows:
+#         entry = {}
+#         for field, column_no in ace_antigen_fields.items():
+#             value = make_antigen_serum_field(field, rows[row_no][column_no])
+#             if value is not None:
+#                 entry[field] = value
+#         ace["c"]["a"].append(entry)
+#         ace["c"]["t"]["l"].append([check_titer(rows[row_no][column_no], row_no, column_no) for column_no in serum_columns])
+
+#     # print(json_dumps(ace, indent=2))
+#     with open(output_file, "wb") as output:
+#         output.write(lzma.compress(json_dumps(ace, indent=2).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
+
+# # ----------------------------------------------------------------------
+
+# def antigen_field(no, cell):
+#     if cell == "name":
+#         return "N", no
+#     elif cell == "date":
+#         return "D", no
+#     elif cell == "passage":
+#         return "P", no
+#     elif cell == "reassortant":
+#         return "R", no
+#     elif cell == "lab_id":
+#         return "l", no
+#     elif cell == "annotation":
+#         return "a", no
+#     elif cell == "clade":
+#         return "c", no
+#     elif cell[0] == "#":
+#         return None, no
+#     else:
+#         raise RuntimeError(f"Unrecognized antigen (first row, column {no}) field name: \"{cell}\"")
+
+# # ----------------------------------------------------------------------
+
+# sReDelim = re.compile(r"^[\-\+]+$")
+
+# def serum_field(no, cell):
+#     if cell == "name":
+#         return "N", no
+#     elif cell == "passage":
+#         return "P", no
+#     elif cell == "reassortant":
+#         return "R", no
+#     elif cell == "serum_id":
+#         return "I", no
+#     elif cell == "annotation":
+#         return "a", no
+#     elif cell == "species":
+#         return "s", no
+#     elif cell[0] == "#" or sReDelim.match(cell):
+#         return None, no
+#     else:
+#         raise RuntimeError(f"Unrecognized serum (first column, row {no}) field name: \"{cell}\"")
+
+# # ----------------------------------------------------------------------
+
+# def make_antigen_serum_field(key, value):
+#     if key in ["l", "a"]:
+#         if value:
+#             return [value]
+#         else:
+#             return None
+#     elif key == "D" and not value:
+#         return None
+#     else:
+#         return value
+
+# # ----------------------------------------------------------------------
+
+if len(sys.argv) != 3:
+    print("Usage:", sys.argv[0], "<input.tsv[.xz]> <output-dir>", file=sys.stderr)
+    exit(1)
+
+try:
+    main(Path(sys.argv[1]), Path(sys.argv[2]))
+    exit(0)
+except Exception as err:
+    print(f"ERROR: {err} @@ {sys.argv[1]}:1", file=sys.stderr)
+    raise
+    exit(2)
