@@ -58,35 +58,115 @@ import logging; module_logger = logging.getLogger(__name__)
 # | titer_log          | float      | Titer log value                                                    |                                                                                                                          |
 # | titer_logfold      | float      | Titer log-fold value                                               |                                                                                                                          |
 
+# no RBCs
+
 # ----------------------------------------------------------------------
+
 
 class Extractor:
 
     def extract(self, row):
-        raw_data = {}
+        raw_data = {"table": {}, "antigen": {}, "serum": {}}
         for field_name, field_value in row.items():
             try:
-                getattr(self, f"get_{field_name}")(field_value, raw_data)
+                getattr(self, f"get_{field_name}")(field_value.strip(), raw_data)
             except AttributeError as err:
                 raise RuntimeError(f"Unrecognized source field {field_name}")
+        raw_data["table"]["name"] = f"""{raw_data["table"]["virus_type_low"]}-{raw_data["table"]["assay"].lower()}-{raw_data["table"]["date"]}"""
         return raw_data
 
     def get_test_date(self, field_value, raw_data):
-        raw_data["assay_date"] = self.convert_date(field_value)
+        raw_data["table"]["date"] = self.convert_date(field_value)
 
     def get_test_protocol(self, field_value, raw_data):
         if field_value in ["hi_protocol", "hi_oseltamivir_protocol"]:
-            raw_data["assay"] = "HI"
+            raw_data["table"]["assay"] = "HI"
         elif field_value == "fra_protocol":
-            raw_data["assay"] = "FRA"
+            raw_data["table"]["assay"] = "FRA"
         elif field_value == "hint_protocol":
-            raw_data["assay"] = "HINT"
+            raw_data["table"]["assay"] = "HINT"
         else:
-            raise RuntimeError(f"Unrecognized test protocol: \"{test_protocol}\"")
+            raise RuntimeError(f"Unrecognized test protocol: \"{field_value}\"")
 
     def get_test_subtype(self, field_value, raw_data):
-        pass
+        if field_value == "H1 swl":
+            raw_data["table"]["virus_type"] = "A(H1N1)PDM09"
+            raw_data["table"]["virus_type_low"] = "h1pdm"
+        elif field_value == "H3":
+            raw_data["table"]["virus_type"] = "A(H3N2)"
+            raw_data["table"]["virus_type_low"] = "h3"
+        elif field_value == "B":
+            raw_data["table"]["virus_type"] = "B"
+            raw_data["table"]["virus_type_low"] = "b"
+        elif field_value == "B vic":
+            raw_data["table"]["virus_type"] = "B"
+            raw_data["table"]["virus_type_low"] = "bvic"
+            raw_data["table"]["lineage"] = "VICTORIA"
+        elif field_value == "B yam":
+            raw_data["table"]["virus_type"] = "B"
+            raw_data["table"]["virus_type_low"] = "byam"
+            raw_data["table"]["lineage"] = "YAMAGATA"
+        else:
+            raise RuntimeError(f"Unrecognized test_subtype: \"{field_value}\"")
+
     def get_ag_isl_type(self, field_value, raw_data):
+        pass # raw_data["virus_type_a_b"] = field_value
+
+    def get_ag_cdc_id(self, field_value, raw_data):
+        raw_data["antigen"]["lab_id"] = f"CDC#{field_value}"
+
+    def get_ag_strain_name(self, field_value, raw_data):
+        raw_data["antigen"]["name"] = field_value
+
+    def get_ag_passage(self, field_value, raw_data):
+        raw_data["antigen"]["passage"] = field_value
+
+    def get_ag_collection_date(self, field_value, raw_data):
+        raw_data["antigen"]["date"] = self.convert_date(field_value)
+
+    def get_ag_date_harvested(self, field_value, raw_data):
+        if field_value:
+            raw_data["antigen"]["passage_date"] = self.convert_date(field_value)
+
+    def get_ag_do_not_report(self, field_value, raw_data):
+        if field_value.lower() == "true":
+            raw_data["antigen"]["DISTINCT"] = True
+
+    def get_sr_strain_name(self, field_value, raw_data):
+        raw_data["serum"]["name"] = field_value
+
+    def get_sr_lot(self, field_value, raw_data):
+        raw_data["serum"]["serum_id"] = field_value
+
+    def get_sr_passage(self, field_value, raw_data):
+        raw_data["serum"]["passage"] = field_value
+
+    def get_sr_date_harvested(self, field_value, raw_data):
+        if field_value:
+            raw_data["serum"]["passage_date"] = self.convert_date(field_value)
+
+    def get_sr_do_not_report(self, field_value, raw_data):
+        if field_value.lower() == "true":
+            raw_data["serum"]["DISTINCT"] = True
+
+    def get_titer_reportable(self, field_value, raw_data):
+        if field_value.lower() == "false":
+            module_logger.warning(f"titer not reportable")
+
+    def get_titer_error(self, field_value, raw_data):
+        if field_value.lower() == "true":
+            module_logger.warning(f"titer error")
+
+    def get_titer_value(self, field_value, raw_data):
+        raw_data["titer"] = field_value
+
+    # ----------------------------------------------------------------------
+    # ignored
+    # ----------------------------------------------------------------------
+
+    def get_test_id(self, field_value, raw_data):
+        pass
+    def get_test_file(self, field_value, raw_data):
         pass
     def get_ag_ha_type(self, field_value, raw_data):
         pass
@@ -98,29 +178,17 @@ class Extractor:
         pass
     def get_ag_entry_id(self, field_value, raw_data):
         pass
-    def get_ag_cdc_id(self, field_value, raw_data):
-        pass
     def get_ag_isolate_id(self, field_value, raw_data):
         pass
     def get_ag_epi_isolate_id(self, field_value, raw_data):
-        pass
-    def get_ag_strain_name(self, field_value, raw_data):
-        pass
-    def get_ag_passage(self, field_value, raw_data):
-        pass
+        pass                    # reference to gisaid
     def get_ag_seq_passage(self, field_value, raw_data):
-        pass
-    def get_ag_collection_date(self, field_value, raw_data):
-        pass
-    def get_ag_date_harvested(self, field_value, raw_data):
         pass
     def get_ag_lab(self, field_value, raw_data):
         pass
     def get_ag_type(self, field_value, raw_data):
-        pass
+        pass                    # "reference", "test"
     def get_ag_is_homologous(self, field_value, raw_data):
-        pass
-    def get_ag_do_not_report(self, field_value, raw_data):
         pass
     def get_ag_back_titer(self, field_value, raw_data):
         pass
@@ -140,43 +208,17 @@ class Extractor:
         pass
     def get_sr_epi_isolate_id(self, field_value, raw_data):
         pass
-    def get_sr_strain_name(self, field_value, raw_data):
-        pass
-    def get_sr_lot(self, field_value, raw_data):
-        pass
     def get_sr_ferret(self, field_value, raw_data):
-        pass
-    def get_sr_passage(self, field_value, raw_data):
         pass
     def get_sr_seq_passage(self, field_value, raw_data):
         pass
     def get_sr_collection_date(self, field_value, raw_data):
         pass
-    def get_sr_date_harvested(self, field_value, raw_data):
-        pass
     def get_sr_lab(self, field_value, raw_data):
         pass
     def get_sr_pool(self, field_value, raw_data):
         pass
-    def get_sr_do_not_report(self, field_value, raw_data):
-        pass
     def get_sr_pairing_status(self, field_value, raw_data):
-        pass
-    def get_titer_reportable(self, field_value, raw_data):
-        pass
-    def get_titer_error(self, field_value, raw_data):
-        pass
-    def get_titer_value(self, field_value, raw_data):
-        pass
-
-
-    # ----------------------------------------------------------------------
-    # ignored
-    # ----------------------------------------------------------------------
-
-    def get_test_id(self, field_value, raw_data):
-        pass
-    def get_test_file(self, field_value, raw_data):
         pass
     def get_titer_log(self, field_value, raw_data):
         pass
@@ -215,14 +257,18 @@ def main(args): # input_file :Path, output_dir :Path):
     tables = {}                 # table -> ace
     extractor = Extractor()
     rows_read = 0
+    tables = set()
     for row in reader:
         row_data = extractor.extract(row)
-        pprint.pprint(row_data)
+        tables.add(row_data["table"]["name"])
         rows_read += 1
-        break
+        # pprint.pprint(row_data)
+        # break
 
-    module_logger.info(f"rows read: {rows_read}")
-
+    module_logger.info(f"rows: {rows_read}")
+    module_logger.info(f"tables: {len(tables)}")
+    pprint.pprint(tables)
+    
     #     assay_date = get_date(row["assay_date"], month_first=True)
     #     # date_suffix = ""
     #     lineage = ""
