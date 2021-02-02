@@ -69,14 +69,21 @@ class Extractor:
                 getattr(self, f"get_{field_name}")(field_value, raw_data)
             except AttributeError as err:
                 raise RuntimeError(f"Unrecognized source field {field_name}")
-        return None
+        return raw_data
 
     def get_test_date(self, field_value, raw_data):
-        pass
-    def get_test_file(self, field_value, raw_data):
-        pass
+        raw_data["assay_date"] = self.convert_date(field_value)
+
     def get_test_protocol(self, field_value, raw_data):
-        pass
+        if field_value in ["hi_protocol", "hi_oseltamivir_protocol"]:
+            raw_data["assay"] = "HI"
+        elif field_value == "fra_protocol":
+            raw_data["assay"] = "FRA"
+        elif field_value == "hint_protocol":
+            raw_data["assay"] = "HINT"
+        else:
+            raise RuntimeError(f"Unrecognized test protocol: \"{test_protocol}\"")
+
     def get_test_subtype(self, field_value, raw_data):
         pass
     def get_ag_isl_type(self, field_value, raw_data):
@@ -169,10 +176,33 @@ class Extractor:
 
     def get_test_id(self, field_value, raw_data):
         pass
+    def get_test_file(self, field_value, raw_data):
+        pass
     def get_titer_log(self, field_value, raw_data):
         pass
     def get_titer_logfold(self, field_value, raw_data):
         pass
+
+    # ----------------------------------------------------------------------
+    # utils
+    # ----------------------------------------------------------------------
+
+    def convert_date(self, field, month_first=True, output_fmt="%Y%m%d"):
+        date = None
+        if month_first:
+            fmts = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y", "%d/%m/%y"]
+        else:
+            fmts = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"]
+        for fmt in fmts:
+            try:
+                date = datetime.datetime.strptime(field, fmt)
+                break
+            except:
+                pass
+        if not date:
+            raise RuntimeError(f"Cannot parse date from {field!r}")
+        return date.strftime(output_fmt)
+
 
 # ----------------------------------------------------------------------
 
@@ -187,10 +217,12 @@ def main(args): # input_file :Path, output_dir :Path):
     rows_read = 0
     for row in reader:
         row_data = extractor.extract(row)
+        pprint.pprint(row_data)
         rows_read += 1
+        break
 
     module_logger.info(f"rows read: {rows_read}")
-    
+
     #     assay_date = get_date(row["assay_date"], month_first=True)
     #     # date_suffix = ""
     #     lineage = ""
@@ -303,22 +335,6 @@ def read_titer(table_name, table, antigen, serum, titer): # cdc_id, date, antige
         row[sr_no] = titer
 
 # ----------------------------------------------------------------------
-
-def get_date(field, month_first, output_fmt="%Y%m%d"):
-    date = None
-    if month_first:
-        fmts = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y", "%d/%m/%y"]
-    else:
-        fmts = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"]
-    for fmt in fmts:
-        try:
-            date = datetime.datetime.strptime(field, fmt)
-            break
-        except:
-            pass
-    if not date:
-        raise RuntimeError(f"Cannot parse date from {field!r}")
-    return date.strftime(output_fmt)
 
 # ----------------------------------------------------------------------
 
