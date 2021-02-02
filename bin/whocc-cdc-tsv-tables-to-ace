@@ -58,12 +58,17 @@ import logging; module_logger = logging.getLogger(__name__)
 # | titer_log          | float      | Titer log value                                                    |                                                                                                                          |
 # | titer_logfold      | float      | Titer log-fold value                                               |                                                                                                                          |
 
-# no RBCs
+# missing:
+# RBC
+# serum BOOSTED
 
 # ----------------------------------------------------------------------
 
 
 class Extractor:
+
+    def __init__(self, lab):
+        self.lab = lab
 
     def extract(self, row):
         raw_data = {"table": {}, "antigen": {}, "serum": {}}
@@ -72,7 +77,11 @@ class Extractor:
                 getattr(self, f"get_{field_name}")(field_value.strip(), raw_data)
             except AttributeError as err:
                 raise RuntimeError(f"Unrecognized source field {field_name}")
-        raw_data["table"]["name"] = f"""{raw_data["table"]["virus_type_low"]}-{raw_data["table"]["assay"].lower()}-{raw_data["table"]["date"]}"""
+        raw_data["table"]["name"] = f"""{raw_data["table"]["virus_type_low"]}-{raw_data["table"]["assay"].lower()}-{self.lab.lower()}-{raw_data["table"]["date"]}"""
+        for ag_sr in ["antigen", "serum"]:
+            raw_data[ag_sr]["P"] = self.make_passage(raw_data[ag_sr])
+            raw_data[ag_sr].pop("passage", None)
+            raw_data[ag_sr].pop("passage", None)
         return raw_data
 
     def get_test_date(self, field_value, raw_data):
@@ -114,37 +123,37 @@ class Extractor:
         pass # raw_data["virus_type_a_b"] = field_value
 
     def get_ag_cdc_id(self, field_value, raw_data):
-        raw_data["antigen"]["lab_id"] = f"CDC#{field_value}"
+        raw_data["antigen"]["l"] = f"CDC#{field_value}"
 
     def get_ag_strain_name(self, field_value, raw_data):
-        raw_data["antigen"]["name"] = field_value
+        raw_data["antigen"]["N"] = field_value
 
     def get_ag_passage(self, field_value, raw_data):
         raw_data["antigen"]["passage"] = field_value
 
     def get_ag_collection_date(self, field_value, raw_data):
-        raw_data["antigen"]["date"] = self.convert_date(field_value)
+        raw_data["antigen"]["D"] = self.convert_date(field_value, output_fmt='%Y-%m-%d')
 
     def get_ag_date_harvested(self, field_value, raw_data):
         if field_value:
-            raw_data["antigen"]["passage_date"] = self.convert_date(field_value)
+            raw_data["antigen"]["passage_date"] = self.convert_date(field_value, output_fmt='%Y-%m-%d')
 
     def get_ag_do_not_report(self, field_value, raw_data):
         if field_value.lower() == "true":
             raw_data["antigen"]["DISTINCT"] = True
 
     def get_sr_strain_name(self, field_value, raw_data):
-        raw_data["serum"]["name"] = field_value
+        raw_data["serum"]["N"] = field_value
 
     def get_sr_lot(self, field_value, raw_data):
-        raw_data["serum"]["serum_id"] = field_value
+        raw_data["serum"]["I"] = f"CDC {field_value}"
 
     def get_sr_passage(self, field_value, raw_data):
         raw_data["serum"]["passage"] = field_value
 
     def get_sr_date_harvested(self, field_value, raw_data):
         if field_value:
-            raw_data["serum"]["passage_date"] = self.convert_date(field_value)
+            raw_data["serum"]["passage_date"] = self.convert_date(field_value, output_fmt='%Y-%m-%d')
 
     def get_sr_do_not_report(self, field_value, raw_data):
         if field_value.lower() == "true":
@@ -246,6 +255,11 @@ class Extractor:
             raise RuntimeError(f"Cannot parse date from {field!r}")
         return date.strftime(output_fmt)
 
+    def make_passage(self, data):
+        if data.get("passage_date") not in [None, "None", ""]:
+            return f"""{data["passage"]} ({data["passage_date"]})"""
+        else:
+            return data["passage"]
 
 # ----------------------------------------------------------------------
 
@@ -256,7 +270,8 @@ def main(args): # input_file :Path, output_dir :Path):
     else:
         reader = csv.DictReader(input_file.open(), dialect="excel-tab")
     tables = {}                 # table -> ace
-    extractor = Extractor()
+    lab = "CDC"
+    extractor = Extractor(lab=lab)
     rows_read = 0
     tables = {}
     for row in reader:
@@ -264,10 +279,34 @@ def main(args): # input_file :Path, output_dir :Path):
         # if row_data.get("titer_not_reportable") or row_data.get("titer_error"):
         #     module_logger.warning(f"titer problem:\n{pprint.pformat(row_data)}")
         if row_data["table"]["name"] not in tables:
-            tables[row_data["table"]["name"]] = make_ace(data=row_data, lab="CDC", input_file=input_file)
+            tables[row_data["table"]["name"]] = make_ace(data=row_data, lab=lab, input_file=input_file)
+
+        antigen = {"N": row_data["antigen"]["N"], "l": [row_data["antigen"]["l"]], "D": row_data["antigen"]["D"], "P": row_data["antigen"]["P"]}
+        serum = {"N": row_data["serum"]["N"], "I": row_data["serum"]["I"], "P": row_data["serum"]["P"]}
+        if row_data["table"]["virus_type"] == "B" and row_data["table"].get("lineage"):
+            antigen["L"] = serum["L"] = row_data["table"]["lineage"]
+        # if row.get("Boosted") and row["Boosted"].lower() not in ["false", "0"]:
+        #     serum["a"] = ["BOOSTED"]
+        read_titer(row_data["table"]["name"], tables[row_data["table"]["name"]], antigen=antigen, serum=serum, titer=row_data["titer"])
+
         rows_read += 1
         # pprint.pprint(row_data)
         # break
+
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(exist_ok=True)
+    for table_name, ace in tables.items():
+        table_dir = output_dir.joinpath(table_name[:-9])
+        table_dir.mkdir(exist_ok=True)
+        merge_titers(table_name, ace["c"]["t"]["l"], ace)
+        populate_missing_titers(table_name, ace["c"]["t"]["l"], number_of_sera=len(ace["c"]["s"]))
+        print(f"""{table_name:25s}   a:{len(ace["c"]["a"]):3d}   s:{len(ace["c"]["s"]):3d}""")
+        orig_name = table_dir.joinpath(f"{table_name}.orig.ace")
+        final_name = table_dir.joinpath(f"{table_name}.ace")
+        with orig_name.open("wb") as output:
+            output.write(lzma.compress(json_dumps(ace, indent=2, object_fields_sorting_key=object_fields_sorting_key).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
+        subprocess.check_call(["chart-fix-names-passages", str(orig_name), str(final_name)])
+        subprocess.check_call(["rm", str(orig_name)])
 
     module_logger.info(f"rows: {rows_read}")
     module_logger.info(f"tables: {len(tables)}")
@@ -297,74 +336,6 @@ def make_ace(data, lab, input_file):
 
 # ----------------------------------------------------------------------
 
-    #     assay_date = get_date(row["assay_date"], month_first=True)
-    #     # date_suffix = ""
-    #     lineage = ""
-    #     assay = (row.get("assay_type") or row.get("assay-type") or "HINT").upper()
-    #     assay_infix = f"{assay.lower()}"
-    #     if assay == "HI":
-    #         # assay_infix = ""
-    #         rbc = "-turkey"
-    #     else:
-    #         rbc = ""
-    #     if not row.get("subtype") or row["subtype"].lower() == "h3":
-    #         subtype = "A(H3N2)"
-    #         subtype_prefix = "h3"
-    #         if assay == "HI":
-    #             rbc = "-guinea-pig"
-    #     elif row["subtype"].lower() == "h1 swl":
-    #         subtype = "A(H1N1)"
-    #         subtype_prefix = "h1"
-    #         lineage = "2009pdm"
-    #     elif row["subtype"].lower() == "b vic":
-    #         subtype = "B"
-    #         subtype_prefix = "bvic"
-    #         lineage = "VICTORIA"
-    #     elif row["subtype"].lower() == "b yam":
-    #         subtype = "B"
-    #         subtype_prefix = "byam"
-    #         lineage = "YAMAGATA"
-    #         # date_suffix = "_002"
-    #     else:
-    #         raise RuntimeError(f"""unrecognized subtype: {row["subtype"]}""")
-    #     table_name = f"""{subtype_prefix}-{assay_infix}{rbc}-cdc-{assay_date}"""
-    #     if table_name not in tables:
-    #         tables[table_name] = make_ace(input_file, lab="CDC", assay_date=assay_date, subtype=subtype, assay=assay, rbc=rbc, lineage=lineage)
-
-    #     antigen = {"N": row["virus_strain"], "l": [f"CDC#{row['virus_cdc_id']}"], "D": row["virus_collection_date"].strip(), }
-    #     if row.get("virus_harvest_date") not in [None, "None"]:
-    #         antigen["P"] = normalize_passage(f"""{row["virus_strain_passage"]} ({row["virus_harvest_date"]})""")
-    #     else:
-    #         antigen["P"] = normalize_passage(row["virus_strain_passage"])
-
-    #     serum = {"N": row["serum_strain"], "I": f"CDC {row['lot #']}", "P": row["serum_antigen_passage"], }
-    #     if row.get("Boosted") and row["Boosted"].lower() not in ["false", "0"]:
-    #         serum["a"] = ["BOOSTED"]
-    #     # row["ferret_id"] is unused
-
-    #     for extra_field in ["reported_by_fra", "tested_by_fra"]:
-    #         if row.get(extra_field):
-    #             print(f">> WARNING extra field \"{extra_field}\" has value: \"{row[extra_field]}\"", file=sys.sdterr)
-
-    #     if subtype == "B" and lineage:
-    #         antigen["L"] = serum["L"] = lineage
-
-    #     read_titer(table_name, tables[table_name], antigen=antigen, serum=serum, titer=row["titer"])
-
-    # output_dir.mkdir(exist_ok=True)
-    # for table_name, ace in tables.items():
-    #     merge_titers(table_name, ace["c"]["t"]["l"], ace)
-    #     populate_missing_titers(table_name, ace["c"]["t"]["l"], number_of_sera=len(ace["c"]["s"]))
-    #     print(f"""{table_name:25s}   a:{len(ace["c"]["a"]):3d}   s:{len(ace["c"]["s"]):3d}""")
-    #     orig_name = output_dir.joinpath(f"{table_name}.orig.ace")
-    #     final_name = output_dir.joinpath(f"{table_name}.ace")
-    #     with orig_name.open("wb") as output:
-    #         output.write(lzma.compress(json_dumps(ace, indent=2).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
-    #     subprocess.check_call(f"chart-fix-names-passages '{orig_name}' '{final_name}'", shell=True)
-    #     subprocess.check_call(f"rm '{orig_name}'", shell=True)
-
-# ----------------------------------------------------------------------
-
 def read_titer(table_name, table, antigen, serum, titer): # cdc_id, date, antigen_name, antigen_passage, serum_name, ferret_id, serum_id, serum_passage, serum_boosted :bool, titer):
     ag_no = antigen_index(table=table, antigen=antigen) # _name=antigen_name, antigen_passage=antigen_passage, cdc_id=cdc_id, date=date)
     sr_no = serum_index(table=table, serum=serum) # serum_name=serum_name, serum_id=serum_id, serum_passage=serum_passage, serum_boosted=serum_boosted)
@@ -386,38 +357,11 @@ def read_titer(table_name, table, antigen, serum, titer): # cdc_id, date, antige
 
 # ----------------------------------------------------------------------
 
-# ----------------------------------------------------------------------
-
-sRePassage1 = re.compile(r"^([^\(\s]+)\s*\(([^\)]+)\)[A-Z]{0,3}$", re.I)
-
-def normalize_passage(passage):
-    m = sRePassage1.match(passage)
-    if m:
-        passage = f"{m.group(1)} ({get_date(m.group(2), month_first=True, output_fmt='%Y-%m-%d')})"
-    return passage
-
-# ----------------------------------------------------------------------
-
-def merge_titers(table_name, titers, ace):
-    for ag_no, row in enumerate(titers):
-        for sr_no in range(len(row)):
-            if isinstance(row[sr_no], list):
-                row[sr_no] = subprocess.check_output(["chart-titer-merge"] + row[sr_no]).decode("utf-8").strip()
-
-# ----------------------------------------------------------------------
-
-def populate_missing_titers(table_name, titers, number_of_sera):
-    for row in titers:
-        while len(row) < number_of_sera:
-            row.append("*")
-
-# ----------------------------------------------------------------------
-
 def antigen_index(table, antigen):
     for no, entry in enumerate(table["c"]["a"]):
         if entry["N"] == antigen["N"] and entry["P"] == antigen["P"] and entry["l"] == antigen["l"]:
             if antigen["D"] and entry["D"] != antigen["D"]:
-                print(f">> WARNING: antigen date mismatch: new: {antigen['D']!r}, old: {entry!r}", file=sys.stderr)
+                module_logger.warning(f"antigen date mismatch: new: {antigen['D']!r}, old: {entry!r}")
             return no
     table["c"]["a"].append(antigen)
     return len(table["c"]["a"]) - 1
@@ -448,6 +392,31 @@ def check_titer(titer, row_no, column_no):
             return str(round(float(m.group(2))))
     else:
         raise RuntimeError(f"Unrecognized titer \"{titer}\" at {row_no}:{column_no}")
+
+# ----------------------------------------------------------------------
+
+def merge_titers(table_name, titers, ace):
+    for ag_no, row in enumerate(titers):
+        for sr_no in range(len(row)):
+            if isinstance(row[sr_no], list):
+                row[sr_no] = subprocess.check_output(["chart-titer-merge"] + row[sr_no]).decode("utf-8").strip()
+
+# ----------------------------------------------------------------------
+
+def populate_missing_titers(table_name, titers, number_of_sera):
+    for row in titers:
+        while len(row) < number_of_sera:
+            row.append("*")
+
+# ----------------------------------------------------------------------
+
+sNameOrder = ["i", "N", "P", "D"]
+
+def object_fields_sorting_key(field_name):
+    try:
+        return f"{sNameOrder.index(field_name):03d}-{field_name}"
+    except ValueError:
+        return f"{len(sNameOrder):03d}-{field_name}"
 
 # ----------------------------------------------------------------------
 
