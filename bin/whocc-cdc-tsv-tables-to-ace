@@ -90,7 +90,8 @@ class Extractor:
 
     def get_test_subtype(self, field_value, raw_data):
         if field_value == "H1 swl":
-            raw_data["table"]["virus_type"] = "A(H1N1)PDM09"
+            raw_data["table"]["virus_type"] = "A(H1N1)"
+            raw_data["table"]["lineage"] = "PDM09"
             raw_data["table"]["virus_type_low"] = "h1pdm"
         elif field_value == "H3":
             raw_data["table"]["virus_type"] = "A(H3N2)"
@@ -151,11 +152,11 @@ class Extractor:
 
     def get_titer_reportable(self, field_value, raw_data):
         if field_value.lower() == "false":
-            module_logger.warning(f"titer not reportable")
+            raw_data["titer_not_reportable"] = True
 
     def get_titer_error(self, field_value, raw_data):
         if field_value.lower() == "true":
-            module_logger.warning(f"titer error")
+            raw_data["titer_error"] = True
 
     def get_titer_value(self, field_value, raw_data):
         raw_data["titer"] = field_value
@@ -257,18 +258,45 @@ def main(args): # input_file :Path, output_dir :Path):
     tables = {}                 # table -> ace
     extractor = Extractor()
     rows_read = 0
-    tables = set()
+    tables = {}
     for row in reader:
         row_data = extractor.extract(row)
-        tables.add(row_data["table"]["name"])
+        # if row_data.get("titer_not_reportable") or row_data.get("titer_error"):
+        #     module_logger.warning(f"titer problem:\n{pprint.pformat(row_data)}")
+        if row_data["table"]["name"] not in tables:
+            tables[row_data["table"]["name"]] = make_ace(data=row_data, lab="CDC", input_file=input_file)
         rows_read += 1
         # pprint.pprint(row_data)
         # break
 
     module_logger.info(f"rows: {rows_read}")
     module_logger.info(f"tables: {len(tables)}")
-    pprint.pprint(tables)
-    
+    # pprint.pprint(tables)
+
+# ----------------------------------------------------------------------
+
+def make_ace(data, lab, input_file):
+    ace = {
+        "  version": "acmacs-ace-v1",
+        "?created": f"imported from {input_file.name} by {os.path.basename(sys.argv[0])} on {datetime.date.today()}",
+        "c": {
+            "i": {
+                "l": lab,
+                "D": data["table"]["date"],
+                "V": data["table"]["virus_type"],
+                "A": data["table"]["assay"],
+            },
+            "a": [], "s": [], "t": {"l": []}
+        }
+    }
+    # if rbc:
+    #     ace["c"]["i"]["r"] = rbc
+    if data["table"].get("lineage"):
+        ace["c"]["i"]["s"] = data["table"]["lineage"]
+    return ace
+
+# ----------------------------------------------------------------------
+
     #     assay_date = get_date(row["assay_date"], month_first=True)
     #     # date_suffix = ""
     #     lineage = ""
@@ -334,30 +362,6 @@ def main(args): # input_file :Path, output_dir :Path):
     #         output.write(lzma.compress(json_dumps(ace, indent=2).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
     #     subprocess.check_call(f"chart-fix-names-passages '{orig_name}' '{final_name}'", shell=True)
     #     subprocess.check_call(f"rm '{orig_name}'", shell=True)
-
-# ----------------------------------------------------------------------
-
-def make_ace(input_file, lab, assay_date, subtype, assay, rbc, lineage):
-    ace = {
-        "  version": "acmacs-ace-v1",
-        "?created": f"imported from {input_file.name} by {os.path.basename(sys.argv[0])} on {datetime.date.today()}",
-        "c": {
-            "i": {
-                "l": lab,
-                "D": assay_date,
-                "V": subtype,
-                "A": assay,
-            },
-            "a": [], "s": [], "t": {"l": []}
-        }
-    }
-    if rbc:
-        ace["c"]["i"]["r"] = rbc
-    if lineage:
-        ace["c"]["i"]["s"] = lineage
-        if lineage == "YAMAGATA":
-            ace["c"]["i"]["D"] += ".002"
-    return ace
 
 # ----------------------------------------------------------------------
 
