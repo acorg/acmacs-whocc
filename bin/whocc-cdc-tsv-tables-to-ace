@@ -296,17 +296,16 @@ def main(args): # input_file :Path, output_dir :Path):
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
     for table_name, ace in tables.items():
+        sort_antigens_sera(ace)
         table_dir = output_dir.joinpath(table_name[:-9])
         table_dir.mkdir(exist_ok=True)
         merge_titers(table_name, ace["c"]["t"]["l"], ace)
         populate_missing_titers(table_name, ace["c"]["t"]["l"], number_of_sera=len(ace["c"]["s"]))
         print(f"""{table_name:25s}   a:{len(ace["c"]["a"]):3d}   s:{len(ace["c"]["s"]):3d}""")
-        orig_name = table_dir.joinpath(f"{table_name}.orig.ace")
-        final_name = table_dir.joinpath(f"{table_name}.ace")
-        with orig_name.open("wb") as output:
+        output_name = table_dir.joinpath(f"{table_name}.ace")
+        with output_name.open("wb") as output:
             output.write(lzma.compress(json_dumps(ace, indent=2, object_fields_sorting_key=object_fields_sorting_key).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
-        subprocess.check_call(["chart-fix-names-passages", str(orig_name), str(final_name)])
-        subprocess.check_call(["rm", str(orig_name)])
+        # subprocess.check_call(["chart-fix-names-passages", str(output_name), str(output_name)])
 
     module_logger.info(f"rows: {rows_read}")
     module_logger.info(f"tables: {len(tables)}")
@@ -399,7 +398,9 @@ def merge_titers(table_name, titers, ace):
     for ag_no, row in enumerate(titers):
         for sr_no in range(len(row)):
             if isinstance(row[sr_no], list):
+                src = row[sr_no]
                 row[sr_no] = subprocess.check_output(["chart-titer-merge"] + row[sr_no]).decode("utf-8").strip()
+                module_logger.info(f"titer merged {row[sr_no]} <-- {src}")
 
 # ----------------------------------------------------------------------
 
@@ -407,6 +408,11 @@ def populate_missing_titers(table_name, titers, number_of_sera):
     for row in titers:
         while len(row) < number_of_sera:
             row.append("*")
+
+# ----------------------------------------------------------------------
+
+def sort_antigens_sera(table):
+    antigens_order = sorted(range(len(table["c"]["a"])), key=lambda ag_no: ag_no)
 
 # ----------------------------------------------------------------------
 
