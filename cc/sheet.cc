@@ -53,7 +53,7 @@ size_t acmacs::sheet::v1::Sheet::size(const cell_t& cell) const
 
 // \xEF\xBC\x9C -> "<" unicode Fullwidth Less-Than Sign &#xFF1C; (NIID)
 // ">" and "," - perhaps typos in Crick tables
-static const std::regex re_titer{R"(^(<|>|,|(?:<|>|\xEF\xBC\x9C)?\s*[1-9][0-9]{0,5}|N[DAT]|QNS|\*)$)", acmacs::regex::icase};
+static const std::regex re_titer{R"(^\s*(<|>|,|(?:<|>|\xEF\xBC\x9C)?\s*[1-9][0-9]{0,5}|N[DAT]|QNS|\*)\s*$)", acmacs::regex::icase};
 
 #include "acmacs-base/diagnostics-pop.hh"
 
@@ -95,6 +95,7 @@ acmacs::sheet::v1::column_range acmacs::sheet::v1::Sheet::titer_range(nrow_t row
     };
 
     for (auto col = ncol_t{0}; col < number_of_columns(); ++col) {
+        // AD_DEBUG("maybe_titer {}:{} \"{}\"", row, col, cell(row, col));
         if (maybe_titer(row, col)) {
             if (!current.valid())
                 current.first = col;

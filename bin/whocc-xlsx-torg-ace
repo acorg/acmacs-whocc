@@ -59,7 +59,7 @@ def name_from_xlsx(xlsx_filename):
     if status.returncode:
         module_logger.warning(f"{' '.join(cmd)} FAILED\n{status.stdout.decode('utf-8')}")
         raise RuntimeError(f"{' '.join(cmd)} FAILED with code {status.returncode}")
-    return status.stdout
+    return status.stdout.decode('utf-8')
 
 # ----------------------------------------------------------------------
 
