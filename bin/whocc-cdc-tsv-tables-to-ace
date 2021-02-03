@@ -126,7 +126,7 @@ class Extractor:
         raw_data["antigen"]["l"] = f"CDC#{field_value}"
 
     def get_ag_strain_name(self, field_value, raw_data):
-        raw_data["antigen"]["N"] = field_value
+        raw_data["antigen"]["N"] = field_value.upper()
 
     def get_ag_passage(self, field_value, raw_data):
         raw_data["antigen"]["passage"] = field_value
@@ -143,7 +143,7 @@ class Extractor:
             raw_data["antigen"]["DISTINCT"] = True
 
     def get_sr_strain_name(self, field_value, raw_data):
-        raw_data["serum"]["N"] = field_value
+        raw_data["serum"]["N"] = field_value.upper()
 
     def get_sr_lot(self, field_value, raw_data):
         raw_data["serum"]["I"] = f"CDC {field_value}"
@@ -296,16 +296,17 @@ def main(args): # input_file :Path, output_dir :Path):
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
     for table_name, ace in tables.items():
-        sort_antigens_sera(ace)
-        table_dir = output_dir.joinpath(table_name[:-9])
-        table_dir.mkdir(exist_ok=True)
         merge_titers(table_name, ace["c"]["t"]["l"], ace)
         populate_missing_titers(table_name, ace["c"]["t"]["l"], number_of_sera=len(ace["c"]["s"]))
+        sort_antigens_sera(ace)
         print(f"""{table_name:25s}   a:{len(ace["c"]["a"]):3d}   s:{len(ace["c"]["s"]):3d}""")
+
+        table_dir = output_dir.joinpath(table_name[:-9])
+        table_dir.mkdir(exist_ok=True)
         output_name = table_dir.joinpath(f"{table_name}.ace")
         with output_name.open("wb") as output:
             output.write(lzma.compress(json_dumps(ace, indent=2, object_fields_sorting_key=object_fields_sorting_key).encode("utf-8"), preset=9|lzma.PRESET_EXTREME))
-        # subprocess.check_call(["chart-fix-names-passages", str(output_name), str(output_name)])
+        subprocess.check_call(["chart-fix-names-passages", str(output_name), str(output_name)])
 
     module_logger.info(f"rows: {rows_read}")
     module_logger.info(f"tables: {len(tables)}")
@@ -412,7 +413,12 @@ def populate_missing_titers(table_name, titers, number_of_sera):
 # ----------------------------------------------------------------------
 
 def sort_antigens_sera(table):
-    antigens_order = sorted(range(len(table["c"]["a"])), key=lambda ag_no: ag_no)
+    serum_names = {sr["N"]: sr_no for sr_no, sr in enumerate(table["c"]["s"])}
+    antigens = table["c"]["a"]
+    antigens_order = sorted(range(len(antigens)), key=lambda ag_no: f"""{serum_names.get(antigens[ag_no]["N"], 999):03d}-{antigens[ag_no].get("D") or "9999"}-{antigens[ag_no]["N"]}-{antigens[ag_no].get("passage", "")}""")
+    # module_logger.warning(f"antigens_order {antigens_order}")
+    table["c"]["a"] = [antigens[ag_no] for ag_no in antigens_order]
+    table["c"]["t"]["l"] = [table["c"]["t"]["l"][ag_no] for ag_no in antigens_order]
 
 # ----------------------------------------------------------------------
 
