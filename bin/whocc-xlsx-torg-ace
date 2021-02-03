@@ -54,7 +54,12 @@ def subprocess_check_call(cmd, **kw):
 # ----------------------------------------------------------------------
 
 def name_from_xlsx(xlsx_filename):
-    return subprocess.check_output(["whocc-xlsx-to-torg", "-n", "-f", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", "-s", detect_py(), xlsx_filename]).decode("utf-8")
+    cmd = ["whocc-xlsx-to-torg", "-n", "-f", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", "-s", str(detect_py()), str(xlsx_filename)]
+    status = subprocess.run(cmd, stdout=subprocess.PIPE)
+    if status.returncode:
+        module_logger.warning(f"{' '.join(cmd)} FAILED\n{status.stdout.decode('utf-8')}")
+        raise RuntimeError(f"{' '.join(cmd)} FAILED with code {status.returncode}")
+    return status.stdout
 
 # ----------------------------------------------------------------------
 
