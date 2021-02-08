@@ -6,26 +6,39 @@ if [[ $BASH_VERSINFO -lt 4 ]]; then
 fi
 set -o pipefail
 
+# ----------------------------------------------------------------------
+
 main()
 {
     case $# in
-        1)
-            local new_name=$(guess_name "$1")
-            if [[ -n $new_name ]]; then
-               process "$1" "$new_name"
-            else
-                echo No names guessed from "$1" >&2
-                exit 2
-            fi
-        ;;
-        2)
-            process "$@"
-        ;;
-        *)
+        0)
             echo Usage: $0 '<src.txt> [<outname-without-suffix>]'
             exit 1
             ;;
+        2)
+            if [[ $2 == *.text ]]; then
+                for src in "$@"; do process1 "${src}"; done
+            else
+                process "$@"
+            fi
+            ;;
+        *)
+            for src in "$@"; do process1 "${src}"; done
+            ;;
     esac
+}
+
+# ----------------------------------------------------------------------
+
+process1()
+{
+    local new_name=$(guess_name "$1")
+    if [[ -n $new_name ]]; then
+        process "$1" "$new_name"
+    else
+        echo No names guessed from "$1" >&2
+        exit 2
+    fi
 }
 
 # ----------------------------------------------------------------------
@@ -33,7 +46,7 @@ main()
 process()
 {
     grep '^>' "$1" | cut -d '>' -f 2
-    local TARGET="${HOME}/ac/sequences/${2}.fas.xz"; do
+    local TARGET="${HOME}/ac/sequences/${2}.fas.xz"
     if [[ -f "${TARGET}" ]]; then
         echo "ERROR: ${TARGET} already exists!" >&2
         exit 3
