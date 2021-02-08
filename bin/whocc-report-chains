@@ -43,7 +43,7 @@ def main():
 
 def report(chain_name):
    print(f"* {chain_name}\n")
-   chain_dir = list(chain_root.joinpath(chain_name).glob("*"))[-1]
+   chain_dir = list(nm for nm in chain_root.joinpath(chain_name).glob("*") if "backward" not in str(nm))[-1]
    print(f"https://notebooks.antigenic-cartography.org/{str(chain_dir).replace('/syn/eu/ac/', 'eu/')}")
    outputs = sorted(chain_dir.joinpath("out").glob("*.[is].*.ace"))
    # print("\n".join(str(p) for p in outputs))
