@@ -77,7 +77,10 @@ class Extractor:
                 getattr(self, f"get_{field_name}")(field_value.strip(), raw_data)
             except AttributeError as err:
                 raise RuntimeError(f"Unrecognized source field {field_name}")
-        raw_data["table"]["name"] = f"""{raw_data["table"]["virus_type_low"]}-{raw_data["table"]["assay"].lower()}-{self.lab.lower()}-{raw_data["table"]["date"]}"""
+        assay_rbc = raw_data["table"]["assay"].lower()
+        if assay_rbc == "hi":
+            assay_rbc = assay_rbc + "-turkey"
+        raw_data["table"]["name"] = f"""{raw_data["table"]["virus_type_low"]}-{assay_rbc}-{self.lab.lower()}-{raw_data["table"]["date"]}"""
         for ag_sr in ["antigen", "serum"]:
             raw_data[ag_sr]["P"] = self.make_passage(raw_data[ag_sr])
             raw_data[ag_sr].pop("passage", None)
