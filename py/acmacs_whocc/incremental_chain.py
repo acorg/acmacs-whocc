@@ -392,7 +392,7 @@ class Processor:
     def preprocess_chart(self, source, target):
         self.chain_data_.chart_loaded(acmacs.Chart(str(source))).export(str(target), "incremental_chain.py")
         return target
-    
+
 # ----------------------------------------------------------------------
 
 class ProcessorBuiltIn (Processor):
