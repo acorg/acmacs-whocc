@@ -48,6 +48,7 @@ import logging; module_logger = logging.getLogger(__name__)
 # | sr_seq_passage     | string     | Passage of sequenced test sera                                     |                                                                                                                          |
 # | sr_collection_date | date       | Collection date of sera                                            |                                                                                                                          |
 # | sr_date_harvested  | date       | Harvest date of sera                                               |                                                                                                                          |
+# | sr_boosted         | boolean    | Sera is boosted (T/F)                                              |                                                                                                                          |
 # | sr_lab             | boolean    | Sera is lab generated (T/F)                                        |                                                                                                                          |
 # | sr_pool            | boolean    | Sera is a pool (T/F)                                               |                                                                                                                          |
 # | sr_do_not_report   | boolean    | Do not report sera (T/F)                                           | If TRUE, then >1 sera in assay for same virus or test error                                                              |
@@ -59,8 +60,7 @@ import logging; module_logger = logging.getLogger(__name__)
 # | titer_logfold      | float      | Titer log-fold value                                               |                                                                                                                          |
 
 # missing:
-# RBC
-# serum BOOSTED
+# RBC - CDC database does not store the RBC information (Becky 2021-02-09 21:38)
 
 # ----------------------------------------------------------------------
 
@@ -141,6 +141,8 @@ class Extractor:
     def get_ag_do_not_report(self, field_value, raw_data):
         if field_value.lower() == "true":
             raw_data["antigen"]["DISTINCT"] = True
+        elif field_value.lower() != "false":
+            raise RuntimeError(f"Unrecognized \"ag_do_not_report\" value: \"{field_value}\"")
 
     def get_sr_strain_name(self, field_value, raw_data):
         raw_data["serum"]["N"] = field_value.upper()
@@ -154,6 +156,12 @@ class Extractor:
     def get_sr_date_harvested(self, field_value, raw_data):
         if field_value:
             raw_data["serum"]["passage_date"] = self.convert_date(field_value, output_fmt='%Y-%m-%d')
+
+    def get_sr_boosted(self, field_value, raw_data):
+        if field_value.lower() == "true":
+            raw_data["serum"]["boosted"] = True
+        elif field_value.lower() != "false":
+            raise RuntimeError(f"Unrecognized \"sr_boosted\" value: \"{field_value}\"")
 
     def get_sr_do_not_report(self, field_value, raw_data):
         if field_value.lower() == "true":
@@ -285,8 +293,8 @@ def main(args): # input_file :Path, output_dir :Path):
         serum = {"N": row_data["serum"]["N"], "I": row_data["serum"]["I"], "P": row_data["serum"]["P"]}
         if row_data["table"]["virus_type"] == "B" and row_data["table"].get("lineage"):
             antigen["L"] = serum["L"] = row_data["table"]["lineage"]
-        # if row.get("Boosted") and row["Boosted"].lower() not in ["false", "0"]:
-        #     serum["a"] = ["BOOSTED"]
+        if row_data["serum"].get("boosted"):
+            serum["a"] = serum.get("a", []) + ["BOOSTED"]
         read_titer(row_data["table"]["name"], tables[row_data["table"]["name"]], antigen=antigen, serum=serum, titer=row_data["titer"])
 
         rows_read += 1
@@ -328,8 +336,8 @@ def make_ace(data, lab, input_file):
             "a": [], "s": [], "t": {"l": []}
         }
     }
-    # if rbc:
-    #     ace["c"]["i"]["r"] = rbc
+    if data["table"]["assay"] == "HI":
+        ace["c"]["i"]["r"] = "turkey"
     if data["table"].get("lineage"):
         ace["c"]["i"]["s"] = data["table"]["lineage"]
     return ace
