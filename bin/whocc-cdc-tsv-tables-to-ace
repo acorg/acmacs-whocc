@@ -412,7 +412,11 @@ def merge_titers(table_name, titers, ace):
             if isinstance(row[sr_no], list):
                 src = row[sr_no]
                 row[sr_no] = subprocess.check_output(["chart-titer-merge"] + row[sr_no]).decode("utf-8").strip()
-                module_logger.info(f"titer merged {row[sr_no]} <-- {src}")
+                # module_logger.info(f"titer merged {row[sr_no]} <-- {src}")
+            if row[sr_no] and row[sr_no][0] not in ["*", "<", ">"] and int(row[sr_no]) < 10:
+                module_logger.warning(f"invalid titer {row[sr_no]} for ag:{ag_no} sr:{sr_no}")
+                if int(row[sr_no]) == 0:
+                    row[sr_no] = "*"
 
 # ----------------------------------------------------------------------
 
