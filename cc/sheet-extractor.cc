@@ -61,7 +61,7 @@ static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex:
 static const std::regex re_NIID_serum_name_row_non_serum_label{R"((HA\s*group))", acmacs::regex::icase};
 
 static const std::regex re_VIDRL_antigen_lab_id{"^(SL|VW)[0-9]{8}$", acmacs::regex::icase};
-static const std::regex re_VIDRL_serum_name{"^([A-Z][A-Z ]+)([0-9]+)$", acmacs::regex::icase};
+static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
 static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT)\b)", acmacs::regex::icase};
