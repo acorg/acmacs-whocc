@@ -108,6 +108,7 @@ namespace acmacs::sheet::inline v1
         virtual bool is_control_serum_cell(const cell_t& cell) const;
 
         virtual std::string make_passage(const std::string& src) const;
+        virtual std::string make_date(const std::string& src) const;
 
         virtual std::string report_serum_anchors() const = 0;
 
@@ -258,6 +259,7 @@ namespace acmacs::sheet::inline v1
       protected:
         bool is_lab_id(const cell_t& cell) const override;
         void find_serum_rows(warn_if_not_found winf) override;
+        std::string make_date(const std::string& src) const override;
 
     };
 

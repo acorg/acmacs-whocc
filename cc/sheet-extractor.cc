@@ -61,6 +61,7 @@ static const std::regex re_NIID_lab_id_label{"^\\s*NIID-ID\\s*$", acmacs::regex:
 static const std::regex re_NIID_serum_name_row_non_serum_label{R"((HA\s*group))", acmacs::regex::icase};
 
 static const std::regex re_VIDRL_antigen_lab_id{"^(SL|VW)[0-9]{8}$", acmacs::regex::icase};
+static const std::regex re_VIDRL_antigen_date_column_title{"^\\s*Sample\\s*Date\\s*$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
@@ -176,13 +177,6 @@ acmacs::sheet::v1::antigen_fields_t acmacs::sheet::v1::Extractor::antigen(size_t
                 return fmt::format("{}", cell);
         }
         return {};
-    };
-
-    const auto make_date = [this](const std::string& source) {
-        if (!source.empty())
-            return date::display(date::from_string(source, date::allow_incomplete::no, date::throw_on_error::yes, lab() == "CDC" ? date::month_first::yes : date::month_first::no));
-        else
-            return source;
     };
 
     return antigen_fields_t{
@@ -489,6 +483,17 @@ bool acmacs::sheet::v1::Extractor::is_control_serum_cell(const cell_t& cell) con
     return false;
 
 } // acmacs::sheet::v1::Extractor::is_control_serum_cell
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::make_date(const std::string& src) const
+{
+        if (!src.empty())
+            return date::display(date::from_string(src, date::allow_incomplete::no, date::throw_on_error::yes, lab() == "CDC" ? date::month_first::yes : date::month_first::no));
+        else
+            return src;
+
+} // acmacs::sheet::v1::Extractor::make_date
 
 // ----------------------------------------------------------------------
 
@@ -1195,6 +1200,16 @@ acmacs::sheet::v1::ExtractorVIDRL::ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet
     lab("VIDRL");
 
 } // acmacs::sheet::v1::ExtractorVIDRL::ExtractorVIDRL
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorVIDRL::make_date(const std::string& src) const
+{
+    if (std::regex_search(src, re_VIDRL_antigen_date_column_title))
+        return {};              // column title in the antigen's row
+    return ExtractorWithSerumRowsAbove::make_date(src);
+
+} // acmacs::sheet::v1::ExtractorVIDRL::make_date
 
 // ----------------------------------------------------------------------
 
