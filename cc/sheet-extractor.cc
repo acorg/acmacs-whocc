@@ -62,6 +62,7 @@ static const std::regex re_NIID_serum_name_row_non_serum_label{R"((HA\s*group))"
 
 static const std::regex re_VIDRL_antigen_lab_id{"^(SL|VW)[0-9]{8}$", acmacs::regex::icase};
 static const std::regex re_VIDRL_antigen_date_column_title{"^\\s*Sample\\s*Date\\s*$", acmacs::regex::icase};
+static const std::regex re_VIDRL_antigen_lab_id_column_title{"^\\s*VW\\s*$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 
@@ -183,7 +184,7 @@ acmacs::sheet::v1::antigen_fields_t acmacs::sheet::v1::Extractor::antigen(size_t
         .name = make(antigen_name_column()),                     //
         .date = make_date(make(antigen_date_column())),          //
         .passage = make_passage(make(antigen_passage_column())), //
-        .lab_id = make(antigen_lab_id_column())                  //
+        .lab_id = make_lab_id(make(antigen_lab_id_column()))     //
     };
 
 } // acmacs::sheet::v1::Extractor::antigen
@@ -508,6 +509,14 @@ std::string acmacs::sheet::v1::Extractor::make_passage(const std::string& src) c
         return *passage;
 
 } // acmacs::sheet::v1::Extractor::make_passage
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::Extractor::make_lab_id(const std::string& src) const
+{
+    return src;
+
+} // acmacs::sheet::v1::Extractor::make_lab_id
 
 // ----------------------------------------------------------------------
 
@@ -1210,6 +1219,16 @@ std::string acmacs::sheet::v1::ExtractorVIDRL::make_date(const std::string& src)
     return ExtractorWithSerumRowsAbove::make_date(src);
 
 } // acmacs::sheet::v1::ExtractorVIDRL::make_date
+
+// ----------------------------------------------------------------------
+
+std::string acmacs::sheet::v1::ExtractorVIDRL::make_lab_id(const std::string& src) const
+{
+    if (std::regex_search(src, re_VIDRL_antigen_lab_id_column_title))
+        return {};              // column title in the antigen's row
+    return ExtractorWithSerumRowsAbove::make_lab_id(src);
+
+} // acmacs::sheet::v1::ExtractorVIDRL::make_lab_id
 
 // ----------------------------------------------------------------------
 
