@@ -125,10 +125,12 @@ std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view f
     const auto assay_rbc = [this]() -> std::string {
         if (const auto assay = extractor_->assay(); assay == "HI")
             return fmt::format("hi-{}", ::string::lower(extractor_->rbc()));
-        else if (assay == "HINT")
-            return "hint";
         else
-            return "neut";
+            return ::string::lower(assay);
+        // else if (assay == "HINT")
+        //     return "hint";
+        // else
+        //     return "neut";
     };
 
     return fmt::format(format,                                               //

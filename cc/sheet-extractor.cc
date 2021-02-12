@@ -93,6 +93,7 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
             extractor = std::make_unique<ExtractorCDC>(sheet);
             extractor->subtype(detected.subtype);
             extractor->lineage(detected.lineage);
+            extractor->assay(detected.assay);
             extractor->rbc(detected.rbc);
         }
         else if (detected.lab == "CRICK") {
@@ -111,12 +112,14 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
             extractor = std::make_unique<ExtractorNIID>(sheet);
             extractor->subtype(detected.subtype);
             extractor->lineage(detected.lineage);
+            extractor->assay(detected.assay);
             extractor->rbc(detected.rbc);
         }
         else if (detected.lab == "VIDRL") {
             extractor = std::make_unique<ExtractorVIDRL>(sheet);
             extractor->subtype(detected.subtype);
             extractor->lineage(detected.lineage);
+            extractor->assay(detected.assay);
             extractor->rbc(detected.rbc);
         }
         else
