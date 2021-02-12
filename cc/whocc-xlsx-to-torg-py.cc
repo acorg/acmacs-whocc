@@ -115,6 +115,7 @@ void acmacs::whocc_xlsx::v1::py_init(const std::vector<std::string_view>& script
 acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(std::shared_ptr<acmacs::sheet::Sheet> sheet)
 {
     const auto detected = py::globals()["detect"](sheet);
+    // AD_DEBUG("detected: {}", detected);
     detect_result_t result;
     std::string date;
     for (const auto key : detected) {

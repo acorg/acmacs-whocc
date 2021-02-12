@@ -42,6 +42,7 @@ static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?\s*(F[0-9][0-9]/[0-2][0-9]|SH[\s\d,/]+)(?:\*(\d)(?:,\d)?)?$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
+static const std::regex re_CRICK_less_than_2{R"(^Superscripts.*\s+(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_multi{R"(^\s*\d\s*<\s*=\s*<\d+\s*;)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_multi_entry{R"(^\s*(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 
@@ -930,6 +931,10 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions(warn_
                 if (std::cmatch match; acmacs::regex::search(entry, match, re_CRICK_less_than_multi_entry))
                     footnote_index_subst_.emplace_not_replace(match[1], match[2]);
             }
+        }
+        else if (const auto found3 = sheet().grep(re_CRICK_less_than_2, {antigen_rows_.back(), ncol_t{1}}, {sheet().number_of_rows(), ncol_t{2}}); !found3.empty()) {
+            for (const auto& cell_match : found3)
+                footnote_index_subst_.emplace_not_replace(cell_match.matches[1], cell_match.matches[2]);
         }
         else
             AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No less than substitution footnote");
