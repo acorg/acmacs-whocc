@@ -1,4 +1,4 @@
-Time-stamp: <2021-02-05 16:25:12 eu>
+Time-stamp: <2021-02-12 17:49:07 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -27,7 +27,7 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 <H-9> ncbi-get --> ~13m 23Mb (~/bin/ncbi-get)
 
 #+BEGIN_SRC bash
-cd ~/ac/sequences/ncbi/ && scp -q i19:/syn/eu/ac/ncbi/$(date '+%Y-%m%d')/\* . && ls -la 
+cd ~/ac/sequences/ncbi/ && scp -q i19:/syn/eu/ac/ncbi/$(date '+%Y-%m%d')/\* . && ls -la
 #+END_SRC
 
 *** ncbi-get
@@ -74,7 +74,7 @@ dos2unix /r/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
 #+BEGIN_SRC elisp
-  (progn 
+  (progn
     (goto-char (point-min))
     (save-excursion (query-replace "\n/" "/")) ; fix broken names for Serbian lab
     (save-excursion (query-replace "\ntype:" " type:")) ; fix broken names for Serbian lab
