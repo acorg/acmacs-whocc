@@ -12,6 +12,7 @@ def main():
     pdf_dir.mkdir(exist_ok=True)
     groups = scan(out_dir, pdf_dir)
     make_pdfs(groups)
+    make_layout_sequences(groups)
     # pprint.pprint(groups)
     make_gridage(groups)
     make_index_html()
@@ -58,6 +59,17 @@ def make_pdfs(groups):
 
 # ----------------------------------------------------------------------
 
+def make_layout_sequences(groups):
+    for group in groups:
+        for i_s in ["i", "s"]:
+            if group.get(i_s) and group[i_s]["ace"].exists():
+                lscsv = group[i_s]["pdf"].with_suffix(".layout-sequences.csv")
+                if not lscsv.exists() or lscsv.stat().st_mtime < group[i_s]["ace"].stat().st_mtime:
+                    print(f""">>> {group[i_s]["ace"]} ls.csv:{lscsv.exists() and lscsv.stat().st_mtime} ace:{group[i_s]["ace"].stat().st_mtime}""")
+                    subprocess.check_call(["chart-layout-sequences", str(group[i_s]["ace"]), str(lscsv)])
+
+# ----------------------------------------------------------------------
+
 def make_gridage(groups):
     name = Path(".").resolve().parent.name
     data = {
@@ -89,7 +101,12 @@ def make_grid(group):
 
     def make_ace_link(files):
         if files.get("ace"):
-            return f"""<a target="_blank" href="{files["ace"]}?acv=html">Interactive viewer</a><span style="padding-left: 2em"></span><a href="{files["ace"]}">Download {files["ace"].name}</a>"""
+            lscsv = files["pdf"].with_suffix(".layout-sequences.csv")
+            return (f"""<a target="_blank" href="{files["ace"]}?acv=html">Interactive viewer</a>"""
+                    + """<span style="padding-left: 2em"></span>"""
+                    + f"""<a href="{files["ace"]}">Download {files["ace"].name}</a>"""
+                    + """<span style="padding-left: 2em"></span>"""
+                    + f"""<a download href="{lscsv}">layout-sequences.csv</a>""")
         else:
             return ""
 
