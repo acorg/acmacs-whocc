@@ -1,12 +1,13 @@
 // gridage v1 2020-10-13
 
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+var gridage_file = "gridage.json";
 
 // ----------------------------------------------------------------------
 
 async function main()
 {
-    const response = await fetch("gridage.json");
+    const response = await fetch(gridage_file);
     if (response.ok) {
         let data = await response.json();
         // console.log(data);
