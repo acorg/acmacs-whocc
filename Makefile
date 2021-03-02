@@ -27,6 +27,8 @@ SHEET_SOURCES = \
   sheet.cc \
   data-fix.cc
 
+CSV_SOURCES = csv-parser.cc
+
 WHOCC_XLSX_TO_TORG_SOURCES = \
   $(SHEET_SOURCES) \
   whocc-xlsx-to-torg-py.cc
@@ -87,11 +89,11 @@ $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BU
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH)
 
-$(DIST)/%: $(BUILD)/%.o | $(DIST)
+$(DIST)/%: $(BUILD)/%.o $(patsubst %.cc,$(BUILD)/%.o,$(CSV_SOURCES)) | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 
-$(DIST)/whocc-xlsx-to-torg: $(BUILD)/whocc-xlsx-to-torg.o $(patsubst %.cc,$(BUILD)/%.o,$(WHOCC_XLSX_TO_TORG_SOURCES)) | $(DIST)
+$(DIST)/whocc-xlsx-to-torg: $(BUILD)/whocc-xlsx-to-torg.o $(patsubst %.cc,$(BUILD)/%.o,$(WHOCC_XLSX_TO_TORG_SOURCES)) $(patsubst %.cc,$(BUILD)/%.o,$(CSV_SOURCES)) | $(DIST)
 	$(call echo_link_exe,$@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(PYTHON_LIBS) $(AD_RPATH) $$(if echo "$@" | grep xls >/dev/null 2>&1; then echo "$(XLSX_LIBS)"; fi)
 

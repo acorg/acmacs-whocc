@@ -26,7 +26,7 @@ struct Options : public argv
                        desc{"print assay information fields: {virus_type} {lineage} {virus_type_lineage} {virus_type_lineage_subset_short_low} {assay_full} {assay_low} "
                             "{assay_low_rbc} {lab} {lab_low} {rbc} {table_date}"}};
     option<bool> assay_information{*this, 'n', desc{"print assay information fields according to format (-f or --format)"}};
-    option<str_array> scripts{*this, 's', desc{"run scheme script (multiple switches allowed) before processing files"}};
+    option<str_array> scripts{*this, 's', desc{"run python script (multiple switches allowed) before processing files"}};
     option<str_array> verbose{*this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
 
     argument<str_array> xlsx{*this, arg_name{".xlsx"}, mandatory};
