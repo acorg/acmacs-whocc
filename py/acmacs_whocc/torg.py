@@ -30,7 +30,7 @@ class TorgGenerator:
         ]
 
         torg = "\n".join(f"- {k}: {v}" for k, v in header if v) + "\n\n"
-        torg += "|            |" + " | ".join(f"{agf:<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + "\n"
+        torg += "|            | " + " | ".join(f"{agf:<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + "\n"
         return torg
 
     def make_fields(self):
