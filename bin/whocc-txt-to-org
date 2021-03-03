@@ -14,8 +14,9 @@ def main(args):
     for row in source[1:]:
         torg.antigens.append({"name": row[0]})
         torg.titers.append(row[1:])
-    print(torg.make())
-
+    Path(args.output).open("w").write(torg.make())
+    print(f">>> Antigens: {len(torg.antigens)}  Sera: {len(torg.sera)}")
+    
 # ----------------------------------------------------------------------
 
 try:

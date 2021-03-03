@@ -2,8 +2,8 @@ class TorgGenerator:
 
     class Error (RuntimeError): pass
 
-    AntigenFieldOrder = ["name", "date", "reassortant", "annotations", "passage"]
-    SerumFieldOrder = ["name", "serum_id", "reassortant", "annotations", "passage", "species"]
+    AntigenFieldOrder = ["name", "date", "reassortant", "annotations", "passage", "lab_id", "clade"]
+    SerumFieldOrder = ["name", "serum_id", "reassortant", "annotations", "passage", "species", "clade"]
 
     def __init__(self):
         # self.name = None
@@ -13,8 +13,8 @@ class TorgGenerator:
         self.assay = None
         self.rbc = None
         self.lineage = None
-        self.antigens = []      # {"name":, "passage":, "date":, "reassortant": "annotations":}
-        self.sera = []          # {"name":, "passage":, "serum_id":, "reassortant": "annotations":, "species":}
+        self.antigens = []      # {"name":, "passage":, "date":, "reassortant": "annotations":, "lab_id":, "clade":}
+        self.sera = []          # {"name":, "passage":, "serum_id":, "reassortant": "annotations":, "species":, "clade":}
         self.titers = []
 
     def make(self):
@@ -29,8 +29,14 @@ class TorgGenerator:
             ["Lineage", self.lineage],
         ]
 
-        torg = "\n".join(f"- {k}: {v}" for k, v in header if v) + "\n\n"
-        torg += "|            | " + " | ".join(f"{agf:<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + "\n"
+        torg = "# -*- Org -*-\n\n" + "\n".join(f"- {k}: {v}" for k, v in header if v) + "\n\n"
+        first_column_width = 10
+        torg += f"| {' ':<{first_column_width}s} | " + " | ".join(f"{agf:<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + " | ".join(f"{' ':<{self.serum_width}s}" for sr in self.sera) + " |\n"
+        for sr_field, srfw in self.serum_fields:
+            torg += f"| {sr_field:<{first_column_width}s} | " + " | ".join(f"{' ':<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + " | ".join(f"{sr.get(sr_field, ''):<{self.serum_width}s}" for sr in self.sera) + " |\n"
+        for ag_no, ag in enumerate(self.antigens):
+            torg += f"| {' ':<{first_column_width}s} | " + " | ".join(f"{ag.get(agf, ''):<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + " | ".join(f"{self.titers[ag_no][sr_no]:>{self.serum_width}s}" for sr_no in range(len(self.sera))) + " |\n"
+        torg += "* -------------------- local vars --------------------\n:PROPERTIES:\n:VISIBILITY: folded\n:END:\n\n#+STARTUP: showall indent\n"
         return torg
 
     def make_fields(self):
