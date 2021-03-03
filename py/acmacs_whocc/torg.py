@@ -36,7 +36,7 @@ class TorgGenerator:
             torg += f"| {sr_field:<{first_column_width}s} | " + " | ".join(f"{' ':<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + " | ".join(f"{sr.get(sr_field, ''):<{self.serum_width}s}" for sr in self.sera) + " |\n"
         for ag_no, ag in enumerate(self.antigens):
             torg += f"| {' ':<{first_column_width}s} | " + " | ".join(f"{ag.get(agf, ''):<{agfw}s}" for agf, agfw in self.antigen_fields) + " | " + " | ".join(f"{self.titers[ag_no][sr_no]:>{self.serum_width}s}" for sr_no in range(len(self.sera))) + " |\n"
-        torg += "* -------------------- local vars --------------------\n:PROPERTIES:\n:VISIBILITY: folded\n:END:\n\n#+STARTUP: showall indent\n"
+        torg += "\n* -------------------- local vars --------------------\n:PROPERTIES:\n:VISIBILITY: folded\n:END:\n\n#+STARTUP: showall indent\n"
         return torg
 
     def make_fields(self):
