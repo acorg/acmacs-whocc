@@ -79,18 +79,27 @@ acmacs::xlsx::v1::csv::Sheet::Sheet(std::string_view filename)
         }
     }
 
-    AD_DEBUG("rows: {} cols: {}", number_of_rows(), number_of_columns());
-    for (const auto& row : data_) {
-        bool first{true};
-        for (const auto& cell : row) {
-            if (first)
-                first = false;
-            else
-                fmt::print("|");
-            fmt::print("{}", cell);
-        }
-        fmt::print("\n");
+    if (!data_.empty() && data_.back().size() <= 1 && number_of_columns_ > sheet::ncol_t{1})
+        data_.erase(std::prev(data_.end()));
+
+    // normalize number of columns
+    for (auto& row : data_) {
+        while (row.size() < *number_of_columns_)
+            row.emplace_back(std::string{});
     }
+
+    AD_INFO("csv: rows: {} cols: {}", number_of_rows(), number_of_columns());
+    // for (const auto& row : data_) {
+    //     bool first{true};
+    //     for (const auto& cell : row) {
+    //         if (first)
+    //             first = false;
+    //         else
+    //             fmt::print("|");
+    //         fmt::print("{}", cell);
+    //     }
+    //     fmt::print("\n");
+    // }
 }
 
 // ----------------------------------------------------------------------
