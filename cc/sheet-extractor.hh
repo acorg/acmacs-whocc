@@ -262,6 +262,7 @@ namespace acmacs::sheet::inline v1
         void find_serum_rows(warn_if_not_found winf) override;
         std::string make_date(const std::string& src) const override;
         std::string make_lab_id(const std::string& src) const override;
+        void adjust_titer_range(nrow_t row, column_range& cr) override;
     };
 
 } // namespace acmacs::sheet::inline v1

@@ -66,6 +66,7 @@ static const std::regex re_VIDRL_antigen_date_column_title{"^\\s*Sample\\s*Date\
 static const std::regex re_VIDRL_antigen_lab_id_column_title{"^\\s*VW\\s*$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
+static const std::regex re_VIDRL_serum_id_with_days{"^[AF][0-9][0-9][0-9][0-9]-[0-9]+D$", acmacs::regex::icase};
 
 static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT)\b)", acmacs::regex::icase};
 
@@ -131,8 +132,8 @@ std::unique_ptr<acmacs::sheet::Extractor> acmacs::sheet::v1::extractor_factory(s
         extractor->preprocess(winf);
         return extractor;
     }
-    catch (std::exception&) {
-        throw std::runtime_error{fmt::format("Sheet \"{}\": no specific extractor found, detected: {}", sheet->name(), detected)};
+    catch (std::exception& err) {
+        throw std::runtime_error{fmt::format("Sheet \"{}\": no specific extractor found, detected: {} (exception: {})", sheet->name(), detected, err)};
     }
 
 } // acmacs::sheet::v1::extractor_factory
@@ -752,10 +753,12 @@ void acmacs::sheet::v1::ExtractorCDC::exclude_control_sera(warn_if_not_found /*w
 
 void acmacs::sheet::v1::ExtractorCDC::adjust_titer_range(nrow_t row, column_range& cr)
 {
-    while (cr.second >= cr.first && !sheet().grep(re_CDC_titer_label, {nrow_t{0}, cr.second}, {row, cr.second + ncol_t{1}}).empty()) // ignore TITER and BACK TITER columns
-        --cr.second;
-    if (cr.second >= cr.first && !sheet().grep(re_CDC_ha_group_label, {nrow_t{0}, cr.first}, {row, cr.first + ncol_t{1}}).empty()) // ignore HA GROUP looking like titer
-        ++cr.first;
+    if (cr.valid()) {
+        while (cr.second >= cr.first && !sheet().grep(re_CDC_titer_label, {nrow_t{0}, cr.second}, {row, cr.second + ncol_t{1}}).empty()) // ignore TITER and BACK TITER columns
+            --cr.second;
+        if (cr.second >= cr.first && !sheet().grep(re_CDC_ha_group_label, {nrow_t{0}, cr.first}, {row, cr.first + ncol_t{1}}).empty()) // ignore HA GROUP looking like titer
+            ++cr.first;
+    }
 
 } // acmacs::sheet::v1::ExtractorCDC::adjust_titer_range
 
@@ -1260,6 +1263,23 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorVIDRL::serum(size_
     return serum;
 
 } // acmacs::sheet::v1::ExtractorVIDRL::serum
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorVIDRL::adjust_titer_range(nrow_t row, column_range& cr)
+{
+    if (cr.valid()) {
+        // VIDRL mutant table may have serum_id looking like a titer. If
+        // the row has serum ids to the left or to the right of titer
+        // range, invalidate the range
+        // AD_DEBUG("vidrl adjust_titer_range {} {} {}", row, cr, sheet().grep(re_VIDRL_serum_id_with_days, {row, ncol_t{1}}, {row + nrow_t{1}, cr.first - ncol_t{1}}));
+        if (sheet().grep(re_VIDRL_serum_id_with_days, {row, ncol_t{1}}, {row + nrow_t{1}, cr.first - ncol_t{1}}).size() > 0 ||
+            sheet().grep(re_VIDRL_serum_id_with_days, {row, cr.second + ncol_t{1}}, {row + nrow_t{1}, sheet().number_of_columns()}).size() > 0) {
+            cr.first = ncol_t{max_row_col};
+        }
+    }
+
+} // acmacs::sheet::v1::ExtractorVIDRL::adjust_titer_range
 
 // ----------------------------------------------------------------------
 
