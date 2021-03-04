@@ -80,6 +80,10 @@ namespace acmacs::sheet::inline v1
         virtual void report_data_anchors() const;
         virtual void check_export_possibility() const; // throws Error if exporting is not possible
 
+        virtual void force_serum_name_row(nrow_t row);
+        virtual void force_serum_passage_row(nrow_t row);
+        virtual void force_serum_id_row(nrow_t row);
+
       protected:
         virtual void find_titers(warn_if_not_found winf);
         virtual void find_antigen_name_column(warn_if_not_found winf);
@@ -175,7 +179,11 @@ namespace acmacs::sheet::inline v1
 
         void check_export_possibility() const override; // throws Error if exporting is not possible
 
-    protected:
+        void force_serum_name_row(nrow_t row) override;
+        void force_serum_passage_row(nrow_t row) override;
+        void force_serum_id_row(nrow_t row) override;
+
+      protected:
         virtual void find_serum_passage_row(const std::regex& re, warn_if_not_found winf) { serum_passage_row_ = find_serum_row(re, "passage", winf); }
         virtual void find_serum_id_row(const std::regex& re, warn_if_not_found winf) { serum_id_row_ = find_serum_row(re, "id", winf); }
         void exclude_control_sera(warn_if_not_found winf) override;

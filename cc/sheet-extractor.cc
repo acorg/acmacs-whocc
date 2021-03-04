@@ -525,6 +525,30 @@ std::string acmacs::sheet::v1::Extractor::make_lab_id(const std::string& src) co
 
 // ----------------------------------------------------------------------
 
+void acmacs::sheet::v1::Extractor::force_serum_name_row(nrow_t /*row*/)
+{
+    AD_WARNING("[{}] forcing serum name row unsupported by this extractor", lab());
+
+} // acmacs::sheet::v1::Extractor::force_serum_name_row
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::Extractor::force_serum_passage_row(nrow_t /*row*/)
+{
+    AD_WARNING("[{}] forcing serum passage row unsupported by this extractor", lab());
+
+} // acmacs::sheet::v1::Extractor::force_serum_passage_row
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::Extractor::force_serum_id_row(nrow_t /*row*/)
+{
+    AD_WARNING("[{}] forcing serum id row unsupported by this extractor", lab());
+
+} // acmacs::sheet::v1::Extractor::force_serum_id_row
+
+// ----------------------------------------------------------------------
+
 acmacs::sheet::v1::ExtractorCDC::ExtractorCDC(std::shared_ptr<Sheet> a_sheet)
     : Extractor(a_sheet)
 {
@@ -842,6 +866,33 @@ std::string acmacs::sheet::v1::ExtractorWithSerumRowsAbove::report_serum_anchors
                        serum_name_row_, serum_passage_row_, serum_id_row_, format(make_ranges(serum_columns_)));
 
 } // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::report_serum_anchors
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorWithSerumRowsAbove::force_serum_name_row(nrow_t row)
+{
+    AD_INFO("forced serum name row: {}", row);
+    serum_name_row_ = row;
+
+} // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::force_serum_name_row
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorWithSerumRowsAbove::force_serum_passage_row(nrow_t row)
+{
+    AD_INFO("forced serum passage row: {}", row);
+    serum_passage_row_ = row;
+
+} // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::force_serum_passage_row
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorWithSerumRowsAbove::force_serum_id_row(nrow_t row)
+{
+    AD_INFO("forced serum id row: {}", row);
+    serum_id_row_ = row;
+
+} // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::force_serum_id_row
 
 // ----------------------------------------------------------------------
 

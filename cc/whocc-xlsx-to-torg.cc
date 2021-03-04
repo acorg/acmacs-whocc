@@ -29,6 +29,10 @@ struct Options : public argv
     option<str_array> scripts{*this, 's', desc{"run python script (multiple switches allowed) before processing files"}};
     option<str_array> verbose{*this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
 
+    option<size_t> serum_name_row{*this, "serum-name-row", dflt{0ul}, desc{"force serum name row (1 based)"}};
+    option<size_t> serum_passage_row{*this, "serum-passage-row", dflt{0ul}, desc{"force serum passage row (1 based)"}};
+    option<size_t> serum_id_row{*this, "serum-id-row", dflt{0ul}, desc{"force serum id row (1 based)"}};
+
     argument<str_array> xlsx{*this, arg_name{".xlsx"}, mandatory};
 };
 
@@ -54,6 +58,12 @@ int main(int argc, char* const argv[])
                 for ([[maybe_unused]] auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
                     auto converter = acmacs::sheet::SheetToTorg{doc.sheet(sheet_no)};
                     converter.preprocess(opt.assay_information ? acmacs::sheet::Extractor::warn_if_not_found::no : acmacs::sheet::Extractor::warn_if_not_found::yes);
+                    if (*opt.serum_name_row > 0)
+                        converter.extractor().force_serum_name_row(acmacs::sheet::nrow_t{*opt.serum_name_row - 1});
+                    if (*opt.serum_passage_row > 0)
+                        converter.extractor().force_serum_passage_row(acmacs::sheet::nrow_t{*opt.serum_passage_row - 1});
+                    if (*opt.serum_id_row > 0)
+                        converter.extractor().force_serum_id_row(acmacs::sheet::nrow_t{*opt.serum_id_row - 1});
                     if (converter.valid()) {
                         // AD_LOG(acmacs::log::xlsx, "Sheet {:2d} {}", sheet_no + 1, converter.name());
                         if (opt.assay_information) {
