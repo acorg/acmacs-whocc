@@ -64,7 +64,7 @@ static const std::regex re_NIID_serum_name_row_non_serum_label{R"((HA\s*group))"
 static const std::regex re_VIDRL_antigen_lab_id{"^(SL|VW)[0-9]{8}$", acmacs::regex::icase};
 static const std::regex re_VIDRL_antigen_date_column_title{"^\\s*Sample\\s*Date\\s*$", acmacs::regex::icase};
 static const std::regex re_VIDRL_antigen_lab_id_column_title{"^\\s*VW\\s*$", acmacs::regex::icase};
-static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)$", acmacs::regex::icase};
+static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)(?:_.*)?$", acmacs::regex::icase}; // optional mutant info at the end
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id_with_days{"^[AF][0-9][0-9][0-9][0-9]-[0-9]+D$", acmacs::regex::icase};
 
@@ -460,9 +460,12 @@ std::optional<acmacs::sheet::v1::nrow_t> acmacs::sheet::v1::Extractor::find_seru
 {
     std::optional<nrow_t> found;
     for (nrow_t row{1}; row < antigen_rows()[0]; ++row) {
-        if (static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](ncol_t col) { return sheet().matches(re, row, col); })) >= (number_of_sera() / 2)) {
+        if (const auto num_columns = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](ncol_t col) { return sheet().matches(re, row, col); })); num_columns >= (number_of_sera() / 2)) {
             found = row;
             break;
+        }
+        else if (num_columns > 0) {
+            // AD_DEBUG("find_serum_row: row:{} columns:{}", row, num_columns);
         }
     }
 
