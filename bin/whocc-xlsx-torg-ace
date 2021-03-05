@@ -203,7 +203,7 @@ def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False):
         print(f">>> {ace_prn_read}:1")
     print()
     # prn_rem_conc = # leads to duplicates for A/Singapore/INFIMH-16-0019/2016 10-4 and 10-6: "--prn-remove-concentration" if prn_remove_concentration else ""
-    subprocess_check_call(["chart-org-table-to-ace", source, ace]) # , prn_rem_conc
+    subprocess_check_call(["chart-torg-table-to-ace", source, ace]) # , prn_rem_conc
     subprocess_check_call(["chart-fix-names-passages", ace, ace]) # , "-v", "all"])
     subprocess_check_call(["chart-table", ace])
     if ace_prn_read:
