@@ -54,7 +54,7 @@ def main(args):
 
 def make_ace(source, target):
     print(f"\n{'=' * 150}\n{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{source}\n{target}\n\n")
-    subprocess.run(f"chart-org-table-to-ace '{source}' '{target}' && chart-fix-names-passages '{target}' '{target}' && chart-table '{target}'", shell=True)
+    subprocess.run(f"chart-torg-table-to-ace '{source}' '{target}' && chart-fix-names-passages '{target}' '{target}' && chart-table '{target}'", shell=True)
 
 def sig_handler(signo, stack):
     raise RuntimeError(f"SIG {signo}")
