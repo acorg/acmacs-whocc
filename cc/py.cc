@@ -4,6 +4,7 @@
 #include "acmacs-chart-2/factory-import.hh"
 #include "acmacs-chart-2/factory-export.hh"
 #include "acmacs-chart-2/chart-modify.hh"
+#include "acmacs-chart-2/selected-antigens-sera.hh"
 
 // merge
 #include "acmacs-chart-2/merge.hh"
@@ -38,18 +39,28 @@ inline acmacs::chart::ChartClone::clone_data clone_type(const std::string& type)
 
 // ----------------------------------------------------------------------
 
-template <typename AgSr> struct AgSrIndexes
+namespace DEPRECATED
 {
-    AgSrIndexes() = default;
-    AgSrIndexes(std::shared_ptr<AgSr> a_ag_sr) : ag_sr{a_ag_sr}, indexes{a_ag_sr->all_indexes()} {}
-    bool empty() const { return indexes.empty(); }
+    template <typename AgSr> struct AgSrIndexes
+    {
+        AgSrIndexes() = default;
+        AgSrIndexes(std::shared_ptr<AgSr> a_ag_sr) : ag_sr{a_ag_sr}, indexes{a_ag_sr->all_indexes()} {}
+        bool empty() const { return indexes.empty(); }
 
-    std::shared_ptr<AgSr> ag_sr;
-    acmacs::chart::Indexes indexes;
-};
+        std::shared_ptr<AgSr> ag_sr;
+        acmacs::chart::Indexes indexes;
+    };
 
-struct AntigenIndexes : public AgSrIndexes<acmacs::chart::Antigens> { using AgSrIndexes<acmacs::chart::Antigens>::AgSrIndexes; };
-struct SerumIndexes : public AgSrIndexes<acmacs::chart::Sera> { using AgSrIndexes<acmacs::chart::Sera>::AgSrIndexes; };
+    struct AntigenIndexes : public AgSrIndexes<acmacs::chart::Antigens>
+    {
+        using AgSrIndexes<acmacs::chart::Antigens>::AgSrIndexes;
+    };
+    struct SerumIndexes : public AgSrIndexes<acmacs::chart::Sera>
+    {
+        using AgSrIndexes<acmacs::chart::Sera>::AgSrIndexes;
+    };
+
+} // namespace DEPRECATED
 
 // ----------------------------------------------------------------------
 
@@ -150,14 +161,25 @@ inline void py_chart(py::module_& mdl)
             [](ChartModify& chart, const std::string& filename, const std::string& program_name) { acmacs::chart::export_factory(chart, filename, program_name); }, //
             "filename"_a, "program_name"_a)                                                                                                                         //
 
-        .def("antigen_indexes",                                                                     //
-             [](ChartModify& chart) { return std::make_shared<AntigenIndexes>(chart.antigens()); }) //
-        .def("serum_indexes",                                                                       //
-             [](ChartModify& chart) { return std::make_shared<SerumIndexes>(chart.sera()); })       //
+        .def("select_antigens",                                                                                                                                                //
+             [](ChartModify& chart) { return std::make_shared<SelectedAntigens>(chart.antigens()); })                                                                          //
+        .def("select_antigens",                                                                                                                                                //
+             [](ChartModify& chart, const std::function<bool(size_t, std::shared_ptr<Antigen>)>& func) { return std::make_shared<SelectedAntigens>(chart.antigens(), func); }) //
 
+        .def("select_sera",                                                                                                                                          //
+             [](ChartModify& chart) { return std::make_shared<SelectedSera>(chart.sera()); })                                                                        //
+        .def("select_sera",                                                                                                                                          //
+             [](ChartModify& chart, const std::function<bool(size_t, std::shared_ptr<Serum>)>& func) { return std::make_shared<SelectedSera>(chart.sera(), func); }) //
+
+        // DEPRECATED
+
+        .def("antigen_indexes",                                                                                 //
+             [](ChartModify& chart) { return std::make_shared<DEPRECATED::AntigenIndexes>(chart.antigens()); }) //
+        .def("serum_indexes",                                                                                   //
+             [](ChartModify& chart) { return std::make_shared<DEPRECATED::SerumIndexes>(chart.sera()); })       //
         .def(
             "remove_antigens_sera",
-            [](ChartModify& chart, std::shared_ptr<AntigenIndexes> antigens, std::shared_ptr<SerumIndexes> sera, bool remove_projections) {
+            [](ChartModify& chart, std::shared_ptr<DEPRECATED::AntigenIndexes> antigens, std::shared_ptr<DEPRECATED::SerumIndexes> sera, bool remove_projections) {
                 if (remove_projections)
                     chart.projections_modify().remove_all();
                 if (antigens && !antigens->empty())
@@ -184,7 +206,7 @@ inline void py_chart(py::module_& mdl)
                     else
                         AD_WARNING("No titer replacement performed: no titer match for \"{}\"", look_for);
                 }
-            },                                                                          //
+            },                                                  //
             "look_for"_a, "replacement"_a, "verbose"_a = false, //
             py::doc(R"(look_for is regular expression,
 replacement is replacement with substitutions:
@@ -195,8 +217,22 @@ replacement is replacement with substitutions:
     $' - suffix after match
 Usage:
     chart.modify_titers(look_for=">", replacement="$`$'", verbose=True)
-)"))                                                                                    //
+)"))                                                            //
         ;
+
+    // ----------------------------------------------------------------------
+
+    py::class_<SelectedAntigens>(mdl, "SelectedAntigens")
+        .def("empty", &SelectedAntigens::empty)
+        .def("size", &SelectedAntigens::size)
+        // .def("indexes", [](const auto& selected) { return selected.indexes; })
+        .def("report", &SelectedAntigens::report);
+
+    py::class_<SelectedSera>(mdl, "SelectedSera")
+        .def("empty", &SelectedSera::empty)
+        .def("size", &SelectedSera::size)
+        // .def("indexes", [](const auto& selected) { return selected.indexes; })
+        .def("report", &SelectedSera::report);
 
     // ----------------------------------------------------------------------
 
@@ -207,33 +243,33 @@ Usage:
             "recalculate"_a = false)                                                                                                                                       //
         ;
 
-    py::class_<AntigenIndexes, std::shared_ptr<AntigenIndexes>>(mdl, "AntigenIndexes") //
-        .def("__str__", [](const AntigenIndexes& indexes) { return fmt::format("AntigenIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
-        .def("empty", &AntigenIndexes::empty)
+    py::class_<DEPRECATED::AntigenIndexes, std::shared_ptr<DEPRECATED::AntigenIndexes>>(mdl, "AntigenIndexes") //
+        .def("__str__", [](const DEPRECATED::AntigenIndexes& indexes) { return fmt::format("DEPRECATED::AntigenIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
+        .def("empty", &DEPRECATED::AntigenIndexes::empty)
 
         .def(
             "filter_lineage",
-            [](AntigenIndexes& indexes, const std::string& lineage) {
+            [](DEPRECATED::AntigenIndexes& indexes, const std::string& lineage) {
                 indexes.ag_sr->filter_lineage(indexes.indexes, acmacs::chart::BLineage{lineage});
                 return indexes;
             },           //
             "lineage"_a) //
         ;
 
-    py::class_<SerumIndexes, std::shared_ptr<SerumIndexes>>(mdl, "SerumIndexes") //
-        .def("__str__", [](const SerumIndexes& indexes) { return fmt::format("SerumIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
-        .def("empty", &SerumIndexes::empty)
+    py::class_<DEPRECATED::SerumIndexes, std::shared_ptr<DEPRECATED::SerumIndexes>>(mdl, "DEPRECATED_SerumIndexes") //
+        .def("__str__", [](const DEPRECATED::SerumIndexes& indexes) { return fmt::format("DEPRECATED::SerumIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
+        .def("empty", &DEPRECATED::SerumIndexes::empty)
 
         .def(
             "filter_lineage",
-            [](SerumIndexes& indexes, const std::string& lineage) {
+            [](DEPRECATED::SerumIndexes& indexes, const std::string& lineage) {
                 indexes.ag_sr->filter_lineage(indexes.indexes, acmacs::chart::BLineage{lineage});
                 return indexes;
             },           //
             "lineage"_a) //
         .def(
             "filter_serum_id",
-            [](SerumIndexes& indexes, const std::string& serum_id) {
+            [](DEPRECATED::SerumIndexes& indexes, const std::string& serum_id) {
                 indexes.ag_sr->filter_serum_id(indexes.indexes, serum_id);
                 return indexes;
             },            //
