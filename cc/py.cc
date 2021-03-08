@@ -161,8 +161,12 @@ inline void py_chart(py::module_& mdl)
             [](ChartModify& chart, const std::string& filename, const std::string& program_name) { acmacs::chart::export_factory(chart, filename, program_name); }, //
             "filename"_a, "program_name"_a)                                                                                                                         //
 
-        .def("select_antigens",                                                                                                                                                //
-             [](ChartModify& chart) { return std::make_shared<SelectedAntigens>(chart.antigens()); })                                                                          //
+        .def("select_antigens", //
+             [](ChartModify& chart) {
+                 auto sa = std::make_shared<SelectedAntigens>(chart.antigens());
+                 AD_DEBUG("sa: {} {}", sa->size(), fmt::ptr(sa.get()));
+                 return sa;
+             })                                                                                                                                                                //
         .def("select_antigens",                                                                                                                                                //
              [](ChartModify& chart, const std::function<bool(size_t, std::shared_ptr<Antigen>)>& func) { return std::make_shared<SelectedAntigens>(chart.antigens(), func); }) //
 
@@ -230,16 +234,16 @@ Usage:
 
     // ----------------------------------------------------------------------
 
-    py::class_<SelectedAntigens>(mdl, "SelectedAntigens")
+    py::class_<SelectedAntigens, std::shared_ptr<SelectedAntigens>>(mdl, "SelectedAntigens")
         .def("empty", &SelectedAntigens::empty)
         .def("size", &SelectedAntigens::size)
-        // .def("indexes", [](const auto& selected) { return selected.indexes; })
+        .def("indexes", [](const SelectedAntigens& selected) { return selected.indexes; })
         .def("report", &SelectedAntigens::report);
 
-    py::class_<SelectedSera>(mdl, "SelectedSera")
+    py::class_<SelectedSera, std::shared_ptr<SelectedSera>>(mdl, "SelectedSera")
         .def("empty", &SelectedSera::empty)
         .def("size", &SelectedSera::size)
-        // .def("indexes", [](const auto& selected) { return selected.indexes; })
+        .def("indexes", [](const SelectedSera& selected) { return selected.indexes; })
         .def("report", &SelectedSera::report);
 
     // ----------------------------------------------------------------------
@@ -250,6 +254,9 @@ Usage:
             [](const ProjectionModify& projection, bool recalculate) { return projection.stress(recalculate ? RecalculateStress::if_necessary : RecalculateStress::no); }, //
             "recalculate"_a = false)                                                                                                                                       //
         ;
+
+    // ----------------------------------------------------------------------
+    // DEPRECATED
 
     py::class_<DEPRECATED::AntigenIndexes, std::shared_ptr<DEPRECATED::AntigenIndexes>>(mdl, "AntigenIndexes") //
         .def("__str__", [](const DEPRECATED::AntigenIndexes& indexes) { return fmt::format("DEPRECATED::AntigenIndexes({}){}", indexes.indexes.size(), indexes.indexes); })
