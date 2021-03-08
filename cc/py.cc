@@ -222,6 +222,14 @@ Usage:
 
     // ----------------------------------------------------------------------
 
+    py::class_<Antigen, std::shared_ptr<Antigen>>(mdl, "Antigen")
+        ;
+
+    py::class_<Serum, std::shared_ptr<Serum>>(mdl, "Serum")
+        ;
+
+    // ----------------------------------------------------------------------
+
     py::class_<SelectedAntigens>(mdl, "SelectedAntigens")
         .def("empty", &SelectedAntigens::empty)
         .def("size", &SelectedAntigens::size)
