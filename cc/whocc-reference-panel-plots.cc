@@ -248,7 +248,7 @@ void process_source(ChartData& aData, std::string_view filename, bool only_exist
 
 size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existing)
 {
-    const std::string name = aAntigen->full_name();
+    const std::string name = aAntigen->format("{name_full}");
     const auto pos = std::find(mAntigens.begin(), mAntigens.end(), name);
     size_t result = static_cast<size_t>(pos - mAntigens.begin());
     if (pos == mAntigens.end()) {
@@ -265,7 +265,7 @@ size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existi
 
 size_t ChartData::add_serum(acmacs::chart::SerumP aSerum, bool only_existing)
 {
-    const std::string name = aSerum->full_name_without_passage();
+    const std::string name = aSerum->format("{name_full}");
     const auto pos = std::find(mSera.begin(), mSera.end(), name);
     size_t result = static_cast<size_t>(pos - mSera.begin());
     if (pos == mSera.end()) {

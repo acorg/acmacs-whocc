@@ -106,27 +106,27 @@ std::vector<SerumData> collect(const acmacs::chart::Chart& chart, std::optional<
     auto hidb_tables = hidb.tables();
     std::vector<SerumData> serum_data;
     for (auto [sr_no, serum] : acmacs::enumerate(*sera)) {
-        if (!name_match || std::regex_search(serum->full_name(), *name_match)) {
+        if (!name_match || std::regex_search(serum->format("{name_full}"), *name_match)) {
             if (auto hidb_serum = hidb_sera[sr_no]; hidb_serum) {
                 const auto serum_tables = hidb_tables->stat(hidb_serum->tables());
                 if (serum_tables.empty())
-                    std::cerr << "WARNING: no tables in hidb for " << sr_no << ' ' << serum->full_name() << '\n';
-                // std::cerr << "DEBUG: " <<  sr_no << ' ' << serum->full_name() << '\n';
+                    std::cerr << "WARNING: no tables in hidb for " << sr_no << ' ' << serum->format("{name_full}") << '\n';
+                // std::cerr << "DEBUG: " <<  sr_no << ' ' << serum->format("{name_full}") << '\n';
                 // for (const auto& est : serum_tables) {
                 //     std::cerr << "DEBUG:    " << est.title() << " tables:" << est.number << " newest:" << est.most_recent->date() << " oldest:" << est.oldest->date() << '\n';
                 // }
-                serum_data.push_back({sr_no, *serum->name(), serum->full_name(), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), serum_tables});
+                serum_data.push_back({sr_no, *serum->name(), serum->format("{name_full}"), serum->reassortant(), serum->passage(), serum->serum_id(), passage_type(serum->reassortant(), serum->passage(), serum->serum_id()), serum_tables});
                 const auto homologous_antigens = serum->homologous_antigens();
                 for (auto ag_no : homologous_antigens) {
                     const auto empirical = acmacs::chart::serum_circle_empirical(ag_no, sr_no, chart, 0);
                     const auto theoretical = acmacs::chart::serum_circle_theoretical(ag_no, sr_no, chart, 0);
-                    serum_data.back().radii.push_back({ag_no, chart.antigen(ag_no)->full_name(), empirical.per_antigen()[0].titer, empirical.per_antigen()[0].radius, theoretical.per_antigen()[0].radius});
+                    serum_data.back().radii.push_back({ag_no, chart.antigen(ag_no)->format("{name_full}"), empirical.per_antigen()[0].titer, empirical.per_antigen()[0].radius, theoretical.per_antigen()[0].radius});
                 }
                 if (homologous_antigens->empty())
-                    std::cerr << "ERROR: no homologous antigens for " << sr_no << ' ' << serum->full_name() << '\n';
+                    std::cerr << "ERROR: no homologous antigens for " << sr_no << ' ' << serum->format("{name_full}") << '\n';
             }
             else
-                std::cerr << "WARNING: not in hidb: " << serum->full_name_with_fields() << '\n';
+                std::cerr << "WARNING: not in hidb: " << serum->format("{name_full} {fields}") << '\n';
         }
     }
     return serum_data;

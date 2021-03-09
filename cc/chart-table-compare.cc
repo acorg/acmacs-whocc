@@ -88,7 +88,7 @@ class ChartData
         for (auto [ag_no, ag] : acmacs::enumerate(*chart_antigens)) {
             for (auto [sr_no, sr] : acmacs::enumerate(*chart_sera)) {
                 if (const auto& titer = chart_titers->titer(ag_no, sr_no); !titer.is_dont_care())
-                    raw_.push_back(TiterRef{.serum = sr->full_name(), .antigen = ag->full_name(), .table_no = table_no, .titer = titer});
+                    raw_.push_back(TiterRef{.serum = sr->format("{name_full}"), .antigen = ag->format("{name_full}"), .table_no = table_no, .titer = titer});
             }
         }
     }

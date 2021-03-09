@@ -37,7 +37,7 @@ int main(int argc, char* const argv[])
             };
 
             constexpr auto is_antigen = std::is_same_v<std::decay_t<decltype(ag_sr)>, acmacs::chart::Antigen>;
-            const auto full_name = ag_sr.full_name();
+            const auto full_name = ag_sr.format("{name_full}");
             const auto reassortant = ag_sr.reassortant();
             const auto annotations = acmacs::string::join(acmacs::string::join_space, ag_sr.annotations());
 
@@ -45,7 +45,7 @@ int main(int argc, char* const argv[])
             bool full_name_match_present{false};
             for (const auto hidb_index : found_ag_sr) {
                 auto hidb_antigen = hidb_ag_sr.at(hidb_index);
-                const auto hidb_full_name = hidb_antigen->full_name();
+                const auto hidb_full_name = hidb_antigen->format("{name_full}");
                 full_name_match_present |= hidb_full_name == full_name;
                 auto& variant = hidb_variants.emplace_back(hidb_full_name, fmt::memory_buffer{});
                 // mark matching matching annotations, reassortant, passage, serum_id
