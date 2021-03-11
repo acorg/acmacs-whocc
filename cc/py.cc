@@ -222,9 +222,30 @@ Usage:
 
     // ----------------------------------------------------------------------
 
-    py::class_<Antigen, std::shared_ptr<Antigen>>(mdl, "Antigen");
+    py::class_<acmacs::virus::Passage>(mdl, "Passage")                                  //
+        .def("__str__", [](const acmacs::virus::Passage& passage) { return *passage; }) //
+        .def("__eq__", [](const acmacs::virus::Passage& passage, std::string_view str) { return *passage == str; }) //
+        .def("__eq__", [](const acmacs::virus::Passage& passage, const acmacs::virus::Passage& another) { return passage == another; }) //
+        .def("type", &acmacs::virus::Passage::passage_type)                             //
+        .def("is_egg", &acmacs::virus::Passage::is_egg)                                 //
+        .def("is_cell", &acmacs::virus::Passage::is_cell)                               //
+        .def("without_date", &acmacs::virus::Passage::without_date)                     //
+        .def("last_number", &acmacs::virus::Passage::last_number)                       //
+        .def("last_type", &acmacs::virus::Passage::last_type)                           //
+        ;
 
-    py::class_<Serum, std::shared_ptr<Serum>>(mdl, "Serum");
+    // ----------------------------------------------------------------------
+
+    py::class_<detail::AntigenSerum, std::shared_ptr<detail::AntigenSerum>>(mdl, "AntigenSerum") //
+        .def("name", [](const detail::AntigenSerum& ag_sr) { return *ag_sr.name(); })            //
+        .def("passage", &detail::AntigenSerum::passage)                                          //
+        ;
+
+    py::class_<Antigen, std::shared_ptr<Antigen>, detail::AntigenSerum>(mdl, "Antigen") //
+        ;
+
+    py::class_<Serum, std::shared_ptr<Serum>, detail::AntigenSerum>(mdl, "Serum") //
+        ;
 
     // ----------------------------------------------------------------------
 
