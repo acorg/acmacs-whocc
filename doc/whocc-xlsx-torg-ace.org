@@ -1,6 +1,10 @@
-# Time-stamp: <2020-12-09 13:13:34 eu>
+# Time-stamp: <2021-03-11 12:40:30 eu>
 
 * whocc-xlsx-torg-ace
+
+see [[file:~/ac/whocc-tables/README.org][~/ac/whocc-tables/README.org]]
+
+* CDC tsv tables and whocc-cdc-tsv-tables-to-ace
 
 see [[file:~/ac/whocc-tables/README.org][~/ac/whocc-tables/README.org]]
 
