@@ -222,29 +222,48 @@ Usage:
 
     // ----------------------------------------------------------------------
 
-    py::class_<acmacs::virus::Passage>(mdl, "Passage")                                  //
-        .def("__str__", [](const acmacs::virus::Passage& passage) { return *passage; }) //
-        .def("__eq__", [](const acmacs::virus::Passage& passage, std::string_view str) { return *passage == str; }) //
+    py::class_<acmacs::virus::Passage>(mdl, "Passage")                                                                                  //
+        .def("__str__", [](const acmacs::virus::Passage& passage) { return *passage; })                                                 //
+        .def("__eq__", [](const acmacs::virus::Passage& passage, std::string_view str) { return *passage == str; })                     //
         .def("__eq__", [](const acmacs::virus::Passage& passage, const acmacs::virus::Passage& another) { return passage == another; }) //
-        .def("type", &acmacs::virus::Passage::passage_type)                             //
-        .def("is_egg", &acmacs::virus::Passage::is_egg)                                 //
-        .def("is_cell", &acmacs::virus::Passage::is_cell)                               //
-        .def("without_date", &acmacs::virus::Passage::without_date)                     //
-        .def("last_number", &acmacs::virus::Passage::last_number)                       //
-        .def("last_type", &acmacs::virus::Passage::last_type)                           //
+        .def("type", &acmacs::virus::Passage::passage_type)                                                                             //
+        .def("is_egg", &acmacs::virus::Passage::is_egg)                                                                                 //
+        .def("is_cell", &acmacs::virus::Passage::is_cell)                                                                               //
+        .def("without_date", &acmacs::virus::Passage::without_date)                                                                     //
+        .def("last_number", &acmacs::virus::Passage::last_number)                                                                       //
+        .def("last_type", &acmacs::virus::Passage::last_type)                                                                           //
+        ;
+
+    py::class_<acmacs::chart::Annotations>(mdl, "Annotations") //
+        .def("distinct", &Annotations::distinct)               //
         ;
 
     // ----------------------------------------------------------------------
 
-    py::class_<detail::AntigenSerum, std::shared_ptr<detail::AntigenSerum>>(mdl, "AntigenSerum") //
-        .def("name", [](const detail::AntigenSerum& ag_sr) { return *ag_sr.name(); })            //
-        .def("passage", &detail::AntigenSerum::passage)                                          //
+    py::class_<detail::AntigenSerum, std::shared_ptr<detail::AntigenSerum>>(mdl, "AntigenSerum")                                                    //
+        .def("name", [](const detail::AntigenSerum& ag_sr) { return *ag_sr.name(); })                                                               //
+        .def("name_full", &detail::AntigenSerum::name_full)                                                                                         //
+        .def("passage", &detail::AntigenSerum::passage)                                                                                             //
+        .def("lineage", [](const detail::AntigenSerum& ag_sr) { return ag_sr.lineage().to_string(); })                                              //
+        .def("reassortant", [](const detail::AntigenSerum& ag_sr) { return *ag_sr.reassortant(); })                                                 //
+        .def("annotations", &detail::AntigenSerum::annotations)                                                                                     //
+        .def("format", [](const detail::AntigenSerum& ag_sr, const std::string& pattern) { return ag_sr.format(pattern, collapse_spaces_t::yes); }) //
+        .def("is_egg", &detail::AntigenSerum::is_egg)                                                                                               //
+        .def("is_cell", &detail::AntigenSerum::is_cell)                                                                                             //
+        .def("passage_type", &detail::AntigenSerum::passage_type)                                                                                   //
+        .def("distinct", &detail::AntigenSerum::distinct)                                                                                           //
         ;
 
     py::class_<Antigen, std::shared_ptr<Antigen>, detail::AntigenSerum>(mdl, "Antigen") //
+        .def("date", [](const Antigen& ag) { return *ag.date(); })                      //
+        .def("reference", &Antigen::reference)                                          //
+        .def("lab_ids", [](const Antigen& ag) { return *ag.lab_ids(); })                //
         ;
 
-    py::class_<Serum, std::shared_ptr<Serum>, detail::AntigenSerum>(mdl, "Serum") //
+    py::class_<Serum, std::shared_ptr<Serum>, detail::AntigenSerum>(mdl, "Serum")  //
+        .def("serum_id", [](const Serum& sr) { return *sr.serum_id(); })           //
+        .def("serum_species", [](const Serum& sr) { return *sr.serum_species(); }) //
+        .def("homologous_antigens", &Serum::homologous_antigens)                   //
         ;
 
     // ----------------------------------------------------------------------
