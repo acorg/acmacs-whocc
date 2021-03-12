@@ -348,6 +348,27 @@ inline void py_merge(py::module_& mdl)
     using namespace pybind11::literals;
     using namespace acmacs::chart;
 
+    // TODO: antigens only, sera only
+    py::class_<CommonAntigensSera>(mdl, "CommonAntigensSera") //
+        .def(py::init(
+                 [](const ChartModify& primary, const ChartModify& secondary, const std::string& match_level) { return new CommonAntigensSera(primary, secondary, CommonAntigensSera::match_level(match_level)); }),
+             "primary"_a, "secondary"_a, "match_level"_a = "auto",
+             py::doc(R"(match_level: "strict", "relaxed", "ignored", "auto")")) //_
+        .def(py::init([](const Chart& chart) { return new CommonAntigensSera(chart); }), "chart"_a,
+             py::doc(R"(for procrustes between projections of the same chart)")) //_
+        .def("report", &CommonAntigensSera::report, "indent"_a = 0);
+
+    py::class_<ProcrustesData>(mdl, "ProcrustesData") //
+        .def_readonly("rms", &ProcrustesData::rms)    //
+        ;
+
+    mdl.def(
+        "procrustes",
+        [](const Projection& primary, const Projection& secondary, const CommonAntigensSera& common, bool scaling) {
+            return procrustes(primary, secondary, common.points(), scaling ? procrustes_scaling_t::yes : procrustes_scaling_t::no);
+        },
+        "primary"_a, "secondary"_a, "common"_a, "scaling"_a = false);
+
     mdl.def(
         "merge",
         [](std::shared_ptr<ChartModify> chart1, std::shared_ptr<ChartModify> chart2, const std::string& merge_type, const std::string& match, bool a_combine_cheating_assays, bool a_remove_distinct) {
