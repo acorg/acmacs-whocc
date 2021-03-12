@@ -162,21 +162,35 @@ inline void py_chart(py::module_& mdl)
             "filename"_a, "program_name"_a)                                                                                                                         //
 
         .def("select_antigens",                                                                                                                                                //
-             [](ChartModify& chart) { return std::make_shared<SelectedAntigens>(chart.antigens()); })                                                                          //
+             [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedAntigens>(chart); },                                                                          //
+             py::doc(R"(Selects all antigens and returns SelectedAntigens object.)")) //
         .def("select_antigens",                                                                                                                                                //
-             [](ChartModify& chart, const std::function<bool(size_t, std::shared_ptr<Antigen>)>& func) { return std::make_shared<SelectedAntigens>(chart.antigens(), func); }) //
+             [](std::shared_ptr<ChartModify> chart, const std::function<bool(size_t, std::shared_ptr<Antigen>)>& func) { return std::make_shared<SelectedAntigens>(chart, func); }, //
+             "predicate"_a, //
+             py::doc(R"(Passed predicate (function with two args: antigen index and antigen object)
+is called for each antigen, selects just antigens for which predicate
+returns True, returns SelectedAntigens object.)")) //
 
         .def("select_sera",                                                                                                                                          //
-             [](ChartModify& chart) { return std::make_shared<SelectedSera>(chart.sera()); })                                                                        //
+             [](std::shared_ptr<ChartModify> chart) { return std::make_shared<SelectedSera>(chart); },                                                                        //
+             py::doc(R"(Selects all sera and returns SelectedSera object.)")) //
         .def("select_sera",                                                                                                                                          //
-             [](ChartModify& chart, const std::function<bool(size_t, std::shared_ptr<Serum>)>& func) { return std::make_shared<SelectedSera>(chart.sera(), func); }) //
+             [](std::shared_ptr<ChartModify> chart, const std::function<bool(size_t, std::shared_ptr<Serum>)>& func) { return std::make_shared<SelectedSera>(chart, func); }, //
+             "predicate"_a, //
+             py::doc(R"(Passed predicate (function with two args: serum index and serum object)
+is called for each serum, selects just sera for which predicate
+returns True, returns SelectedAntigens object.)")) //
 
         // DEPRECATED
 
-        .def("antigen_indexes",                                                                                 //
-             [](ChartModify& chart) { return std::make_shared<DEPRECATED::AntigenIndexes>(chart.antigens()); }) //
-        .def("serum_indexes",                                                                                   //
-             [](ChartModify& chart) { return std::make_shared<DEPRECATED::SerumIndexes>(chart.sera()); })       //
+        .def(
+            "antigen_indexes",                                                                                 //
+            [](ChartModify& chart) { return std::make_shared<DEPRECATED::AntigenIndexes>(chart.antigens()); }, //
+            py::doc(R"(DEPRECATED, use chart.select_antigens())"))                                             //
+        .def(
+            "serum_indexes",                                                                             //
+            [](ChartModify& chart) { return std::make_shared<DEPRECATED::SerumIndexes>(chart.sera()); }, //
+            py::doc(R"(DEPRECATED, use chart.select_sera())"))                                           //
         .def(
             "remove_antigens_sera",
             [](ChartModify& chart, std::shared_ptr<DEPRECATED::AntigenIndexes> antigens, std::shared_ptr<DEPRECATED::SerumIndexes> sera, bool remove_projections) {
@@ -188,7 +202,8 @@ inline void py_chart(py::module_& mdl)
                     chart.remove_sera(acmacs::ReverseSortedIndexes{*sera->indexes});
             },                                                                          //
             "antigens"_a = nullptr, "sera"_a = nullptr, "remove_projections"_a = false, //
-            py::doc(R"(Usage:
+            py::doc(R"(DEPRECATED, use chart.select_antigens
+Usage:
     chart.remove_antigens_sera(antigens=c.antigen_indexes().filter_lineage(\"yamagata\"), sera=c.serum_indexes().filter_lineage(\"yamagata\"))
     chart.remove_antigens_sera(sera=chart.serum_indexes().filter_serum_id("A8658-14D"))
 )"))                                                                                    //
@@ -272,13 +287,13 @@ Usage:
         .def("empty", &SelectedAntigens::empty)
         .def("size", &SelectedAntigens::size)
         .def("indexes", [](const SelectedAntigens& selected) { return *selected.indexes; })
-        .def("report", &SelectedAntigens::report);
+        .def("report", &SelectedAntigens::report, "format"_a = "{no0},");
 
     py::class_<SelectedSera, std::shared_ptr<SelectedSera>>(mdl, "SelectedSera")
         .def("empty", &SelectedSera::empty)
         .def("size", &SelectedSera::size)
         .def("indexes", [](const SelectedSera& selected) { return *selected.indexes; })
-        .def("report", &SelectedSera::report);
+        .def("report", &SelectedSera::report, "format"_a = "{no0},");
 
     // ----------------------------------------------------------------------
 
