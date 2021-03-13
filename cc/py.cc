@@ -350,9 +350,15 @@ inline void py_merge(py::module_& mdl)
 
     // TODO: antigens only, sera only
     py::class_<CommonAntigensSera>(mdl, "CommonAntigensSera") //
-        .def(py::init(
-                 [](const ChartModify& primary, const ChartModify& secondary, const std::string& match_level) { return new CommonAntigensSera(primary, secondary, CommonAntigensSera::match_level(match_level)); }),
+        .def(py::init([](const ChartModify& primary, const ChartModify& secondary, const std::string& match_level) {
+                 return new CommonAntigensSera(primary, secondary, CommonAntigensSera::match_level(match_level));
+             }),
              "primary"_a, "secondary"_a, "match_level"_a = "auto",
+             py::doc(R"(match_level: "strict", "relaxed", "ignored", "auto")")) //_
+        .def(py::init([](const ChartModify& primary, const ChartModify& secondary, common::antigen_selector_t antigen_entry_extractor, common::serum_selector_t serum_entry_extractor, const std::string& match_level) {
+            return new CommonAntigensSera(primary, secondary, antigen_entry_extractor, serum_entry_extractor, CommonAntigensSera::match_level(match_level));
+             }),
+            "primary"_a, "secondary"_a, "antigen_entry_extractor"_a, "serum_entry_extractor"_a, "match_level"_a = "auto",
              py::doc(R"(match_level: "strict", "relaxed", "ignored", "auto")")) //_
         .def(py::init([](const Chart& chart) { return new CommonAntigensSera(chart); }), "chart"_a,
              py::doc(R"(for procrustes between projections of the same chart)")) //_
@@ -360,6 +366,41 @@ inline void py_merge(py::module_& mdl)
 
     py::class_<ProcrustesData>(mdl, "ProcrustesData") //
         .def_readonly("rms", &ProcrustesData::rms)    //
+        ;
+
+    py::class_<common::AntigenEntry>(mdl, "common_AntigenEntry") //
+        .def(py::init<size_t, const Antigen&>())                 //
+        .def_property(
+            "name", [](const common::AntigenEntry& en) { return *en.name; }, [](common::AntigenEntry& en, const std::string& new_name) { en.name = new_name; }) //
+        .def("full_name", &common::AntigenEntry::full_name)                                                                                                     //
+        .def_property(
+            "reassortant", [](const common::AntigenEntry& en) { return *en.reassortant; },
+            [](common::AntigenEntry& en, const std::string& new_reassortant) { en.reassortant = acmacs::virus::Reassortant{new_reassortant}; }) //
+        .def_property(
+            "annotations", [](const common::AntigenEntry& en) { return *en.annotations; },
+            [](common::AntigenEntry& en, const std::vector<std::string>& new_annotations) { en.annotations = Annotations{new_annotations}; }) //
+        .def_property(
+            "passage", [](const common::AntigenEntry& en) { return *en.passage; },
+            [](common::AntigenEntry& en, const std::string& new_passage) { en.passage = acmacs::virus::Passage{new_passage}; }) //
+        ;
+
+    py::class_<common::SerumEntry>(mdl, "common_SerumEntry") //
+        .def(py::init<size_t, const Serum&>())                 //
+        .def_property(
+            "name", [](const common::SerumEntry& en) { return *en.name; }, [](common::SerumEntry& en, const std::string& new_name) { en.name = new_name; }) //
+        .def("full_name", &common::SerumEntry::full_name)                                                                                                     //
+        .def_property(
+            "reassortant", [](const common::SerumEntry& en) { return *en.reassortant; },
+            [](common::SerumEntry& en, const std::string& new_reassortant) { en.reassortant = acmacs::virus::Reassortant{new_reassortant}; }) //
+        .def_property(
+            "annotations", [](const common::SerumEntry& en) { return *en.annotations; },
+            [](common::SerumEntry& en, const std::vector<std::string>& new_annotations) { en.annotations = Annotations{new_annotations}; }) //
+        .def_property(
+            "serum_id", [](const common::SerumEntry& en) { return *en.serum_id; },
+            [](common::SerumEntry& en, const std::string& new_serum_id) { en.serum_id = SerumId{new_serum_id}; }) //
+        .def_property(
+            "passage", [](const common::SerumEntry& en) { return *en.passage; },
+            [](common::SerumEntry& en, const std::string& new_passage) { en.passage = acmacs::virus::Passage{new_passage}; }) //
         ;
 
     mdl.def(
