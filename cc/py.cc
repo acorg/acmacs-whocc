@@ -371,36 +371,36 @@ inline void py_merge(py::module_& mdl)
     py::class_<common::AntigenEntry>(mdl, "common_AntigenEntry") //
         .def(py::init<size_t, const Antigen&>())                 //
         .def_property(
-            "name", [](const common::AntigenEntry& en) { return *en.name; }, [](common::AntigenEntry& en, const std::string& new_name) { en.name = new_name; }) //
+            "name", [](const common::AntigenEntry& en) { return *en.name; }, [](common::AntigenEntry& en, const std::string& new_name) { en.make_orig(); en.name = new_name; }) //
         .def("full_name", &common::AntigenEntry::full_name)                                                                                                     //
         .def_property(
             "reassortant", [](const common::AntigenEntry& en) { return *en.reassortant; },
-            [](common::AntigenEntry& en, const std::string& new_reassortant) { en.reassortant = acmacs::virus::Reassortant{new_reassortant}; }) //
+            [](common::AntigenEntry& en, const std::string& new_reassortant) { en.make_orig(); en.reassortant = acmacs::virus::Reassortant{new_reassortant}; }) //
         .def_property(
             "annotations", [](const common::AntigenEntry& en) { return *en.annotations; },
-            [](common::AntigenEntry& en, const std::vector<std::string>& new_annotations) { en.annotations = Annotations{new_annotations}; }) //
+            [](common::AntigenEntry& en, const std::vector<std::string>& new_annotations) { en.make_orig(); en.annotations = Annotations{new_annotations}; }) //
         .def_property(
             "passage", [](const common::AntigenEntry& en) { return *en.passage; },
-            [](common::AntigenEntry& en, const std::string& new_passage) { en.passage = acmacs::virus::Passage{new_passage}; }) //
+            [](common::AntigenEntry& en, const std::string& new_passage) { en.make_orig(); en.passage = acmacs::virus::Passage{new_passage}; }) //
         ;
 
     py::class_<common::SerumEntry>(mdl, "common_SerumEntry") //
         .def(py::init<size_t, const Serum&>())                 //
         .def_property(
-            "name", [](const common::SerumEntry& en) { return *en.name; }, [](common::SerumEntry& en, const std::string& new_name) { en.name = new_name; }) //
+            "name", [](const common::SerumEntry& en) { return *en.name; }, [](common::SerumEntry& en, const std::string& new_name) { en.make_orig(); en.name = new_name; }) //
         .def("full_name", &common::SerumEntry::full_name)                                                                                                     //
         .def_property(
             "reassortant", [](const common::SerumEntry& en) { return *en.reassortant; },
-            [](common::SerumEntry& en, const std::string& new_reassortant) { en.reassortant = acmacs::virus::Reassortant{new_reassortant}; }) //
+            [](common::SerumEntry& en, const std::string& new_reassortant) { en.make_orig(); en.reassortant = acmacs::virus::Reassortant{new_reassortant}; }) //
         .def_property(
             "annotations", [](const common::SerumEntry& en) { return *en.annotations; },
-            [](common::SerumEntry& en, const std::vector<std::string>& new_annotations) { en.annotations = Annotations{new_annotations}; }) //
+            [](common::SerumEntry& en, const std::vector<std::string>& new_annotations) { en.make_orig(); en.annotations = Annotations{new_annotations}; }) //
         .def_property(
             "serum_id", [](const common::SerumEntry& en) { return *en.serum_id; },
-            [](common::SerumEntry& en, const std::string& new_serum_id) { en.serum_id = SerumId{new_serum_id}; }) //
+            [](common::SerumEntry& en, const std::string& new_serum_id) { en.make_orig(); en.serum_id = SerumId{new_serum_id}; }) //
         .def_property(
             "passage", [](const common::SerumEntry& en) { return *en.passage; },
-            [](common::SerumEntry& en, const std::string& new_passage) { en.passage = acmacs::virus::Passage{new_passage}; }) //
+            [](common::SerumEntry& en, const std::string& new_passage) { en.make_orig(); en.passage = acmacs::virus::Passage{new_passage}; }) //
         ;
 
     mdl.def(
