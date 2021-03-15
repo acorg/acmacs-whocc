@@ -2,7 +2,6 @@
 # ----------------------------------------------------------------------
 
 TARGETS = \
-  $(ACMACS_PY_LIB) \
   $(DIST)/whocc-reference-panel-plots \
   $(DIST)/whocc-scan-titers \
   $(DIST)/whocc-histogram-of-titers \
@@ -35,13 +34,13 @@ WHOCC_XLSX_TO_TORG_SOURCES = \
 
 # data-fix-guile.cc
 
-ACMACS_PY_SOURCES = \
-  py.cc
+# ACMACS_PY_SOURCES = \
+#   py.cc
 
-ACMACS_PY_LIB_MAJOR = 1
-ACMACS_PY_LIB_MINOR = 0
-ACMACS_PY_LIB_NAME = acmacs
-ACMACS_PY_LIB = $(DIST)/$(ACMACS_PY_LIB_NAME)$(PYTHON_MODULE_SUFFIX)
+# ACMACS_PY_LIB_MAJOR = 1
+# ACMACS_PY_LIB_MINOR = 0
+# ACMACS_PY_LIB_NAME = acmacs
+# ACMACS_PY_LIB = $(DIST)/$(ACMACS_PY_LIB_NAME)$(PYTHON_MODULE_SUFFIX)
 
 # ----------------------------------------------------------------------
 
@@ -51,7 +50,7 @@ all: install
 
 CONFIGURE_CAIRO = 1
 # CONFIGURE_GUILE = 1
-CONFIGURE_PYTHON = 1
+# CONFIGURE_PYTHON = 1
 include $(ACMACSD_ROOT)/share/Makefile.config
 
 LDLIBS = \
@@ -81,9 +80,9 @@ test: install
 
 # ----------------------------------------------------------------------
 
-$(ACMACS_PY_LIB): $(patsubst %.cc,$(BUILD)/%.o,$(ACMACS_PY_SOURCES)) | $(DIST)
-	$(call echo_shared_lib,$@)
-	$(call make_shared_lib,$(ACMACS_PY_LIB_NAME),$(ACMACS_PY_LIB_MAJOR),$(ACMACS_PY_LIB_MINOR)) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(PYTHON_LIBS)
+# $(ACMACS_PY_LIB): $(patsubst %.cc,$(BUILD)/%.o,$(ACMACS_PY_SOURCES)) | $(DIST)
+# 	$(call echo_shared_lib,$@)
+# 	$(call make_shared_lib,$(ACMACS_PY_LIB_NAME),$(ACMACS_PY_LIB_MAJOR),$(ACMACS_PY_LIB_MINOR)) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(PYTHON_LIBS)
 
 $(DIST)/whocc-reference-panel-plots: $(BUILD)/whocc-reference-panel-plots.o $(BUILD)/whocc-reference-panel-plot-colors.o | $(DIST)
 	$(call echo_link_exe,$@)
