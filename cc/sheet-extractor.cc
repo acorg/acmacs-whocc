@@ -311,7 +311,7 @@ void acmacs::sheet::v1::Extractor::find_titers(warn_if_not_found winf)
         for (const auto& [row_no, rng] : rows)
             fmt::format_to(report, "    {}: {} ({})\n", row_no, rng, rng.length());
         if (winf == warn_if_not_found::yes)
-            AD_WARNING_IF(winf == warn_if_not_found::yes, "sheet \"{}\": variable titer row ranges:\n{}", sheet().name(), fmt::to_string(report));
+            AD_WARNING(winf == warn_if_not_found::yes, "sheet \"{}\": variable titer row ranges:\n{}", sheet().name(), fmt::to_string(report));
     }
 
     for (ncol_t col{rows[0].second.first}; col <= rows[0].second.second; ++col)
@@ -343,7 +343,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_name_column(warn_if_not_found wi
     if (antigen_name_column_.has_value())
         remove_redundant_antigen_rows(winf);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "Antigen name column not found");
+        AD_WARNING(winf == warn_if_not_found::yes, "Antigen name column not found");
 
 } // acmacs::sheet::v1::Extractor::find_antigen_name_column
 
@@ -379,7 +379,7 @@ void acmacs::sheet::v1::Extractor::remove_redundant_antigen_rows(warn_if_not_fou
         ranges::actions::remove_if(antigen_rows_, [this, are_titers_increasing_numers, winf](nrow_t row) {
             const auto no_name = !is_virus_name(row, *antigen_name_column_);
             if (no_name && !are_titers_increasing_numers(row))
-                AD_WARNING_IF(winf == warn_if_not_found::yes, "row {} has titers but no name: {}", row, sheet().cell(row, *antigen_name_column_));
+                AD_WARNING(winf == warn_if_not_found::yes, "row {} has titers but no name: {}", row, sheet().cell(row, *antigen_name_column_));
             return no_name;
         });
     }
@@ -418,7 +418,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_date_column(warn_if_not_found wi
     if (antigen_date_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen date column: {}", *antigen_date_column_);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "Antigen date column not found");
+        AD_WARNING(winf == warn_if_not_found::yes, "Antigen date column not found");
 
 } // acmacs::sheet::v1::Extractor::find_antigen_date_column
 
@@ -438,7 +438,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_passage_column(warn_if_not_found
     if (antigen_passage_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen passage column: {}", *antigen_passage_column_);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "Antigen passage column not found");
+        AD_WARNING(winf == warn_if_not_found::yes, "Antigen passage column not found");
 
 } // acmacs::sheet::v1::Extractor::find_antigen_passage_column
 
@@ -450,7 +450,7 @@ void acmacs::sheet::v1::Extractor::find_antigen_lab_id_column(warn_if_not_found 
     if (antigen_lab_id_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "Antigen lab_id column: {}", *antigen_lab_id_column_);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "Antigen lab_id column not found");
+        AD_WARNING(winf == warn_if_not_found::yes, "Antigen lab_id column not found");
 
 } // acmacs::sheet::v1::Extractor::find_antigen_lab_id_column
 
@@ -472,7 +472,7 @@ std::optional<acmacs::sheet::v1::nrow_t> acmacs::sheet::v1::Extractor::find_seru
     if (found.has_value())
         AD_LOG(acmacs::log::xlsx, "[{}] Serum {} row: {}", lab(), row_name, *found);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "[{}] Serum {} row not found", lab(), row_name);
+        AD_WARNING(winf == warn_if_not_found::yes, "[{}] Serum {} row not found", lab(), row_name);
     return found;
 
 } // acmacs::sheet::v1::Extractor::find_serum_row
@@ -673,7 +673,7 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_index_row(warn_if_not_found win
     if (serum_index_row_.has_value())
         AD_LOG(acmacs::log::xlsx, "[CDC]: Serum index row: {}", serum_index_row_);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "[CDC]: No serum index row found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
+        AD_WARNING(winf == warn_if_not_found::yes, "[CDC]: No serum index row found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_index_row
 
@@ -692,7 +692,7 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_columns(warn_if_not_found winf)
     }
 
     if (!serum_name_column_.has_value()) {
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "serum name column not found");
+        AD_WARNING(winf == warn_if_not_found::yes, "serum name column not found");
         return;
     }
 
@@ -956,7 +956,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows(warn_if_not_found w
     if (serum_name_1_row_.has_value())
         AD_LOG(acmacs::log::xlsx, "[Crick]: Serum name row 1: {}", serum_name_1_row_);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No serum name row 1 found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
+        AD_WARNING(winf == warn_if_not_found::yes, "[Crick]: No serum name row 1 found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
 
     if (serum_name_1_row_.has_value() &&
         static_cast<size_t>(ranges::count_if(serum_columns(), [this](ncol_t col) { return sheet().matches(re_CRICK_serum_name_2, *serum_name_1_row_ + nrow_t{1}, col); })) > number_of_sera_threshold)
@@ -968,7 +968,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows(warn_if_not_found w
     if (serum_name_2_row_.has_value())
         AD_LOG(acmacs::log::xlsx, "[Crick]: Serum name row 2: {}", serum_name_2_row_);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No serum name row 2 found");
+        AD_WARNING(winf == warn_if_not_found::yes, "[Crick]: No serum name row 2 found");
 
 } // acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows
 
@@ -994,7 +994,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions(warn_
                 footnote_index_subst_.emplace_not_replace(cell_match.matches[1], cell_match.matches[2]);
         }
         else
-            AD_WARNING_IF(winf == warn_if_not_found::yes, "[Crick]: No less than substitution footnote");
+            AD_WARNING(winf == warn_if_not_found::yes, "[Crick]: No less than substitution footnote");
 
         if (!footnote_index_subst_.empty()) {
             AD_LOG(acmacs::log::xlsx, "[Crick]: less than subst: {}", footnote_index_subst_);
@@ -1187,7 +1187,7 @@ void acmacs::sheet::v1::ExtractorNIID::find_antigen_lab_id_column(warn_if_not_fo
     if (antigen_lab_id_column_.has_value())
         AD_LOG(acmacs::log::xlsx, "[NIID] Antigen lab_id column: {}", *antigen_lab_id_column_);
     else
-        AD_WARNING_IF(winf == warn_if_not_found::yes, "[NIID] Antigen lab_id column not found");
+        AD_WARNING(winf == warn_if_not_found::yes, "[NIID] Antigen lab_id column not found");
 
 
 } // acmacs::sheet::v1::ExtractorNIID::find_antigen_lab_id_column
