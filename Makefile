@@ -49,8 +49,7 @@ SRC_DIR = $(abspath $(ACMACSD_ROOT)/sources)
 all: install
 
 CONFIGURE_CAIRO = 1
-# CONFIGURE_GUILE = 1
-# CONFIGURE_PYTHON = 1
+CONFIGURE_PYTHON = 1
 include $(ACMACSD_ROOT)/share/Makefile.config
 
 LDLIBS = \
