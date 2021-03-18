@@ -2,10 +2,18 @@
 
 #include "acmacs-virus/log.hh"
 
+#pragma GCC diagnostic push
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wexit-time-destructors"
+#pragma GCC diagnostic ignored "-Wglobal-constructors"
+#endif
+
 namespace acmacs::log::inline v1
 {
-    constexpr log_key_t xlsx{"xlsx"};
+    const log_key_t xlsx{"xlsx"};
 }
+
+#pragma GCC diagnostic pop
 
 // ----------------------------------------------------------------------
 /// Local Variables:
