@@ -68,7 +68,7 @@ static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)
 static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id_with_days{"^[AF][0-9][0-9][0-9][0-9]-[0-9]+D$", acmacs::regex::icase};
 
-static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT)\b)", acmacs::regex::icase};
+static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT|POST VAX)\b)", acmacs::regex::icase}; // "POST VAX" is in VIDRL H3 HI 2021
 
 #include "acmacs-base/diagnostics-pop.hh"
 
