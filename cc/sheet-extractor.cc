@@ -43,7 +43,7 @@ static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::ic
 static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?\s*(F[0-9][0-9]/[0-2][0-9]|SH[\s\d,/]+)(?:\*(\d)(?:,\d)?)?$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_2{R"(^Superscripts.*\s+(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
-static const std::regex re_CRICK_less_than_multi{R"(^\s*\d\s*<\s*=\s*<\d+\s*;)", acmacs::regex::icase};
+static const std::regex re_CRICK_less_than_multi{R"(^\s*\d\s*<\s*=\s*<\d+\s*[;,])", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_multi_entry{R"(^\s*(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_prn_2fold{"^2-fold$", acmacs::regex::icase};
@@ -984,7 +984,14 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_less_than_substitutions(warn_
         else if (const auto found2 = sheet().grep(re_CRICK_less_than_multi, {antigen_rows_.back(), ncol_t{1}}, {sheet().number_of_rows(), ncol_t{2}}); !found2.empty()) {
             // AD_DEBUG("[Crick]: less than subst (multi): {}", sheet().cell(found2[0].row, found2[0].col));
             const auto cell = fmt::format("{}", sheet().cell(found2[0].row, found2[0].col)); // do not move inside split below, cannot survive within loop
-            for (const auto& entry : acmacs::string::split(cell, ";")) {
+            const auto split = [&cell]() {
+                if (cell.find(";") != std::string::npos)
+                    return acmacs::string::split(cell, ";");
+                else
+                    return acmacs::string::split(cell, ",");
+            };
+
+            for (const auto& entry : split()) {
                 if (std::cmatch match; acmacs::regex::search(entry, match, re_CRICK_less_than_multi_entry))
                     footnote_index_subst_.emplace_not_replace(match[1], match[2]);
             }
