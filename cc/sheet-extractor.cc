@@ -40,7 +40,7 @@ static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
-static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?\s*(F[0-9][0-9]/[0-2][0-9]|SH[\s\d,/]+)(?:\*(\d)(?:,\d)?)?$)", acmacs::regex::icase};
+static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?\s*(F[0-9]+/[0-2][0-9]|SH[\s\d,/]+)(?:\*(\d)(?:,\d)?)?$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_2{R"(^Superscripts.*\s+(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_multi{R"(^\s*\d\s*<\s*=\s*<\d+\s*[;,])", acmacs::regex::icase};
