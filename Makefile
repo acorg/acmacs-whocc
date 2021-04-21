@@ -10,6 +10,7 @@ TARGETS = \
   $(DIST)/whocc-sera-of-chart \
   $(DIST)/whocc-xlsx-to-torg \
   $(DIST)/whocc-check-new-tables \
+  $(DIST)/whocc-cdc-tsv \
   $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines \
   $(DIST)/chart-table-compare \
