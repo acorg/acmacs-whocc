@@ -10,7 +10,6 @@ TARGETS = \
   $(DIST)/whocc-sera-of-chart \
   $(DIST)/whocc-xlsx-to-torg \
   $(DIST)/whocc-check-new-tables \
-  $(DIST)/whocc-cdc-tsv \
   $(DIST)/chart-vaccines \
   $(DIST)/chart-update-vaccines \
   $(DIST)/chart-table-compare \
@@ -72,6 +71,7 @@ XLSX_LIBS = $(XLNT_LIBS)
 
 install: make-installation-dirs $(TARGETS)
 	$(call install_all,$(AD_PACKAGE_NAME))
+	$(call install_py_all)
 	$(call install_wildcard,$(abspath js)/*,$(AD_SHARE)/js/who)
 
 test: install
