@@ -21,6 +21,7 @@ def main(args):
 def setup(args):
     settings = object()
     settings.whocc_tables_root = Path(f"/syn/eu/ac/whocc-tables")
+    settings.whocc_chains_root = Path(f"/syn/eu/ac/results/chains-202104")
     return settings
 
 # ----------------------------------------------------------------------
