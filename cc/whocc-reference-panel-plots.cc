@@ -239,6 +239,7 @@ void make_antigen_serum_set(ChartData& aData, std::string_view filename)
 
 void process_source(ChartData& aData, std::string_view filename, bool only_existing_antigens_sera)
 {
+    AD_DEBUG("process_source {}", filename);
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::no);
     chart->set_homologous(acmacs::chart::find_homologous::strict);
@@ -278,7 +279,7 @@ void process_source(ChartData& aData, std::string_view filename, bool only_exist
 
 size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existing)
 {
-    const std::string name = aAntigen->format("{name_full}");
+    const auto name = aAntigen->format("{name_full}");
     const auto pos = std::find(mAntigens.begin(), mAntigens.end(), name);
     size_t result = static_cast<size_t>(pos - mAntigens.begin());
     if (pos == mAntigens.end()) {
@@ -287,6 +288,7 @@ size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existi
         mAntigens.emplace_back(name);
         result = mAntigens.size() - 1;
     }
+    AD_DEBUG("add_antigen {} \"{}\"", result, name);
     return result;
 
 } // ChartData::add_antigen
