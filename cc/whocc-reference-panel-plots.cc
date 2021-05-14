@@ -66,14 +66,14 @@ struct CellParameters
 
 struct AgSr
 {
-    AgSr(std::string aName) : name(aName), enabled(true) {}
+    AgSr(const std::string& aName) : name(aName) {}
     operator std::string() const { return name; }
     size_t size() const { return name.size(); }
     bool operator==(const AgSr& a) const { return name == a.name; }
-    bool operator==(std::string a) const { return name == a; }
+    bool operator==(const std::string& a) const { return name == a; }
 
     std::string name;
-    bool enabled;
+    bool enabled{true};
     std::vector<size_t> homologous;
 };
 
@@ -375,7 +375,7 @@ void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
         mAntigens[antigen_no].enabled = max_number_of_tables >= aMinNumberOfTables;
-        // std::cerr << "AG " << mAntigens[antigen_no].name << " tables: " << max_number_of_tables << std::endl;
+        AD_DEBUG("AG {} tables: {}", mAntigens[antigen_no].name, max_number_of_tables);
     }
 
     for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
@@ -384,7 +384,7 @@ void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
         mSera[serum_no].enabled = max_number_of_tables >= aMinNumberOfTables;
-          // std::cerr << "SR " << mSera[serum_no].name << " tables: " << max_number_of_tables << std::endl;
+        AD_DEBUG("SR {} tables: {}", mSera[serum_no].name, max_number_of_tables);
     }
 
 } // ChartData::disable_antigens_sera
