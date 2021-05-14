@@ -375,7 +375,7 @@ void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
         mAntigens[antigen_no].enabled = max_number_of_tables >= aMinNumberOfTables;
-        AD_DEBUG("AG {} tables: {}", mAntigens[antigen_no].name, max_number_of_tables);
+        AD_DEBUG("{} AG {} tables: {}", mAntigens[antigen_no].enabled ? "enabled " : "DISABLED", mAntigens[antigen_no].name, max_number_of_tables);
     }
 
     for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
@@ -384,7 +384,7 @@ void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
         mSera[serum_no].enabled = max_number_of_tables >= aMinNumberOfTables;
-        AD_DEBUG("SR {} tables: {}", mSera[serum_no].name, max_number_of_tables);
+        AD_DEBUG("{} SR {} tables: {}", mSera[serum_no].enabled ? "enabled " : "DISABLED", mSera[serum_no].name, max_number_of_tables);
     }
 
 } // ChartData::disable_antigens_sera
