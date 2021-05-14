@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 # -*- Python -*-
 
+raise RuntimeError("OBSOLETE 2021-05-14, use whocc-tables-reference-panel-plots")
+
 import sys, os, re, pprint, subprocess, datetime
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
