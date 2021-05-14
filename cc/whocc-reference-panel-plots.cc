@@ -1,11 +1,7 @@
 // For sera-antigen titres that exist in multiple reference panels, plot the titre on the y axis against table number on the x axis.
 // Colors: Green is the median, yellow is 1 log from the median and red is >1 log from the median.
 
-#include <string>
-#include <iomanip>
-#include <cmath>
-
-#include "acmacs-base/argc-argv.hh"
+#include "acmacs-base/argv.hh"
 #include "acmacs-base/enumerate.hh"
 #include "acmacs-chart-2/chart.hh"
 #include "acmacs-chart-2/factory-import.hh"
@@ -54,7 +50,6 @@ class AntigenSerumData
 
     std::pair<acmacs::chart::Titer, int> median;
     std::vector<std::pair<acmacs::chart::Titer, int>> titer_per_table;
-    friend std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData);
 };
 
 struct CellParameters
@@ -114,7 +109,14 @@ class ChartData
     range find_range(size_t aSerum, size_t aAntigen) const;
     acmacs::chart::Titer median(const range& aRange) const;
 
- private:
+    bool empty() const { return mTiters.empty(); }
+
+    template <typename FormatCtx> auto format(FormatCtx& ctx) const
+    {
+        return fmt::format_to(ctx.out(), "Tables:{} Sera:{} Antigens:{} Titers:{}\nTiters: {}", mTables.size(), mSera.size(), mAntigens.size(), mTiters.size(), mAllTiters);
+    }
+
+  private:
     std::vector<std::string> mTables;
     std::vector<AgSr> mSera;
     std::vector<AgSr> mAntigens;
@@ -125,7 +127,6 @@ class ChartData
     std::string mLab, mVirusType, mAssay, mFirstDate, mLastDate;
     std::vector<std::string> mYAxisLabels;
 
-    friend std::ostream& operator << (std::ostream& out, const ChartData& aData);
     void sort_titers_by_serum_antigen() { std::sort(mTiters.begin(), mTiters.end()); }
 
     size_t titer_index_in_sAllTiters(acmacs::chart::Titer aTiter) const
@@ -138,7 +139,7 @@ class ChartData
         {
             const auto titer_index = titer_index_in_sAllTiters(aTiter);
             if (aMedianIndex == sNumberOfAllTiters || titer_index == sNumberOfAllTiters)
-                std::cerr << "Invalid median or titer index: " << aMedianIndex << " " << titer_index << std::endl;
+                AD_WARNING("Invalid median or titer index: {} {}", aMedianIndex, titer_index);
             return sMedianTiterColors[aMedianIndex][titer_index];
         }
 
@@ -156,38 +157,63 @@ class ChartData
     void disable_antigens_sera(size_t aMinNumberOfTables);
 };
 
+// ----------------------------------------------------------------------
+
+template <> struct fmt::formatter<AntigenSerumData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
+    template <typename FormatCtx> auto format(const AntigenSerumData& aData, FormatCtx& ctx)
+    {
+        constexpr const int titer_width = 7;
+        format_to(ctx.out, "[{:>{}}({})]", *aData.median.first, titer_width, aData.median.second);
+        for (const auto& element : aData.titer_per_table)
+            format_to(ctx.out, "{:>{}}({})", *element.first, titer_width, element.second);
+        return ctx.out();
+    }
+};
+
+template <> struct fmt::formatter<ChartData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
+    template <typename FormatCtx> auto format(const ChartData& aData, FormatCtx& ctx)
+    {
+        return aData.format(ctx);
+    }
+};
+
+
 // ======================================================================
+
+using namespace acmacs::argv;
+struct Options : public argv
+{
+    Options(int a_argc, const char* const a_argv[], on_error on_err = on_error::exit) : argv() { parse(a_argc, a_argv, on_err); }
+
+    option<str>    output_pdf{*this, 'o', desc{"output.pdf"}};
+    option<bool>   last{*this, "last", desc{"for ref antigens and sera found in the last table only"}};
+    option<size_t> min_tables{*this, "min-tables", dflt{5ul}, desc{"minimum number of tables where antigen/serum appears"}};
+    // option<str_array> verbose{*this, 'v', "verbose", desc{"comma separated list (or multiple switches) of log enablers"}};
+
+    argument<str_array> charts{*this, arg_name{".ace"}, mandatory};
+};
 
 int main(int argc, const char* argv[])
 {
     int exit_code = 0;
     try {
-        argc_argv args(argc, argv,
-                       {{"-o", "", "output pdf"},
-                        {"--last", false, "for ref antigens and sera found in the last table only"},
-                        {"--min-tables", 5, "minimum number of tables where antigen/serum appears"},
-                        {"-h", false},
-                        {"--help", false},
-                        {"-v", false},
-                        {"--verbose", false}});
-        if (args["-h"] || args["--help"] || args.number_of_arguments() < 1) {
-            std::cerr << "Usage: " << args.program() << " [options] <chart-file> ... \n" << args.usage_options() << '\n';
-            exit_code = 1;
-        }
-        else {
-            ChartData data;
-            if (args["--last"])
-                make_antigen_serum_set(data, args[args.number_of_arguments() - 1]);
-            for (size_t file_no = 0; file_no < args.number_of_arguments(); ++file_no) {
-                process_source(data, args[file_no], args["--last"]);
-                data.make_antigen_serum_data(args["--min-tables"]);
-                std::cout << data << std::endl;
-                data.plot(args["-o"], args["--last"]);
+        Options opt(argc, argv);
+        ChartData data;
+        if (opt.last)
+            make_antigen_serum_set(data, opt.charts->back());
+        for (const auto& chart_file : *opt.charts) {
+            process_source(data, chart_file, opt.last);
+            if (!data.empty()) {
+                data.make_antigen_serum_data(opt.min_tables);
+                fmt::print("{}\n", data);
+                data.plot(opt.output_pdf, opt.last);
             }
+            else
+                AD_WARNING("{} has no reference antigens found in {}", chart_file, opt.charts->back());
         }
     }
     catch (std::exception& err) {
-        std::cerr << err.what() << std::endl;
+        AD_ERROR("{}", err);
         exit_code = 1;
     }
     return exit_code;
@@ -225,13 +251,17 @@ void process_source(ChartData& aData, std::string_view filename, bool only_exist
             antigens[antigen_index_in_chart] = aData.add_antigen((*chart_antigens)[antigen_index_in_chart], only_existing_antigens_sera);
         }
         catch (AntigenSerumDoesNotPresent&) {
+            // AD_DEBUG("AntigenSerumDoesNotPresent AG {}", antigen_index_in_chart);
         }
     }
+    // if (antigens.empty())
+    //     throw std::runtime_error{AD_FORMAT("no suitable reference antigens in {}", filename)};
     for (size_t serum_no = 0; serum_no < chart_sera->size(); ++serum_no) {
         try {
             const size_t serum_index_in_data = aData.add_serum((*chart_sera)[serum_no], only_existing_antigens_sera);
             for (const auto& antigen : antigens) {
-                // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) << std::endl;
+                // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) <<
+                // std::endl;
                 aData.add_titer(antigen.second, serum_index_in_data, table_no, chart_titers->titer(antigen.first, serum_no));
             }
             for (size_t homologous_antigen : (*chart_sera)[serum_no]->homologous_antigens()) {
@@ -311,11 +341,12 @@ void ChartData::make_antigen_serum_data(size_t aMinNumberOfTables)
     }
     // std::cerr << "mTiterLevel: " << mTiterLevel << std::endl;
 
+    AD_DEBUG("mTiters {}", mTiters.size());
     for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         mAntigenSerumData.emplace_back(number_of_sera());
         for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
             auto range = find_range(serum_no, antigen_no);
-            if (range.first->antigen == antigen_no && range.first->serum == serum_no) {
+            if (range.first != mTiters.end() && range.first->antigen == antigen_no && range.first->serum == serum_no) {
                 const auto median_titer = median(range);
                 auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
                 ag_sr_data.median = std::make_pair(median_titer, mTiterLevel[median_titer]);
@@ -395,46 +426,12 @@ acmacs::chart::Titer ChartData::median(const ChartData::range& aRange) const
 
 } // ChartData::median
 
-// ----------------------------------------------------------------------
-
-std::ostream& operator << (std::ostream& out, const AntigenSerumData& aData)
-{
-    constexpr const int titer_width = 7;
-    out << '[' << std::setw(titer_width) << std::right << *aData.median.first << '(' << aData.median.second << ")]";
-    for (const auto& element: aData.titer_per_table)
-        out << std::setw(titer_width) << std::right << *element.first << '(' << element.second << ')';
-    return out;
-
-} // operator <<
-
-// ----------------------------------------------------------------------
-
-std::ostream& operator << (std::ostream& out, const ChartData& aData)
-{
-    out << fmt::format("Tables:{} Sera:{} Antigens:{} Titers:{}\nTiters: {}", aData.mTables.size(), aData.mSera.size(), aData.mAntigens.size(), aData.mTiters.size(), aData.mAllTiters); // << std::endl;
-    // out << "Titers: " << aData.mTiterLevel << std::endl;
-
-    // const int serum_field_size = static_cast<int>(aData.longest_serum_name()), antigen_field_size = static_cast<int>(aData.longest_antigen_name());
-
-    // for (size_t antigen_no = 0; antigen_no < aData.number_of_antigens(); ++antigen_no) {
-    //     for (size_t serum_no = 0; serum_no < aData.number_of_sera(); ++serum_no) {
-    //         const auto& ag_sr_data = aData.mAntigenSerumData[antigen_no][serum_no];
-    //         if (!ag_sr_data.empty()) {
-    //             out << std::setw(serum_field_size) << std::left << aData.mSera[serum_no] << "  " << std::setw(antigen_field_size) << aData.mAntigens[antigen_no] << " " << ag_sr_data << std::endl;
-    //         }
-    //     }
-    // }
-
-    return out;
-
-} // operator <<
-
 // ======================================================================
 
 void ChartData::plot(std::string_view output_filename, bool for_ref_in_last_table_only)
 {
     const size_t ns = number_of_enabled_sera(), na = number_of_enabled_antigens();
-    std::cout << "Enabled: antigens: " << na << " sera: " << ns << std::endl;
+    fmt::print("Enabled: antigens: {} sera: {}\n", na, ns);
     CellParameters cell_parameters{number_of_tables() - first_table_no(), mTiterLevel.size()};
     const double title_height = cell_parameters.vstep * 0.5;
 

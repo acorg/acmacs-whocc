@@ -6,6 +6,59 @@ import logging; module_logger = logging.getLogger(__name__)
 
 # ======================================================================
 
+sReNameGetDate = re.compile(r"(.+)-(\d{8}(?:[\-_]\d+)?)\.ace$")
+
+# ======================================================================
+
+def main(args):
+    sources = walk(Path(args.source_dir))
+    plotted_data = plot_sources(sources=sources, chunk_size=args.chunk_size, output_dir=Path(args.output_dir), num_recent_table_plots=args.num_recent_table_plots)
+    # make_index(plotted_data, Path(args.output_dir))
+    # make_readme(plotted_data, Path(args.output_dir))
+
+# ----------------------------------------------------------------------
+
+def plot_sources(sources, chunk_size, output_dir :Path, num_recent_table_plots):
+    if len(sources) > 9:
+        return plot_source_set(sources=sources, chunk_size=chunk_size, output_dir=output_dir, num_recent_table_plots=num_recent_table_plots)
+    else:
+        return {}
+
+# ----------------------------------------------------------------------
+
+def plot_source_set(sources, chunk_size, output_dir :Path, num_recent_table_plots):
+    module_logger.info(f"{len(sources)} {sources[0].name} - {sources[-1].name}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    first_table_for_one_table_plots = len(sources) - num_recent_table_plots if len(sources) > num_recent_table_plots else 0
+    plots = [plot_one_table(table_no=table_no, sources=sources, output_dir=output_dir) for table_no in range(first_table_for_one_table_plots, len(sources))]
+    chunks = make_chunks(sources, chunk_size)
+    plots += [plot_chunk(chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
+    return plots
+
+# ----------------------------------------------------------------------
+
+def plot_one_table(table_no, sources, output_dir):
+    m1 = sReNameGetDate.match(sources[table_no].name)
+    if not m1:
+        raise ValueError(f"Date extraction failed: {sources[table_no].name!r}")
+    key = m1.group(1)
+    d1 = m1.group(2)
+    module_logger.info('one table {}'.format(d1))
+    output_filename = f"{key}-one-{table_no:02d}-{d1}.pdf"
+    try:
+        command = ["whocc-reference-panel-plots", "--last",  "--min-tables", "2", "-o", str(output_dir.joinpath(output_filename))] + [str(s) for s in sources[:table_no + 1]]
+        print(" ".join(command))
+        subprocess.check_call(command)
+        return {"name": output_filename, "d1": d1, "d2": "one", "num": 1}
+    except subprocess.CalledProcessError as err:
+        module_logger.error(err)
+        return {}
+
+# ----------------------------------------------------------------------
+
+def walk(source_dir :Path):
+    return sorted(path for path in source_dir.glob("*.ace"))
+
 # ======================================================================
 
 import argparse, traceback
@@ -15,8 +68,8 @@ try:
     parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
     parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
 
-    parser.add_argument('--source', action='store', dest='source_dir', required=True, help="/syn/eu/ac/whocc-tables/h3-hint-cdc")
-    parser.add_argument('--output', action='store', dest='output_dir', required=True, help="/syn/eu/www/who/reference-panel-plots")
+    parser.add_argument('-s', '--source', action='store', dest='source_dir', required=True, help="/syn/eu/ac/whocc-tables/h3-hint-cdc")
+    parser.add_argument('-o', '--output', action='store', dest='output_dir', required=True, help="/syn/eu/www/who/reference-panel-plots")
     parser.add_argument('--chunk', action='store', type=float, dest='chunk_size', default=40)
     parser.add_argument('--num-recent-table-plots', action='store', type=int, dest='num_recent_table_plots', default=10)
 
