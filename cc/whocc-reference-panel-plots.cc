@@ -346,6 +346,7 @@ void ChartData::make_antigen_serum_data(size_t aMinNumberOfTables)
         mAntigenSerumData.emplace_back(number_of_sera());
         for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
             auto range = find_range(serum_no, antigen_no);
+            AD_DEBUG("AG {} SR {} range {}", antigen_no, serum_no, range.second -  range.first);
             if (range.first != mTiters.end() && range.first->antigen == antigen_no && range.first->serum == serum_no) {
                 const auto median_titer = median(range);
                 auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
