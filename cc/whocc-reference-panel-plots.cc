@@ -432,6 +432,8 @@ void ChartData::plot(std::string_view output_filename, bool for_ref_in_last_tabl
 {
     const size_t ns = number_of_enabled_sera(), na = number_of_enabled_antigens();
     fmt::print("Enabled: antigens: {} sera: {}\n", na, ns);
+    if (ns == 0 || na == 0)
+        throw std::runtime_error{AD_FORMAT("cannot plot: too few enabled antigens ({}) or sera ({}), total antigens: {} sera: {}", na, ns, number_of_antigens(), number_of_sera())};
     CellParameters cell_parameters{number_of_tables() - first_table_no(), mTiterLevel.size()};
     const double title_height = cell_parameters.vstep * 0.5;
 
