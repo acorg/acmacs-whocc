@@ -203,13 +203,13 @@ int main(int argc, const char* argv[])
             make_antigen_serum_set(data, opt.charts->back());
         for (const auto& chart_file : *opt.charts) {
             process_source(data, chart_file, opt.last);
-            if (!data.empty()) {
-                data.make_antigen_serum_data(opt.min_tables);
-                fmt::print("{}\n", data);
-                data.plot(opt.output_pdf, opt.last);
-            }
-            else
+            if (data.empty())
                 AD_WARNING("{} has no reference antigens found in {}", chart_file, opt.charts->back());
+        }
+        if (!data.empty()) {
+            data.make_antigen_serum_data(opt.min_tables);
+            fmt::print("{}\n", data);
+            data.plot(opt.output_pdf, opt.last);
         }
     }
     catch (std::exception& err) {
@@ -239,7 +239,7 @@ void make_antigen_serum_set(ChartData& aData, std::string_view filename)
 
 void process_source(ChartData& aData, std::string_view filename, bool only_existing_antigens_sera)
 {
-    AD_DEBUG("process_source {}", filename);
+    // AD_DEBUG("process_source {}", filename);
     std::map<size_t, size_t> antigens; // index in chart to index in aData.mAntigens|mSera
     auto chart = acmacs::chart::import_from_file(filename, acmacs::chart::Verify::None, report_time::no);
     chart->set_homologous(acmacs::chart::find_homologous::strict);
@@ -255,14 +255,10 @@ void process_source(ChartData& aData, std::string_view filename, bool only_exist
             // AD_DEBUG("AntigenSerumDoesNotPresent AG {}", antigen_index_in_chart);
         }
     }
-    // if (antigens.empty())
-    //     throw std::runtime_error{AD_FORMAT("no suitable reference antigens in {}", filename)};
     for (size_t serum_no = 0; serum_no < chart_sera->size(); ++serum_no) {
         try {
             const size_t serum_index_in_data = aData.add_serum((*chart_sera)[serum_no], only_existing_antigens_sera);
             for (const auto& antigen : antigens) {
-                // std::cerr << serum_index_in_data << ' ' << aData.serum(serum_index_in_data) << " -- " << aData.antigen(antigen.second) << " -- " << chart->titers().get(antigen.first, serum_no) <<
-                // std::endl;
                 aData.add_titer(antigen.second, serum_index_in_data, table_no, chart_titers->titer(antigen.first, serum_no));
             }
             for (size_t homologous_antigen : (*chart_sera)[serum_no]->homologous_antigens()) {
@@ -288,7 +284,7 @@ size_t ChartData::add_antigen(acmacs::chart::AntigenP aAntigen, bool only_existi
         mAntigens.emplace_back(name);
         result = mAntigens.size() - 1;
     }
-    AD_DEBUG("add_antigen {} \"{}\"", result, name);
+    // AD_DEBUG("add_antigen {} \"{}\"", result, name);
     return result;
 
 } // ChartData::add_antigen
@@ -341,14 +337,13 @@ void ChartData::make_antigen_serum_data(size_t aMinNumberOfTables)
         mTiterLevel[titer] = level;
         --level;
     }
-    // std::cerr << "mTiterLevel: " << mTiterLevel << std::endl;
 
-    AD_DEBUG("mTiters {}", mTiters.size());
+    AD_DEBUG("mTiterLevel: {}  mTiters: {}", mTiterLevel, mTiters.size());
     for (size_t antigen_no = 0; antigen_no < number_of_antigens(); ++antigen_no) {
         mAntigenSerumData.emplace_back(number_of_sera());
         for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
             auto range = find_range(serum_no, antigen_no);
-            AD_DEBUG("AG {} SR {} range {}", antigen_no, serum_no, range.second -  range.first);
+            // AD_DEBUG("AG {} SR {} range {}", antigen_no, serum_no, range.second -  range.first);
             if (range.first != mTiters.end() && range.first->antigen == antigen_no && range.first->serum == serum_no) {
                 const auto median_titer = median(range);
                 auto& ag_sr_data = mAntigenSerumData[antigen_no][serum_no];
@@ -378,7 +373,7 @@ void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
         mAntigens[antigen_no].enabled = max_number_of_tables >= aMinNumberOfTables;
-        AD_DEBUG("{} AG {} tables: {}", mAntigens[antigen_no].enabled ? "enabled " : "DISABLED", mAntigens[antigen_no].name, max_number_of_tables);
+        // AD_DEBUG("{} AG {} tables: {}", mAntigens[antigen_no].enabled ? "enabled " : "DISABLED", mAntigens[antigen_no].name, max_number_of_tables);
     }
 
     for (size_t serum_no = 0; serum_no < number_of_sera(); ++serum_no) {
@@ -387,7 +382,7 @@ void ChartData::disable_antigens_sera(size_t aMinNumberOfTables)
             max_number_of_tables = std::max(max_number_of_tables, mAntigenSerumData[antigen_no][serum_no].number_of_tables());
         }
         mSera[serum_no].enabled = max_number_of_tables >= aMinNumberOfTables;
-        AD_DEBUG("{} SR {} tables: {}", mSera[serum_no].enabled ? "enabled " : "DISABLED", mSera[serum_no].name, max_number_of_tables);
+        // AD_DEBUG("{} SR {} tables: {}", mSera[serum_no].enabled ? "enabled " : "DISABLED", mSera[serum_no].name, max_number_of_tables);
     }
 
 } // ChartData::disable_antigens_sera
