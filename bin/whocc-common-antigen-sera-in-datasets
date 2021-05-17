@@ -1,0 +1,64 @@
+#! /usr/bin/env python3
+"""
+Reads tables from two datasets, e.g. h3-fra-cdc and h3-hint-cdc, and reports common antigens and sera in them.
+"""
+
+import sys, os, logging, pprint
+from pathlib import Path
+import acmacs
+
+# ----------------------------------------------------------------------
+
+def main(args):
+    if len(args.dataset) < 2:
+        raise RuntimeError("at least 2 datasets required")
+    res = {dataset: load(Path(dataset)) for dataset in args.dataset}
+    all_antigens = [dd["antigens"] for ds, dd in res.items()]
+    common_antigens = all_antigens[0].intersection(*all_antigens[1:])
+    all_sera = [dd["sera"] for ds, dd in res.items()]
+    common_sera = all_sera[0].intersection(*all_sera[1:])
+    pprint.pprint(common_antigens, width=200)
+    pprint.pprint(common_sera, width=200)
+
+# ----------------------------------------------------------------------
+
+def load(dataset :Path):
+    antigens = set()
+    sera = set()
+
+    def collect_antigen(ag_no, antigen):
+        antigens.add(antigen.name_full())
+
+    def collect_serum(sr_no, serum):
+        sera.add(serum.name_full())
+
+    for table_path in dataset.glob("*.ace"):
+        chart = acmacs.Chart(str(table_path))
+        chart.select_all_antigens().for_each(collect_antigen)
+        chart.select_all_sera().for_each(collect_serum)
+
+    return {"antigens": antigens, "sera": sera}
+
+# ======================================================================
+
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    # parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', default=False)
+
+    parser.add_argument("dataset", nargs="+", help="directory name of dataset, e.g. /syn/eu/ac/whocc-tables/h3-fra-cdc")
+
+    args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    exit_code = main(args)
+except Exception as err:
+    logging.error('{}\n{}'.format(err, traceback.format_exc()))
+    exit_code = 1
+exit(exit_code)
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
