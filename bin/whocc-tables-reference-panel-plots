@@ -1,18 +1,20 @@
 #! /usr/bin/env python3
 
-import sys, os, re, pprint, subprocess, datetime
+import sys, os, re, pprint, subprocess, datetime, multiprocessing, concurrent.futures
 from pathlib import Path
 import logging; module_logger = logging.getLogger(__name__)
 
 # ======================================================================
 
 sReNameGetDate = re.compile(r"(.+)-(\d{8}(?:[\-_]\d+)?)\.ace$")
+sWhoccReferencePanelPlots = "whocc-reference-panel-plots"
 
 # ======================================================================
 
 def main(args):
     sources = walk(Path(args.source_dir))
     plotted_data = plot_sources(sources=sources, chunk_size=args.chunk_size, output_dir=Path(args.output_dir), num_recent_table_plots=args.num_recent_table_plots)
+    pprint.pprint(plotted_data)
     # make_index(plotted_data, Path(args.output_dir))
     # make_readme(plotted_data, Path(args.output_dir))
 
@@ -30,9 +32,19 @@ def plot_source_set(sources, chunk_size, output_dir :Path, num_recent_table_plot
     module_logger.info(f"{len(sources)} {sources[0].name} - {sources[-1].name}")
     output_dir.mkdir(parents=True, exist_ok=True)
     first_table_for_one_table_plots = len(sources) - num_recent_table_plots if len(sources) > num_recent_table_plots else 0
-    plots = [plot_one_table(table_no=table_no, sources=sources, output_dir=output_dir) for table_no in range(first_table_for_one_table_plots, len(sources))]
     chunks = make_chunks(sources, chunk_size)
-    plots += [plot_chunk(chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
+    # plots = [plot_one_table(table_no=table_no, sources=sources, output_dir=output_dir) for table_no in range(first_table_for_one_table_plots, len(sources))]
+    # plots += [plot_chunk(chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
+
+    plots = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=multiprocessing.cpu_count() * 2) as executor:
+        futures = [executor.submit(plot_one_table, table_no=table_no, sources=sources, output_dir=output_dir) for table_no in range(first_table_for_one_table_plots, len(sources))] \
+            + [executor.submit(plot_chunk, chunk_no, chunk, output_dir) for chunk_no, chunk in enumerate(chunks, start=1)]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                plots.append(future.result())
+            except Exception as exc:
+                module_logger.error(f"{future} generated an exception: {exc}")
     return plots
 
 # ----------------------------------------------------------------------
@@ -46,13 +58,43 @@ def plot_one_table(table_no, sources, output_dir):
     module_logger.info('one table {}'.format(d1))
     output_filename = f"{key}-one-{table_no:02d}-{d1}.pdf"
     try:
-        command = ["whocc-reference-panel-plots", "--last",  "--min-tables", "2", "-o", str(output_dir.joinpath(output_filename))] + [str(s) for s in sources[:table_no + 1]]
+        command = [sWhoccReferencePanelPlots, "--last",  "--min-tables", "2", "-o", str(output_dir.joinpath(output_filename))] + [str(s) for s in sources[:table_no + 1]]
         print(" ".join(command))
         subprocess.check_call(command)
         return {"name": output_filename, "d1": d1, "d2": "one", "num": 1}
     except subprocess.CalledProcessError as err:
         module_logger.error(err)
         return {}
+
+# ----------------------------------------------------------------------
+
+def make_chunks(sources, chunk_size):
+    chunks = []
+    common = int(chunk_size * 0.25)
+    for start in range(0, 10000, chunk_size - common):
+        if not chunks or (len(sources) - start) > common:
+            chunks.append(sources[start : start+chunk_size])
+        else:
+            break
+    return chunks
+
+# ----------------------------------------------------------------------
+
+def plot_chunk(index, sources, output_dir):
+    m1 = sReNameGetDate.match(sources[0].name)
+    m2 = sReNameGetDate.match(sources[-1].name)
+    if not m1 or not m2:
+        raise ValueError(f"Date extraction failed: {sources[0].name!r} {sources[-1].name!r}")
+    d1 = m1.group(2)
+    d2 = m2.group(2)
+    module_logger.info('chunk {} {} - {}'.format(len(sources), d1, d2))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    key = m1.group(1)
+    output_filename = f"{key}-{index:02d}-{d1}-{d2}.pdf"
+    command = [sWhoccReferencePanelPlots, "-o", str(output_dir.joinpath(output_filename))] + [str(s) for s in sources]
+    print(" ".join(command))
+    subprocess.check_call(command)
+    return {"name": output_filename, "d1": d1, "d2": d2, "num": len(sources)}
 
 # ----------------------------------------------------------------------
 

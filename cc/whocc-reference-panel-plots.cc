@@ -139,7 +139,7 @@ class ChartData
         {
             const auto titer_index = titer_index_in_sAllTiters(aTiter);
             if (aMedianIndex == sNumberOfAllTiters || titer_index == sNumberOfAllTiters)
-                AD_WARNING("Invalid median or titer index: {} {}", aMedianIndex, titer_index);
+                AD_WARNING("Invalid median ({}) or titer ({}) index, sNumberOfAllTiters: {}", aMedianIndex, titer_index, sNumberOfAllTiters);
             return sMedianTiterColors[aMedianIndex][titer_index];
         }
 
@@ -203,8 +203,8 @@ int main(int argc, const char* argv[])
             make_antigen_serum_set(data, opt.charts->back());
         for (const auto& chart_file : *opt.charts) {
             process_source(data, chart_file, opt.last);
-            if (data.empty())
-                AD_WARNING("{} has no reference antigens found in {}", chart_file, opt.charts->back());
+            // if (data.empty())
+            //     AD_WARNING("{} has no reference antigens found in {}", chart_file, opt.charts->back());
         }
         if (!data.empty()) {
             data.make_antigen_serum_data(opt.min_tables);
