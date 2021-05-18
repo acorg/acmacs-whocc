@@ -437,7 +437,7 @@ void ChartData::plot(std::string_view output_filename, bool for_ref_in_last_tabl
 
     const acmacs::Viewport cell_viewport{acmacs::Size{cell_parameters.hstep, cell_parameters.vstep}};
 
-    acmacs::surface::PdfCairo surface(std::string(output_filename), static_cast<double>(ns) * cell_parameters.hstep, static_cast<double>(na) * cell_parameters.vstep + title_height, static_cast<double>(ns) * cell_parameters.hstep);
+    acmacs::surface::PdfCairo surface(output_filename, static_cast<double>(ns) * cell_parameters.hstep, static_cast<double>(na) * cell_parameters.vstep + title_height, static_cast<double>(ns) * cell_parameters.hstep);
 
     std::string title;
     if (for_ref_in_last_table_only)
