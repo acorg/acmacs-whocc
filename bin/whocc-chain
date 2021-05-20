@@ -1,46 +1,25 @@
 #! /usr/bin/env python3
 
 """
+whocc-chain
 """
 
-import sys, os, subprocess, csv, pprint
-import logging; module_logger = logging.getLogger(__name__)
-from pathlib import Path
-sys.path[:0] = [str(Path(os.environ["ACMACSD_ROOT"]).resolve().joinpath("py"))]
-import utils.email
+from acmacs_py import run, Path, chain202105
 
 # ======================================================================
 
 def main(args):
-    with utils.email.send_after():
-        settings = setup(args)
+    chain202105.run(args.chain_dir)
+    # with email.send_after():
+    #     settings = setup(args)
 
 
 # ----------------------------------------------------------------------
 
-def setup(args):
-    settings = object()
-    settings.whocc_tables_root = Path(f"/syn/eu/ac/whocc-tables")
-    settings.whocc_chains_root = Path(f"/syn/eu/ac/results/chains-202104")
-    return settings
-
-# ----------------------------------------------------------------------
-
-import argparse, traceback
-
-try:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("chart", nargs=1)
-    parser.add_argument("output", nargs=1)
-
-    parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
-    args = parser.parse_args()
-    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
-    exit_code = main(args)
-except Exception as err:
-    logging.error('{}\n{}'.format(err, traceback.format_exc()))
-    exit_code = 1
-exit(exit_code)
+run(main, {
+    "chain_dir": {"type": Path},
+    # ("-v", "--verbose"): {"action": "store_true"},
+    })
 
 # ======================================================================
 ### Local Variables:
