@@ -4,7 +4,7 @@
 whocc-chain
 """
 
-from acmacs_py import run, Path, chain202105
+from acmacs_py import execute_this_script, Path, chain202105
 
 # ======================================================================
 
@@ -16,7 +16,7 @@ def main(args):
 
 # ----------------------------------------------------------------------
 
-run(main, {
+execute_this_script(main, {
     "chain_dir": {"type": Path},
     # ("-v", "--verbose"): {"action": "store_true"},
     })
