@@ -80,9 +80,9 @@ class Extractor:
         assay_rbc = raw_data["table"]["assay"].lower()
         if assay_rbc == "hi":
             if raw_data["table"]["virus_type_low"] == "h3":
-                assay_rbc = assay_rbc + "-turkey"
-            else:
                 assay_rbc = assay_rbc + "-guinea-pig"
+            else:
+                assay_rbc = assay_rbc + "-turkey"
         raw_data["table"]["name"] = f"""{raw_data["table"]["virus_type_low"]}-{assay_rbc}-{self.lab.lower()}-{raw_data["table"]["date"]}"""
         for ag_sr in ["antigen", "serum"]:
             raw_data[ag_sr]["P"] = self.make_passage(raw_data[ag_sr])
