@@ -4,7 +4,13 @@
 whocc-chain
 """
 
-from acmacs_py import execute_this_script, Path, chain202105
+import sys, os
+sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], subdir) for subdir in ["lib", "py"]]
+try:
+    from acmacs_py import execute_this_script, Path, chain202105
+except Exception as err:
+    print(sys.path, file=sys.stderr)
+    raise
 
 # ======================================================================
 
