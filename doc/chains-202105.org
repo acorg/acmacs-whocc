@@ -1,0 +1,31 @@
+# Time-stamp: <2021-06-04 10:59:03 eu>
+keywords: whocc chains
+* <2021-06-03 Thu>
+
+  /syn/eu/ac/results/chains-202105
+  
+* programs
+
+** run
+whocc-chain /syn/eu/ac/results/chains-202105/<subtype-assay-lab>
+
+** update after edit
+make -C ~/AD/sources/acmacs-py && make -C ~/AD/sources/acmacs-whocc
+
+** main script
+/ssh:i22:/home/eu/AD/sources/acmacs-whocc/bin/whocc-chain
+
+** modules
+/ssh:i22:/home/eu/AD/sources/acmacs-py/py/acmacs_py/chain202105/
+
+* -------------------- local vars ----------------------------------------------------------------------
+  :PROPERTIES:
+  :VISIBILITY: folded
+  :END:
+  #+STARTUP: showall indent
+  Local Variables:
+  eval: (auto-fill-mode 0)
+  eval: (add-hook 'before-save-hook 'time-stamp)
+  eval: (set (make-local-variable 'org-confirm-elisp-link-function) nil)
+  eval: (set (make-local-variable 'org-confirm-babel-evaluate) nil)
+  End:
