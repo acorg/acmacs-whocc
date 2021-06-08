@@ -6,7 +6,7 @@ ifeq ($(CHAINS_ROOT),)
 endif
 
 install:
-	ls -la
+	rsync -av py js $(CHAINS_ROOT)
 
 # ======================================================================
 ### Local Variables:
