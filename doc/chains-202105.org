@@ -1,4 +1,4 @@
-# Time-stamp: <2021-06-08 14:06:27 eu>
+# Time-stamp: <2021-06-08 14:55:40 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -22,9 +22,64 @@ make -C ~/AD/sources/acmacs-py && make -C ~/AD/sources/acmacs-whocc
 
 ** gunicorn
 
+https://docs.gunicorn.org/en/latest/
+
+*** gunicorn.conf.py
+
+#+NAME: gunicorn.conf.py
+#+BEGIN_SRC python
+# https://docs.gunicorn.org/en/stable/settings.html
+
+import multiprocessing
+from pathlib import Path
+
+# ----------------------------------------------------------------------
+
+wsgi_app = "app1:app"
+
+# argv0
+proc_name = "chains-202105"
+
+# chdir = ""
+
+# daemon = True
+# pidfile = f"/var/run/{proc_name}.pid"
+
+chdir = <.../chains-202105>
+pythonpath = "py"
+pythonpath = <.../chains-202105/py>
+
+# ----------------------------------------------------------------------
+
+bind = "i22:21051"
+# workers = multiprocessing.cpu_count() * 2 + 1
+workers = 4
+
+reload = True
+
+
+# ----------------------------------------------------------------------
+# Log
+
+log_dir = Path("log")
+log_dir.mkdir(exist_ok=True)
+
+# loglevel = "info"
+capture_output = True
+
+accesslog = str(log_dir.joinpath("access.log"))
+# access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
+errorlog = str(log_dir.joinpath("error.log"))
+
+# ----------------------------------------------------------------------
+
+#+END_SRC
+
 *** oriane
 #+BEGIN_SRC bash
 sudo apt install gunicorn
+
+gunicorn 
 #+END_SRC
 
 *** albertine apache reverse proxy

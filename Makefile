@@ -74,6 +74,9 @@ install: make-installation-dirs $(TARGETS)
 	$(call install_py_all)
 	$(call install_wildcard,$(abspath js)/*,$(AD_SHARE)/js/who)
 
+install-chains-202105:
+	$(MAKE) -C web/chains-202105 install
+
 test: install
 	@#test/test
 .PHONY: test
