@@ -1,4 +1,4 @@
-# Time-stamp: <2021-06-08 14:55:40 eu>
+# Time-stamp: <2021-06-08 17:52:07 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -77,9 +77,12 @@ errorlog = str(log_dir.joinpath("error.log"))
 
 *** oriane
 #+BEGIN_SRC bash
-sudo apt install gunicorn
+sudo apt install gunicorn python3-aiohttp
 
-gunicorn 
+make -C ${ACMACSD_ROOT}/sources/acmacs-whocc/web/chains-202105 CHAINS_ROOT=<.../chains-202105>
+
+gunicorn -c <.../chains-202105/gunicorn/gunicorn.conf.py> application:app
+
 #+END_SRC
 
 *** albertine apache reverse proxy
@@ -87,8 +90,8 @@ gunicorn
 #+BEGIN_SRC conf
 # acmacs-whocc/doc/chains-202105.org
 <Location "/chains-202105">
-    ProxyPass "http://i22:21051/"
-    ProxyPassReverse "http://i22:21051/"
+    ProxyPass "http://i22:21051"
+    ProxyPassReverse "http://i22:21051"
     ProxyPreserveHost On
     # auth data
 </Location>
