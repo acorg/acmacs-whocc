@@ -73,9 +73,17 @@ def collect_index_subtypes():
 
 # ----------------------------------------------------------------------
 
+sReTableDate = re.compile(r"-(?P<date>(?P<year>(?:19|20)\d\d)(?P<month>\d\d)\d+[^\.]*)\.")
+
 def collect_tables_of_subtype(subtype_id):
     names = [fn.name for fn in Path(subtype_id, "i-none").glob("*.ace")]
-    return names
+    data = {}
+    for name in names:
+        if mm := sReTableDate.search(name):
+            data.setdefault(mm["year"], {}).setdefault(mm["month"], []).append({"date": mm["date"], "id": name})
+        else:
+            data.setdefault("unknown", []).append(name)
+    return data
 
 # ======================================================================
 

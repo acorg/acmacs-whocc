@@ -42,6 +42,10 @@ function subtype_tab_title(subtype_data) {
         return dir_subtype_to_display[subtype_data.subtype];
 }
 
+function split_subtypes(subtypes) {
+}
+
+
 function sort_subtypes(subtypes) {
     const subtype_order = ["h1pdm", "h3", "bvic", "byam"];
     const assay_order = ["hint", "neut", "hi"];
