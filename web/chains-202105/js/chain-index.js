@@ -1,5 +1,7 @@
 function show_subtype_tabs() {
     console.log(index_subtypes);
+    // split_subtypes(index_subtypes);
+    // sort split_subtypes keys
     index_subtypes = sort_subtypes(index_subtypes);
     const subtype_tabs = $("<div class='subtype-tabs'></div>").appendTo("body");
     const tablinks = $("<div></div>").addClass("tablinks").prependTo(subtype_tabs);
