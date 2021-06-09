@@ -43,6 +43,15 @@ function subtype_tab_title(subtype_data) {
 }
 
 function split_subtypes(subtypes) {
+    const subtype_assays = {};
+    for (let subtype_data of subtypes) {
+        const subtype_assay = subtype_data.subtype + "-" + dir_assay_to_assay[subtype_data.assay];
+        if (!subtype_assays[subtype_assay])
+            subtype_assays[subtype_assay] = [subtype_data];
+        else
+            subtype_assays[subtype_assay].push(subtype_data);
+    }
+    return subtype_assays;
 }
 
 
