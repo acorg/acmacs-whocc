@@ -1,4 +1,5 @@
-import pprint
+import os, re, json, pprint
+from pathlib import Path
 from aiohttp import web
 
 routes = web.RouteTableDef()
@@ -17,7 +18,8 @@ sINDEX = """<!DOCTYPE html>
   <head>
     <meta charset="utf-8" />
     {stylesheets}
-    {scripts}
+    {remote_scripts}
+    {inline_scripts}
     <title>Chains 202105</title>
   </head>
   <body>
@@ -30,20 +32,33 @@ sINDEX = """<!DOCTYPE html>
 @routes.get('/')
 async def index(request):
     global sINDEX
-    scripts = [
+    remote_scripts = [
         "js/jquery.js",
         "js/a.js",
         ]
     stylesheets = [
         ]
+    inline_scripts = [
+        f"index_subtypes =\n{json.dumps(collect_index_subtypes(), indent=1)};",
+        ]
     return web.Response(
         text=sINDEX.format(
-            scripts="\n    ".join(f'<script src="{script}"></script>' for script in scripts),
+            remote_scripts="\n    ".join(f'<script src="{script}"></script>' for script in remote_scripts),
+            inline_scripts="\n    ".join(f'<script>\n{code}\n    </script>' for code in inline_scripts),
             stylesheets="\n    ".join(f'<link rel="stylesheet" href="{stylesheet}">' for stylesheet in stylesheets),
             # body=f"<pre>{pprint.pformat(vars(request))}</pre>"
             body=""
         ),
         content_type='text/html')
+
+# ======================================================================
+
+sReSubtypeDirName = re.compile(r"(?P<subtype>h1pdm|h3|bvic|byam)-(?P<assay>hi|hint|fra|prn|mn)(?:-(?P<rbc>guinea-pig|turkey|chicken))?-(?P<lab>cdc|cnic|crick|niid|vidrl)")
+
+def collect_index_subtypes():
+    return [fn_m.groupdict() for fn in Path(".").glob("*") if fn.is_dir() and (fn_m := sReSubtypeDirName.match(fn.name))]
+
+# ======================================================================
 
 # import os, urllib.parse, wsgiref.util, pprint
 
