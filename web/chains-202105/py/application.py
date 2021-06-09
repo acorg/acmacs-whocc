@@ -1,4 +1,4 @@
-import os, re, json, pprint
+import os, re, json, pprint, traceback
 from pathlib import Path
 from aiohttp import web
 
@@ -55,10 +55,27 @@ async def index(request):
 
 # ======================================================================
 
+@routes.get('/api/subtype-data/')
+async def subtype_data(request):
+    try:
+        tables = collect_tables_of_subtype(request.query["subtype_id"])
+        return web.json_response({"tables": tables})
+    except Exception as err:
+        return web.json_response({"error": err, "tb": traceback.format_exc()})
+
+
+# ======================================================================
+
 sReSubtypeDirName = re.compile(r"(?P<subtype>h1pdm|h3|bvic|byam)-(?P<assay>hi|hint|fra|prn|mn)(?:-(?P<rbc>guinea-pig|turkey|chicken))?-(?P<lab>cdc|cnic|crick|niid|vidrl)")
 
 def collect_index_subtypes():
     return [{"id": fn.name, **fn_m.groupdict()} for fn in Path(".").glob("*") if fn.is_dir() and (fn_m := sReSubtypeDirName.match(fn.name))]
+
+# ----------------------------------------------------------------------
+
+def collect_tables_of_subtype(subtype_id):
+    names = [fn.name for fn in Path(subtype_id, "i-none").glob("*.ace")]
+    return names
 
 # ======================================================================
 
