@@ -34,7 +34,7 @@ async def index(request):
     global sINDEX
     remote_scripts = [
         "js/jquery.js",
-        "js/a.js",
+        "js/chain-index.js",
         ]
     stylesheets = [
         ]
@@ -56,7 +56,7 @@ async def index(request):
 sReSubtypeDirName = re.compile(r"(?P<subtype>h1pdm|h3|bvic|byam)-(?P<assay>hi|hint|fra|prn|mn)(?:-(?P<rbc>guinea-pig|turkey|chicken))?-(?P<lab>cdc|cnic|crick|niid|vidrl)")
 
 def collect_index_subtypes():
-    return [fn_m.groupdict() for fn in Path(".").glob("*") if fn.is_dir() and (fn_m := sReSubtypeDirName.match(fn.name))]
+    return [{"id": fn.name, **fn_m.groupdict()} for fn in Path(".").glob("*") if fn.is_dir() and (fn_m := sReSubtypeDirName.match(fn.name))]
 
 # ======================================================================
 
