@@ -16,13 +16,13 @@ sINDEX = """<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <style>
-    </style>
-    <script src="js/a.js"></script>
+    {stylesheets}
+    {scripts}
     <title>Chains 202105</title>
   </head>
   <body>
     <h2>Chains 202105</h2>
+{body}
   </body>
 </html>
 """
@@ -30,7 +30,20 @@ sINDEX = """<!DOCTYPE html>
 @routes.get('/')
 async def index(request):
     global sINDEX
-    return web.Response(text=sINDEX, content_type='text/html')
+    scripts = [
+        "js/jquery.js",
+        "js/a.js",
+        ]
+    stylesheets = [
+        ]
+    return web.Response(
+        text=sINDEX.format(
+            scripts="\n    ".join(f'<script src="{script}"></script>' for script in scripts),
+            stylesheets="\n    ".join(f'<link rel="stylesheet" href="{stylesheet}">' for stylesheet in stylesheets),
+            # body=f"<pre>{pprint.pformat(vars(request))}</pre>"
+            body=""
+        ),
+        content_type='text/html')
 
 # import os, urllib.parse, wsgiref.util, pprint
 
