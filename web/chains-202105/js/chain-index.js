@@ -3,7 +3,7 @@ $(document).ready(() => {
     const subtype_tabs = $("<div class='subtype-tabs'></div>").appendTo("body");
     const tablinks = $("<div></div>").addClass("tablinks").prependTo(subtype_tabs);
     for (let subtype_data of index_subtypes) {
-        const tabcontent = $(`<div>${subtype_data.id}</div>`).addClass("tabcontent").appendTo(subtype_tabs);
+        const tabcontent = $(`<div>Loading ${subtype_data.id}, please wait</div>`).addClass("tabcontent").appendTo(subtype_tabs);
         const button = $("<button></button>")
               .addClass("tablink")
               .attr("id", `button-${subtype_data.id}`)
