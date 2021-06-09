@@ -1,0 +1,50 @@
+/* Tabs https://www.w3schools.com/howto/howto_js_tabs.asp */
+
+.subtype-tabs .tablinks {
+    overflow: hidden;
+    border: none;
+    border-left: 1px solid grey;
+    border-bottom: 3px solid grey;
+}
+
+.subtype-tabs button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    border-right: 1px solid grey;
+    margin: 0;
+    padding: 0 0.5em;
+    outline: none;
+    cursor: pointer;
+    /* padding: 14px 16px; */
+    transition: 0.3s;
+    font-size: 1.3em;
+    color: grey;
+}
+
+.subtype-tabs button:hover {
+    color: black;
+    background-color: #f0f0f0;
+    /* text-decoration: underline ; */
+    /* text-decoration: underline; */
+    /* text-decoration-color: #4040C0; */
+    /* text-decoration-thickness: 2px; */
+}
+
+.subtype-tabs button.active {
+    font-weight: bold;
+    color: black;
+    /* background-color: #ccc; */
+}
+
+.tabcontent {
+    display: none;
+    /* padding: 0px 2px; */
+    /* border: 1px solid #ccc; */
+    /* border-top: none; */
+}
+
+.loading-message {
+    font-size: 2em;
+    margin: 1em;
+}

@@ -34,9 +34,11 @@ async def index(request):
     global sINDEX
     remote_scripts = [
         "js/jquery.js",
+        "js/directories.js",
         "js/chain-index.js",
         ]
     stylesheets = [
+        "js/chain-index.css",
         ]
     inline_scripts = [
         f"index_subtypes =\n{json.dumps(collect_index_subtypes(), indent=1)};",
