@@ -2,6 +2,10 @@ const sSubtypeOrder = ["h1pdm", "h3-hint", "h3-neut", "h3-hi", "bvic", "byam"];
 const sSubtypeTitle = {"h1pdm" : "H1pdm", "h3-hint": "H3 HINT", "h3-neut": "H3 Neut", "h3-hi": "H3 HI", "bvic": "B/Vic", "byam": "B/Yam"};
 const sLabOrder = ["cdc", "cnic", "crick", "niid", "vidrl"]
 const sLabDisplay = {"cdc": "CDC", "cnic": "CNIC", "crick": "Crick", "niid": "NIID", "vidrl": "VIDRL"};
+const sToday = new Date();
+const sMonthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// ----------------------------------------------------------------------
 
 function show_subtype_tabs() {
     console.log(index_subtypes);
@@ -13,7 +17,7 @@ function show_subtype_tabs() {
     for (let subtype_assay of sSubtypeOrder) {
         if (index_subtypes[subtype_assay]) {
             const title = sSubtypeTitle[subtype_assay];
-            const tabcontent = $("<div><table><thead></thead><tbody></tbody></table></div>")
+            const tabcontent = $("<div><table class='labs'><tr class='labs'><th></th></tr></table></div>")
                   .addClass("tabcontent")
                   .append(`<div class='loading-message'>Loading ${title}, please wait</div>`)
                   .appendTo(subtype_tabs);
@@ -36,15 +40,44 @@ function show_subtype_tabs() {
 // ----------------------------------------------------------------------
 
 function load_subtype_tab_data(tabcontent, subtype_data) {
+    add_years(tabcontent.find("table.labs"), sToday.getFullYear() - 1);
     for (let lab of sLabOrder) {
+        tabcontent.find("tr.labs").append(`<th>${sLabDisplay[lab]}</th>`);
         const en = subtype_data[lab];
         if (en) {
-            tabcontent.find("thead").append(`<th>${sLabDisplay[lab]}</th>`);
             for (let en of subtype_data[lab]) {
                 $.getJSON(`api/subtype-data/?subtype_id=${en.id}`, (data) => {
-                    // $.getJSON(`api/subtype-data`, (data) => {
-                    console.log(subtype_data.id, data);
+                    console.log(data);
+                    const years = Object.keys(data.tables).sort()
+                    add_years(tabcontent.find("table.labs"), Object.keys(data.tables).sort()[0]);
+                    for (let year in data.tables) {
+                        console.log("year", year);
+                        for (let month in data.tables[year]) {
+                            data.tables[year][month].sort((en1,en2) => en2.date.localeCompare(en1.date));
+                            for (let en of data.tables[year][month]) {
+                                tabcontent.find(`tr[year-month='${year}-${month}'] td[lab='${lab}'] ul`).append(`<li><a href="">${en.date}</a></li>`)
+                            }
+                        }
+                    }
                 });
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------
+
+function add_years(tbody, first) {
+    for (let year = sToday.getFullYear(); year >= first; --year) {
+        if (!tbody.find(`tr[year=${year}]`).length) {
+            // tbody.children("tr")[0]
+            tbody.append(`<tr year='${year}'><td colspan=${sLabOrder.length + 1}>${year}</td></tr>`)
+            const months = (year === sToday.getFullYear() ? [...Array(sToday.getMonth() + 1).keys()] : [...Array(10).keys()]).map(x => ++x).reverse();;
+            for (let month of months) {
+                month2 = month.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})
+                const tr = $(`<tr year-month='${year}-${month2}'><td>${sMonthNames[month]}</td></tr>`).appendTo(tbody);
+                for (let lab of sLabOrder)
+                    tr.append(`<td lab='${lab}'><ul></ul></td>`);
             }
         }
     }

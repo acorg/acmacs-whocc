@@ -44,6 +44,28 @@
     /* border-top: none; */
 }
 
+.tabcontent .labs {
+    border-collapse: collapse;
+}
+
+.tabcontent .labs th {
+    border: 1px solid black;
+    min-width: 12em;
+    padding: 1em 0;
+}
+
+.tabcontent .labs td {
+    border: 1px solid black;
+}
+
+.tabcontent table.labs tr[year] td {
+    border-top: 3px solid black;
+}
+
+.tabcontent table.labs tr[year-month] ul {
+    list-style-type: none;
+}
+
 .loading-message {
     font-size: 2em;
     margin: 1em;
