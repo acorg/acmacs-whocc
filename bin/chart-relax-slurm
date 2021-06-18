@@ -1,7 +1,8 @@
 #! /usr/bin/env python3
 import sys, os, datetime, concurrent.futures, tempfile, math, socket
-import subprocess
+import subprocess, logging
 sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], subdir) for subdir in ["lib", "py"]]
+import acmacs
 try:
     from acmacs_py import execute_this_script, Path
 except Exception as err:
@@ -11,7 +12,7 @@ except Exception as err:
 # ----------------------------------------------------------------------
 
 def main(args):
-    chunk_size = 100
+    chunk_size = 1000
     number_of_chunks = math.ceil(args.number_of_optimizations / chunk_size)
     with tempfile.TemporaryDirectory(prefix="slurm", dir=args.output_chart.parent) as intermediate_results_dir:
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -22,14 +23,31 @@ def main(args):
                 "minimum_column_basis": args.minimum_column_basis,
                 "keep_projections": args.keep_projections,
                 }
-            futures = [futu for futu in (executor.submit(chart_relax, **relax_args, output=Path(intermediate_results_dir).joinpath(f"{chunk}.ace")) for chunk in range(number_of_chunks))]
+            def submit(chunk):
+                output = Path(intermediate_results_dir).joinpath(f"{chunk}.ace")
+                return (
+                    executor.submit(chart_relax, **relax_args, output=output),
+                    {"output": output}
+                )
+            futures = dict(submit(chunk) for chunk in range(number_of_chunks))
+            resulting_chart = None
             for future in concurrent.futures.as_completed(futures):
-                print(future.result())
+                proc_result = future.result()
+                if proc_result.returncode == 0:
+                    # logging.info(f"chunk completed {futures[future]['output']}")
+                    if resulting_chart is None:
+                        resulting_chart = acmacs.Chart(futures[future]["output"])
+                        logging.info(f"{resulting_chart.projection(0).stress():9.4f} {futures[future]['output']}")
+                    else:
+                        merge_in = acmacs.Chart(futures[future]["output"])
+                        logging.info(f"{merge_in.projection(0).stress():9.4f} {futures[future]['output']}")
+                else:
+                    logging.warning(f"chunk failed {futures[future]['output']}")
 
 # ----------------------------------------------------------------------
 
 def chart_relax(source, output, number_of_optimizations, number_of_dimensions, minimum_column_basis, keep_projections):
-    threads = 21
+    threads = 32
     return subprocess.run(map(str, [
         "srun", "--ntasks=1", "-N1", f"--cpus-per-task={threads}",
         "chart-relax", "-n", number_of_optimizations, "-d", number_of_dimensions, "-m", minimum_column_basis, "--keep-projections", keep_projections, "--threads", threads, source, output
