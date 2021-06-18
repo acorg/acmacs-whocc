@@ -41,7 +41,7 @@ async def index(request):
         "js/chain-index.css",
         ]
     inline_scripts = [
-        f"index_subtypes =\n{json.dumps(collect_index_subtypes(), indent=1)};",
+        f"index_subtypes =\n{json.dumps(collect_index_subtypes(), separators=(',', ':'))};",
         ]
     return web.Response(
         text=sINDEX.format(
@@ -67,9 +67,19 @@ async def subtype_data(request):
 # ======================================================================
 
 sReSubtypeDirName = re.compile(r"(?P<subtype>h1pdm|h3|bvic|byam)-(?P<assay>hi|hint|fra|prn|mn)(?:-(?P<rbc>guinea-pig|turkey|chicken))?-(?P<lab>cdc|cnic|crick|niid|vidrl)")
+sAssayToAssay = {"hi": "hi", "hint": "hint", "prn": "neut", "fra": "neut"}
 
 def collect_index_subtypes():
-    return [{"id": fn.name, **fn_m.groupdict()} for fn in Path(".").glob("*") if fn.is_dir() and (fn_m := sReSubtypeDirName.match(fn.name))]
+    """returns {subtype-assay: {lab: [entry]}}"""
+    index_subtypes = {}         # subtype-assay -> lab -> [entry]
+    for fn in Path(".").glob("*"):
+        if fn.is_dir() and (fn_m := sReSubtypeDirName.match(fn.name)):
+            if fn_m.group("subtype") == "h3":
+                subtype_assay = f"""{fn_m.group("subtype")}-{sAssayToAssay[fn_m.group("assay")]}"""
+            else:
+                subtype_assay = fn_m.group("subtype")
+            index_subtypes.setdefault(subtype_assay, {}).setdefault(fn_m.group("lab"), []).append({"id": fn.name, **fn_m.groupdict()})
+    return index_subtypes
 
 # ----------------------------------------------------------------------
 
