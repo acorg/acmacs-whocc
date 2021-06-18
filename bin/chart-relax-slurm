@@ -40,9 +40,19 @@ def main(args):
                         logging.info(f"{resulting_chart.projection(0).stress():9.4f} {futures[future]['output']}")
                     else:
                         merge_in = acmacs.Chart(futures[future]["output"])
+                        resulting_chart.combine_projections(merge_in)
                         logging.info(f"{merge_in.projection(0).stress():9.4f} {futures[future]['output']}")
                 else:
                     logging.warning(f"chunk failed {futures[future]['output']}")
+            resulting_chart.keep_projections(args.keep_projections)
+            resulting_chart.export(args.output_chart)
+            if args.grid:
+                proc_result = chart_grid(args.output_chart, args.output_chart)
+                if proc_result.returncode == 0:
+                    subprocess.check_call(["chart-info", args.output_chart])
+                else:
+                    logging.warning(f"grid test failed:\n{proc_result.stderr}")
+            # print(resulting_chart.make_info())
 
 # ----------------------------------------------------------------------
 
@@ -53,14 +63,23 @@ def chart_relax(source, output, number_of_optimizations, number_of_dimensions, m
         "chart-relax", "-n", number_of_optimizations, "-d", number_of_dimensions, "-m", minimum_column_basis, "--keep-projections", keep_projections, "--threads", threads, source, output
     ]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+# ----------------------------------------------------------------------
+
+def chart_grid(source, output):
+    threads = 32
+    return subprocess.run(map(str, [
+        "srun", "--ntasks=1", "-N1", f"--cpus-per-task={threads}",
+        "chart-grid-test", "--relax", "--threads", threads, source, output
+    ]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 # ----------------------------------------------------------------------
 
 execute_this_script(main, {
-    "-n": {"dest": "number_of_optimizations", "default": 10000},
-    "-d": {"dest": "number_of_dimensions", "default": 2},
+    "-n": {"dest": "number_of_optimizations", "default": 10000, "type": int},
+    "-d": {"dest": "number_of_dimensions", "default": 2, "type": int},
     "-m": {"dest": "minimum_column_basis", "default": "none"},
-    ("-k", "--keep-projections"): {"dest": "keep_projections", "default": 10},
+    "--grid": {"action": "store_true"},
+    ("-k", "--keep-projections"): {"dest": "keep_projections", "default": 10, "type": int},
     "input_chart": {"type": Path},
     "output_chart": {"type": Path},
     # ("-v", "--verbose"): {"action": "store_true"},
