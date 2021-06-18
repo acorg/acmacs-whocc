@@ -48,11 +48,11 @@ def main(args):
             resulting_chart.export(args.output_chart)
             if args.grid:
                 proc_result = chart_grid(args.output_chart, args.output_chart)
-                if proc_result.returncode == 0:
-                    subprocess.check_call(["chart-info", args.output_chart])
-                else:
+                if proc_result.returncode != 0:
                     logging.warning(f"grid test failed:\n{proc_result.stderr}")
-            # print(resulting_chart.make_info())
+            if args.reorient:
+                subprocess.check_call(["chart-reorient", args.reorient, args.output_chart])
+            subprocess.check_call(["chart-info", args.output_chart])
 
 # ----------------------------------------------------------------------
 
@@ -79,6 +79,7 @@ execute_this_script(main, {
     "-d": {"dest": "number_of_dimensions", "default": 2, "type": int},
     "-m": {"dest": "minimum_column_basis", "default": "none"},
     "--grid": {"action": "store_true"},
+    "--reorient": {"dest": "reorient"},
     ("-k", "--keep-projections"): {"dest": "keep_projections", "default": 10, "type": int},
     "input_chart": {"type": Path},
     "output_chart": {"type": Path},
