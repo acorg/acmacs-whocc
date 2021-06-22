@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-import sys, os, datetime, subprocess, logging
+import sys, os, datetime, subprocess, shutil, logging
 from pathlib import Path
 
 class Error (RuntimeError): pass
@@ -10,6 +10,7 @@ def main(args):
     check_cwd()
     working_dir = Path(args.subtype)
     working_dir.mkdir(exist_ok=True)
+    copy_seqdb()
     export_sequences(subtype=args.subtype, working_dir=working_dir)
 
 # ======================================================================
@@ -26,6 +27,8 @@ CONFIG = {
                 "AH1N1/ANKARA/14015-724/2019_hC7E3C2CC",
                 "AH1N1/ANKARA/14017-004/2019_h55177F82",
                 "AH1N1/ANKARA/14015-736/2019_hF435606A",
+                # 2021-06-22 deletion at the end
+                "AH1N1/BADEN-WURTTEMBERG/1/2020_OR_h287EF0FC",
             ],
             "args": ["--flu", "h1", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--most-common-length", "--nuc-hamming-distance-mean-threshold", "140"],
         },
@@ -117,6 +120,16 @@ SEQDB3_COMMON_ARGS = ["--db", "../seqdb.json.xz", "--name-format", "{seq_id}", "
 
 # ======================================================================
 
+def copy_seqdb():
+    source_seqdb = Path("/syn/eu/AD/data/seqdb.json.xz")
+    target_seqdb = Path("seqdb.json.xz")
+    if not target_seqdb.exists():
+        logging.info(f"copying seqdb")
+        shutil.copy(source_seqdb, target_seqdb)
+    subprocess.check_call(["ls", "-l", str(target_seqdb)])
+
+# ----------------------------------------------------------------------
+
 def export_sequences(subtype :str, working_dir :Path):
     source_fas = working_dir.joinpath("source.fas")
     if not source_fas.exists():
@@ -137,16 +150,16 @@ def export_sequences(subtype :str, working_dir :Path):
         script_path.chmod(0o755)
 
         logging.info(f"running export.sh in {working_dir}")
-        subprocess.check_call(["export.sh"], cwd=working_dir)
+        subprocess.check_call([str(script_path.resolve())], cwd=working_dir)
     subprocess.check_call(["ls", "-l", str(source_fas)])
 
 # ----------------------------------------------------------------------
 
-sTreeRootDir = "/syn/eu/ac/results/trees"
+sTreeRootDir = Path("/syn/eu/ac/results/trees")
 
 def check_cwd():
     if Path(os.getcwd()).parent != sTreeRootDir:
-        raise Error(f"invalid CWD, subdir of {sTreeRootDir} expected, e.g. {sTreeRootDir}/{datetime.date.today().strftime('%Y-%m%d')}")
+        raise Error(f"invalid CWD, subdir of {sTreeRootDir} expected, e.g. {sTreeRootDir.joinpath(datetime.date.today().strftime('%Y-%m%d'))}")
 
 # ======================================================================
 
