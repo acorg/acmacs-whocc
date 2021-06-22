@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 import sys, os, datetime, subprocess, shutil, concurrent.futures, time, random, logging
 from pathlib import Path
+from acmacs_py import email
 
 class Error (RuntimeError): pass
 
@@ -12,7 +13,8 @@ def main(args):
     working_dir.mkdir(exist_ok=True)
     copy_seqdb()
     export_sequences(subtype=args.subtype, working_dir=working_dir)
-    raxml_ng(subtype=args.subtype, working_dir=working_dir)
+    with email.send_after():
+        raxml_ng(subtype=args.subtype, working_dir=working_dir)
 
 # ======================================================================
 
@@ -32,6 +34,9 @@ CONFIG = {
                 "AH1N1/BADEN-WURTTEMBERG/1/2020_OR_h287EF0FC",
             ],
             "args": ["--flu", "h1", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--most-common-length", "--nuc-hamming-distance-mean-threshold", "140"],
+        },
+        "raxml-ng": {
+            "slurm-nodelist": "i20",
         },
     },
 
@@ -96,8 +101,11 @@ CONFIG = {
                 "AH3N2/WISCONSIN/327/2017_OR_hB1B4681C",
             ],
             # before 2020-02-10  "args": ["--flu", "h3", "--recent-matched", "3000,4000", "--host", "human"],
-        "args": ["--flu", "h3", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--length", "1650", "--minimum-nuc-length", "1650", "--nuc-hamming-distance-mean-threshold", "140"],
-        }
+            "args": ["--flu", "h3", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--length", "1650", "--minimum-nuc-length", "1650", "--nuc-hamming-distance-mean-threshold", "140"],
+        },
+        "raxml-ng": {
+            "slurm-nodelist": "i22",
+        },
     },
 
     "bvic": {
@@ -115,7 +123,10 @@ CONFIG = {
                 "B/MIE/1/2019_h2C1CA3AE",
                 ],
             "args": ["--flu", "b", "--lineage", "vic", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
-        }
+        },
+        "raxml-ng": {
+            "slurm-nodelist": "i21",
+        },
     },
 
     "byam": {
@@ -123,7 +134,10 @@ CONFIG = {
             "base": "B/MINNESOTA/2/2014_MDCK1_hF5650512", # MELB uses B/Florida/4/2006 as base (Y1 clade), B/MASSACHUSETTS/02/2012 egg (Y2), B/HUBEI WUJIAGANG/20158/2009
             "prepend": ["B/IDAHO/1/2014_MDCK1_h45F759E9", "B/MASSACHUSETTS/7/2014_MK1/MDCK1_h42B3D3E5"],
             "args": ["--flu", "b", "--lineage", "yam", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
-        }
+        },
+        "raxml-ng": {
+            "slurm-nodelist": "i18",
+        },
     },
 
     # ----------------------------------------------------------------------
@@ -198,7 +212,7 @@ def raxml_ng(subtype, working_dir):
     output_dir = working_dir.joinpath(f"raxml-ng.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
     output_dir.mkdir()
     random_gen = random.SystemRandom()
-    cmd = [
+    raxml_cmd = [
         "/syn/bin/raxml-ng",
         "--search",         # (raxml: -f d) run topology search to find the best-scoring ML tree
         "--model", "GTR+G+I", # raxml: -m GTRGAMMAI -c 4
@@ -210,11 +224,20 @@ def raxml_ng(subtype, working_dir):
         "--threads", "1",
     ]
     # "--silent", "--no-seq-check"
+    srun_cmd = [
+        "srun",
+        "--cpus-per-task=2",
+        "--nodes=1",
+        "--ntasks=1",
+        "--threads=1",
+        f"--nodelist={CONFIG[subtype]['raxml-ng']['slurm-nodelist']}",
+    ]
 
     def run_raxml_ng(run_id):
-        srun_cmd = ["srun", "x"] + cmd + ["--prefix", f"{output_dir.name}/{run_id}", "--seed", str(random_gen.randint(1, 0xFFFFFFF))]
-        print(srun_cmd)
-        subprocess.check_call(srun_cmd)
+        cmd = (srun_cmd + [f"--job-name='raxml-ng {subtype} {run_id}'", f"--output='{output_dir.name}/{run_id}.stdout'", f"--error='{output_dir.name}/{run_id}.stderr'"]
+               + raxml_cmd + ["--prefix", f"{output_dir.name}/{run_id}", "--seed", str(random_gen.randint(1, 0xFFFFFFF))])
+        print(cmd)
+        subprocess.check_call(cmd)
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["raxml-ng"]["num_runs"]))}
