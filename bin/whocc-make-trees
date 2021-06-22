@@ -11,10 +11,11 @@ def main(args):
     check_cwd()
     working_dir = Path(args.subtype)
     working_dir.mkdir(exist_ok=True)
+    working_dir = working_dir.resolve()
     copy_seqdb()
-    export_sequences(subtype=args.subtype, working_dir=working_dir)
+    source_fas = export_sequences(subtype=args.subtype, working_dir=working_dir)
     with email.send_after():
-        raxml_ng(subtype=args.subtype, working_dir=working_dir)
+        raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas)
 
 # ======================================================================
 
@@ -197,6 +198,7 @@ def export_sequences(subtype :str, working_dir :Path):
         logging.info(f"running export.sh in {working_dir}")
         subprocess.check_call([str(script_path.resolve())], cwd=working_dir)
     subprocess.check_call(["ls", "-l", str(source_fas)])
+    return source_fas
 
 # ----------------------------------------------------------------------
 
@@ -208,15 +210,16 @@ def check_cwd():
 
 # ======================================================================
 
-def raxml_ng(subtype, working_dir):
+def raxml_ng(subtype, working_dir, source_fas):
     output_dir = working_dir.joinpath(f"raxml-ng.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
     output_dir.mkdir()
+    output_dir.chmod(0o777)
     random_gen = random.SystemRandom()
     raxml_cmd = [
         "/syn/bin/raxml-ng",
         "--search",         # (raxml: -f d) run topology search to find the best-scoring ML tree
         "--model", "GTR+G+I", # raxml: -m GTRGAMMAI -c 4
-        "--msa", "source.fas",
+        "--msa", str(source_fas),
         "--msa-format", "FASTA",
         "--outgroup", CONFIG[subtype]["export"]["base"],
         "--tree", "pars{1}",
@@ -234,16 +237,28 @@ def raxml_ng(subtype, working_dir):
     ]
 
     def run_raxml_ng(run_id):
-        cmd = (srun_cmd + [f"--job-name='raxml-ng {subtype} {run_id}'", f"--output='{output_dir.name}/{run_id}.stdout'", f"--error='{output_dir.name}/{run_id}.stderr'"]
-               + raxml_cmd + ["--prefix", f"{output_dir.name}/{run_id}", "--seed", str(random_gen.randint(1, 0xFFFFFFF))])
-        print(cmd)
+        cmd = (srun_cmd + [f"--job-name='raxml-ng {subtype} {run_id}'", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+               + raxml_cmd + ["--prefix", f"{output_dir.joinpath(run_id)}", "--seed", str(random_gen.randint(1, 0xFFFFFFF))])
+        with output_dir.joinpath("commands.txt").open("a") as commands_txt:
+            print(" ".join(cmd), file=commands_txt)
+        # print(cmd)
         subprocess.check_call(cmd)
 
+    failures = 0
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["raxml-ng"]["num_runs"]))}
         for future in concurrent.futures.as_completed(future_to_runid):
-            print(f"raxml-ng run {future_to_runid[future]} completed")
-    print("raxml-ng completed")
+            try:
+                future.result()
+            except Exception as err:
+                logging.error(f"raxml-ng {subtype} {future_to_runid[future]} FAILED: {err}")
+                failures += 1
+            else:
+                logging.info(f"raxml-ng run {subtype} {future_to_runid[future]} completed")
+    if failures:
+        logging.error(f"raxml-ng {subtype} FAILED: {failures} runs failed")
+    else:
+        logging.info("raxml-ng completed")
 
 # ======================================================================
 
