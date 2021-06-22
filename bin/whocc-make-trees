@@ -99,7 +99,7 @@ CONFIG = {
         }
     },
 
-    "bv": {
+    "bvic": {
         "export": {
             "base": "B/VICTORIA/830/2013_MDCK2", # MELB: B/BRISBANE/60/2008, B/CHONGQING BANAN/1840/2017 (V1A)
             "prepend": [],
@@ -107,7 +107,7 @@ CONFIG = {
         }
     },
 
-    "by": {
+    "byam": {
         "export": {
             "base": "B/MINNESOTA/2/2014_MDCK1_hF5650512", # MELB uses B/Florida/4/2006 as base (Y1 clade), B/MASSACHUSETTS/02/2012 egg (Y2), B/HUBEI WUJIAGANG/20158/2009
             "prepend": ["B/IDAHO/1/2014_MDCK1_h45F759E9", "B/MASSACHUSETTS/7/2014_MK1/MDCK1_h42B3D3E5"],
