@@ -1,0 +1,124 @@
+#! /usr/bin/env python3
+import sys, os, re, subprocess
+from pathlib import Path
+import logging; module_logger = logging.getLogger(__name__)
+
+# ======================================================================
+
+def main(args):
+    preprocessed = preprocess(Path(args.source))
+    check(preprocessed)
+
+# ----------------------------------------------------------------------
+
+class NameFixes:
+
+    @classmethod
+    def do(cls, line):
+        for fname in vars(cls):
+            if fname[:2] == "f_":
+                line = getattr(cls, fname)(line)
+        return line
+
+    @classmethod
+    def f_a8_a9(cls, line):
+        return line.replace("?A8", "(").replace("?A9", ")")
+
+    @classmethod
+    def f_recombinant(cls, line):
+        return line.replace(">recombinant A/", ">A/")
+
+    m_date_after_year = re.compile(r"(?P<year>/201[89])_201[89]-[0-9][0-9]-[0-9][0-9](?P<next>_\|_a=)")
+    @classmethod
+    def f_date_after_year(cls, line):
+        def repl(mm):
+            return mm["year"] + mm["next"]
+        return cls.m_date_after_year.sub(repl, line)
+
+    m_number_after_year = re.compile(r"(?P<year>/2019)\([0-9]+\)(?P<next>_\|_a=)")
+    @classmethod
+    def f_number_after_year(cls, line):
+        def repl(mm):
+            return mm["year"] + mm["next"]
+        return cls.m_number_after_year.sub(repl, line)
+
+    m_year_typo = re.compile(r"/2109(?P<next>_\|_a=)")
+    @classmethod
+    def f_year_typo(cls, line):
+        def repl(mm):
+            return "2019" + mm["next"]
+        return cls.m_year_typo.sub(repl, line)
+
+    m_subtype_after_year = re.compile(r"(?P<year>/2019)_H\dN\d(?P<next>_\|_a=)")
+    @classmethod
+    def f_subtype_after_year(cls, line):
+        def repl(mm):
+            return mm["year"] + mm["next"]
+        return cls.m_subtype_after_year.sub(repl, line)
+
+    m_broken_reassortant = re.compile(r"^>(?P<first>IVR)[\-\ ]+(?P<second>\d+)\(")
+    @classmethod
+    def f_broken_reassortant(cls, line):
+        def repl(mm):
+            return f""">{mm["first"]}-{mm["second"]}("""
+        return cls.m_broken_reassortant.sub(repl, line)
+
+    m_broken_subtype = re.compile(r"^>A(?P<bird>quail)/")
+    @classmethod
+    def f_broken_subtype(cls, line):
+        def repl(mm):
+            return f""">A/{mm["bird"]}/"""
+        return cls.m_broken_subtype.sub(repl, line)
+
+    @classmethod
+    def f_broken_subtype_rus(cls, line):
+        return line.replace(">A-/", ">A/")
+
+# ----------------------------------------------------------------------
+
+def preprocess(source :Path):
+    output_lines = []
+    for line in source.open():
+        line = line.strip()
+        if line[0] == ">":
+            line = NameFixes.do(line)
+            output_lines.append(line)
+        elif re.match(r"^(/|type:|3)", line, re.I):
+            module_logger.warning(f"broken name for Serbian lab: {line}")
+            if line[0] != "/":
+                line = " " + line
+            output_lines[-1] += line
+        else:
+            output_lines.append(line)
+    preprocessed = source.with_suffix(".fixed.fasta")
+    with preprocessed.open("w") as output:
+        output.write("\n".join(output_lines))
+    return preprocessed
+
+# ----------------------------------------------------------------------
+
+def check(source):
+    subprocess.check_call(["seqdb3-scan", "--gisaid", "--all-subtypes-messages", "-m", str(source)])
+
+# ======================================================================
+
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-d', '-v', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+
+    parser.add_argument("source")
+
+    args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    exit_code = main(args)
+except Exception as err:
+    logging.error('{}\n{}'.format(err, traceback.format_exc()))
+    exit_code = 1
+exit(exit_code)
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
