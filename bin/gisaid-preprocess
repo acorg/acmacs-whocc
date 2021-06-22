@@ -70,12 +70,19 @@ class NameFixes:
             return f""">{mm["first"]}-{mm["second"]}("""
         return cls.m_broken_reassortant.sub(repl, line)
 
-    m_no_slash_after_subtype = re.compile(r"^>A(?P<next>[a-z\-]+)/", re.I)
+    m_no_slash_after_subtype = re.compile(r"^>A\.(?P<next>[a-z\-]+)/", re.I)
     @classmethod
     def f_no_slash_after_subtype(cls, line):
         def repl(mm):
             return f""">A/{mm["next"]}/"""
         return cls.m_no_slash_after_subtype.sub(repl, line)
+
+    m_space_instead_of_slash = re.compile(r"^>A (?P<f1>duck|chicken) (?P<f2>[a-z]+) (?P<f3>[a-z0-9]+) (?P<year>20(?:18|19|20|21))(?P<next>_\|_a=)", re.I)
+    @classmethod
+    def f_space_instead_of_slash(cls, line):
+        def repl(mm):
+            return f""">A/{mm["f1"]}/{mm["f2"]}/{mm["f3"]}/{mm["year"]}{mm["next"]}"""
+        return cls.m_space_instead_of_slash.sub(repl, line)
 
     @classmethod
     def f_broken_subtype_rus(cls, line):
@@ -83,7 +90,7 @@ class NameFixes:
 
     @classmethod
     def f_rus_location(cls, line):
-        return line.replace("/Russia_Novosibirsk region/", "/Novosibirsk/")
+        return line.replace("/Russia_Novosibirsk region/", "/Novosibirsk/").replace("/Pskov region/", "/Pskov/")
 
 # ----------------------------------------------------------------------
 
@@ -94,7 +101,7 @@ def preprocess(source :Path):
         if line[0] == ">":
             line = NameFixes.do(line)
             output_lines.append(line)
-        elif re.match(r"^(/|type:|3)", line, re.I):
+        elif re.match(r"^(/|type:|3|siat1)", line, re.I):
             # module_logger.warning(f"broken name line: {line}")
             if line[0] != "/":
                 line = " " + line
