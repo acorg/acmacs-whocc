@@ -1,10 +1,20 @@
-# Time-stamp: <2021-06-22 14:16:21 eu>
+# Time-stamp: <2021-06-22 14:51:15 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
 * [2019-12-02 Mon] raxml-ng
 https://github.com/amkozlov/raxml-ng/releases
 install as /syn/bin/raxml-ng
 
 * [2021-06-22 Tue] Oriane and slurm
+
+#+BEGIN_SRC bash
+mkdir /syn/eu/ac/results/trees/$(date '+%Y-%m%d')
+cd /syn/eu/ac/results/trees/$(date '+%Y-%m%d')
+whocc-make-trees h1
+whocc-make-trees h3
+whocc-make-trees bvic
+whocc-make-trees byam
+#+END_SRC
+
 
 * OLD [2019-12-02 Mon] Albertine and htcondor
 [[file:/scp:i19:~/AD/sources/acmacs-tree-maker/bin/make-trees][i19  ~/AD/sources/acmacs-tree-maker/bin/make-trees-2019]]
