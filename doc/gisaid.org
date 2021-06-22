@@ -1,4 +1,4 @@
-Time-stamp: <2021-06-22 10:35:01 eu>
+Time-stamp: <2021-06-22 11:40:09 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -69,9 +69,18 @@ seqdb3-scan --ncbi ~/ac/sequences/ncbi
 
 * Check downloaded fasta
 
+<H-d> whocc-hidb5-update --> ssh albertine whocc-hidb5-update && hidb-get-from-albertine
+
 #+BEGIN_SRC bash
 gisaid-preprocess /r/gisaid_epiflu_sequence.fasta
+#+END_SRC
 
+** OLD
+:PROPERTIES:
+:VISIBILITY: folded
+:END:
+
+#+BEGIN_SRC bash
 dos2unix /r/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
@@ -94,14 +103,12 @@ dos2unix /r/gisaid_epiflu_sequence.fasta
     )
 #+END_SRC
 
-<H-d> whocc-hidb5-update --> ssh albertine whocc-hidb5-update && hidb-get-from-albertine
-
 #+BEGIN_SRC bash
 seqdb3-scan --gisaid --all-subtypes-messages -m --print-not-aligned-for B /r/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
 * Install into ~/ac/sequences/
-xz -9ecv /r/gisaid_epiflu_sequence.fasta >~/ac/sequences/gisaid-.fas.xz
+xz -9ecv /r/gisaid_epiflu_sequence.fixed.fasta >~/ac/sequences/gisaid-.fas.xz
 
 * generate seqdb
 [[elisp:(eu-process "make-seqdb -H")][make-seqdb -H]]

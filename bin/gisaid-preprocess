@@ -28,14 +28,21 @@ class NameFixes:
     def f_recombinant(cls, line):
         return line.replace(">recombinant A/", ">A/")
 
-    m_date_after_year = re.compile(r"(?P<year>/201[89])_201[89]-[0-9][0-9]-[0-9][0-9](?P<next>_\|_a=)")
+    m_date_after_year = re.compile(r"(?P<year>/20(?:1[89]|2[01]))[_\ ](?:20(?:1[89]|2[01])-\d\d-\d\d|[01]\d-[0-3]\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?P<next>_\|_a=)", re.I)
     @classmethod
     def f_date_after_year(cls, line):
         def repl(mm):
             return mm["year"] + mm["next"]
         return cls.m_date_after_year.sub(repl, line)
 
-    m_number_after_year = re.compile(r"(?P<year>/2019)\([0-9]+\)(?P<next>_\|_a=)")
+    m_month_day_after_year = re.compile(r"(?P<year>/20(?:1[89]|2[01]))-[01]\d-[0-3]\d(?:\(H\dN\d\))?(?P<next>_\|_a=)", re.I)
+    @classmethod
+    def f_month_day_after_year(cls, line):
+        def repl(mm):
+            return mm["year"] + mm["next"]
+        return cls.m_month_day_after_year.sub(repl, line)
+
+    m_number_after_year = re.compile(r"(?P<year>/20(?:19|20|21))(?:\([0-9]+\)|-\d)(?P<next>_\|_a=)")
     @classmethod
     def f_number_after_year(cls, line):
         def repl(mm):
@@ -63,16 +70,20 @@ class NameFixes:
             return f""">{mm["first"]}-{mm["second"]}("""
         return cls.m_broken_reassortant.sub(repl, line)
 
-    m_broken_subtype = re.compile(r"^>A(?P<bird>quail)/")
+    m_no_slash_after_subtype = re.compile(r"^>A(?P<next>[a-z\-]+)/", re.I)
     @classmethod
-    def f_broken_subtype(cls, line):
+    def f_no_slash_after_subtype(cls, line):
         def repl(mm):
-            return f""">A/{mm["bird"]}/"""
-        return cls.m_broken_subtype.sub(repl, line)
+            return f""">A/{mm["next"]}/"""
+        return cls.m_no_slash_after_subtype.sub(repl, line)
 
     @classmethod
     def f_broken_subtype_rus(cls, line):
         return line.replace(">A-/", ">A/")
+
+    @classmethod
+    def f_rus_location(cls, line):
+        return line.replace("/Russia_Novosibirsk region/", "/Novosibirsk/")
 
 # ----------------------------------------------------------------------
 
@@ -84,7 +95,7 @@ def preprocess(source :Path):
             line = NameFixes.do(line)
             output_lines.append(line)
         elif re.match(r"^(/|type:|3)", line, re.I):
-            module_logger.warning(f"broken name for Serbian lab: {line}")
+            # module_logger.warning(f"broken name line: {line}")
             if line[0] != "/":
                 line = " " + line
             output_lines[-1] += line
