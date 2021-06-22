@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-import sys, os, datetime, subprocess, shutil, logging
+import sys, os, datetime, subprocess, shutil, concurrent.futures, time, logging
 from pathlib import Path
 
 class Error (RuntimeError): pass
@@ -12,6 +12,7 @@ def main(args):
     working_dir.mkdir(exist_ok=True)
     copy_seqdb()
     export_sequences(subtype=args.subtype, working_dir=working_dir)
+    raxml_ng(subtype=args.subtype, working_dir=working_dir)
 
 # ======================================================================
 
@@ -124,6 +125,26 @@ CONFIG = {
             "args": ["--flu", "b", "--lineage", "yam", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
         }
     },
+
+    # ----------------------------------------------------------------------
+
+    "raxml-ng": {
+        "num_runs": 16,
+    },
+
+    "garli": {
+        "num_runs": 16,
+
+        # the number of attachment branches evaluated for each taxon to be added to the tree during the creation of an ML stepwise-addition starting tree (when garli is run without raxml step)
+        "attachmentspertaxon": 1000000,
+
+        # termination condition: the maximum number of seconds for the run to continue (default value is a week)
+        "stoptime": 60*60,
+
+        # termination condition: when no new significantly better scoring topology has been encountered in greater than this number of generations, garli stops
+        "genthreshfortopoterm": 20000,
+    },
+
 }
 
 SEQDB3_COMMON_ARGS = ["--db", "../seqdb.json.xz", "--name-format", "{seq_id}", "--nucs", "--wrap", "--remove-with-front-back-deletions"]
@@ -170,6 +191,36 @@ sTreeRootDir = Path("/syn/eu/ac/results/trees")
 def check_cwd():
     if Path(os.getcwd()).parent != sTreeRootDir:
         raise Error(f"invalid CWD, subdir of {sTreeRootDir} expected, e.g. {sTreeRootDir.joinpath(datetime.date.today().strftime('%Y-%m%d'))}")
+
+# ======================================================================
+
+def raxml_ng(subtype, working_dir):
+    output_dir = working_dir.joinpath(f"raxml-ng.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
+    output_dir.mkdir()
+    cmd = [
+        "/syn/bin/raxml-ng",
+        "--search",         # (raxml: -f d) run topology search to find the best-scoring ML tree
+        "--model", "GTR+G+I", # raxml: -m GTRGAMMAI -c 4
+        "--msa", "source.fas",
+        "--msa-format", "FASTA",
+        "--outgroup", CONFIG[subtype]["export"]["base"],
+        "--tree", "pars{1}",
+        "--seed", "{seed}",
+        "--prefix", f"{output_dir.name}/{{run_id}}",
+        "--log", "PROGRESS", # VERBOSE, DEBUG
+        "--threads", "1",
+    ]
+    # "--silent", "--no-seq-check"
+
+    def run_raxml_ng(run_id):
+        print(run_id)
+        time.sleep(3)
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["raxml-ng"]["num_runs"]))}
+        for future in concurrent.futures.as_completed(future_to_runid):
+            print(f"raxml-ng run {future_to_runid[future]} completed")
+    print("raxml-ng completed")
 
 # ======================================================================
 
