@@ -1,0 +1,175 @@
+#! /usr/bin/env python3
+import sys, os, datetime, subprocess, logging
+from pathlib import Path
+
+class Error (RuntimeError): pass
+
+# ======================================================================
+
+def main(args):
+    check_cwd()
+    working_dir = Path(args.subtype)
+    working_dir.mkdir(exist_ok=True)
+    export_sequences(subtype=args.subtype, working_dir=working_dir)
+
+# ======================================================================
+
+CONFIG = {
+    "h1": {
+        "export": {
+            "base": "AH1N1/SOUTH_AUSTRALIA/30/2013_MDCK1_h67695CD8",  # 2009-04-09
+            "prepend": [
+                "AH1N1/MICHIGAN/45/2015_QMC2MDCK3",                   # 2015-09-07
+            ],
+            "exclude": [
+                # 2020-08-10 Sarah: They're not sequenced by a CC or NIC, but by a company.  The sequences don't have obvious errors, but are very different (obviously) from the rest. My feeling is they're either variant viruses (from swine) or a sequencing error.
+                "AH1N1/ANKARA/14015-724/2019_hC7E3C2CC",
+                "AH1N1/ANKARA/14017-004/2019_h55177F82",
+                "AH1N1/ANKARA/14015-736/2019_hF435606A",
+            ],
+            "args": ["--flu", "h1", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--most-common-length", "--nuc-hamming-distance-mean-threshold", "140"],
+        },
+    },
+
+    "h3": {
+        "export": {
+            "base": "AH3N2/PERTH/16/2009_E3/E2_h6BB67ED5",        # 2009-04-07    3C.3
+            "prepend": [
+                "AH3N2/VICTORIA/361/2011_MDCK2_h160B8E64",        # 2011-10-24    3C.3
+                # [2020-09-07] Nearest common ancestor of 2a and 3a in /syn/eu/ac/results/eu/2019-0417-h3-trees/cdc-usa-2009-2019-250-per-year-1.rough-29532.tree.pdf https://notebooks.antigenic-cartography.org/eu/results/eu/2019-0417-h3-trees/
+                "AH3N2/MARYLAND/30/2012_Rx/MDCK2_hCD1FF690",          # 2012-07-26    3C.3
+                # [2020-08-17] Derek thinks that the root (A/STOCKHOLM/6/2014) is not old enough
+                "AH3N2/TEXAS/50/2012_E6_h7B522BBD",                   # 2012-04-15    3C.3  root in MELB tree 2020
+                "AH3N2/VERMONT/6/2012_MK1/MDCK2_h6BD4A807",
+                "AH3N2/STOCKHOLM/6/2014_OR",                          # 2014-02-06    3a
+                # [2020-02-07] intermediate strains from nextflu https://nextstrain.org/flu/seasonal/h3n2/ha/2y to keep 3a at the top
+                "AH3N2/SWITZERLAND/9715293/2013_SIAT1/SIAT2/SIAT1",   # 2013-12-06    3a
+                "AH3N2/NORWAY/466/2014_SIAT1SIAT1/SIAT1",             # 2014-02-03    3a
+                "AH3N2/SOUTH_AUSTRALIA/55/2014_MDCK1/",               # 2014-06-29    3a
+                "AH3N2/TASMANIA/11/2014_MDCK1",                       # 2014-03-16    3a
+                "AH3N2/KOBE/63/2014_MDCK1",                           # 2014-05-21    3a
+                "AH3N2/PERU/27/2015_MDCK2/SIAT1",                     # 2015-04-13    3a
+                "AH3N2/NEVADA/22/2016_OR",                            # 2016-03-05    3a
+                "AH3N2/IDAHO/33/2016_OR",                             # 2016-06-08    3a
+                "AH3N2/TEXAS/88/2016_OR",                             # 2016-02-25    3a
+                "AH3N2/TEXAS/71/2017_OR",                             # 2017-03-18    3a
+                "AH3N2/BRAZIL/7331/2018_OR",                          # 2018-07-09    3a
+                "AH3N2/KANSAS/14/2017_OR_h",                          # 2017-12-14    3a, to have serum circles in the sig page
+                "AH3N2/HONG_KONG/4801/2014_MDCK4/SIAT4",              # 2014-02-26    2a
+                "AH3N2/HAWAII/47/2014_SIAT3",                         # 2014-07-18    2a
+                "AH3N2/NORTH_CAROLINA/4/2017_OR",                     # 2017-01-26    2a2
+                "AH3N2/NORTH_CAROLINA/4/2016_OR",                     # 2016-01-14    2a1
+                "AH3N2/ANTANANARIVO/1067/2016_OR",                    # 2016-04-06    2a1
+                "AH3N2/HONG_KONG/2286/2017_MDCKx/SIAT1",              # 2017-05-23    2a1b 135K
+                "AH3N2/WISCONSIN/327/2017_OR",                        # 2017-09-22    2a1b 135K
+                "AH3N2/ABU_DHABI/240/2018_OR",                        # 2018-01-01    2a1b 135K
+                "AH3N2/JAMAICA/1447/2018_OR",                         # 2018-02-19    2a1b 131K
+
+            # Strains before and after T135N substitution to have a better 135N branch placement
+                # Sarah 2021-02-08 17:05
+                "AH3N2/WISCONSIN/85/2016_OR_h2A1A947B",
+                "AH3N2/SRI_LANKA/56/2017_SIAT1_hBE9667B3",
+                "AH3N2/SOUTH_CAROLINA/4/2017_OR_hC91E2A2E",
+                "AH3N2/YOKOHAMA/145/2017_A2/SIAT1_h0318BAD4",
+                "AH3N2/INDIA/9930/2017_X2_h92EF43A1",
+                "AH3N2/HONG_KONG/3118/2017_OR_h84D43D73",
+                "AH3N2/HAWAII/47/2014_SIAT3_h3B458D5A",
+                "AH3N2/HAWAII/47/2014_QMC2SIAT1_h3E8BB38B",
+                "AH3N2/NIIGATA-C/43/2015_MDCK2/SIAT1_h142B6AE9",
+                "AH3N2/DAKAR/17/2016_X1/SIAT1_h19A41C86",
+                "AH3N2/CAMEROON/16V-9267/2016_OR_hD54E7459",
+                "AH3N2/LAOS/3008/2016_MDCK2_h5F21B56F",
+                "AH3N2/YUNNAN_LINXIANG/1718/2016_MDCK1/SIAT1_hF485FA1E",
+                "AH3N2/HONG_KONG/2302/2016_OR_h0A3FDAB6",
+                "AH3N2/ONTARIO/RV2414/2015_X1_h7F1CB896",
+                "AH3N2/ONTARIO/RV2414/2015_X1/SIAT2_hE8F24BAB",
+                "AH3N2/HONG_KONG/2286/2017_E8_hA2DFD717",
+                "AH3N2/HONG_KONG/2286/2017_E7/E2_h981D5A8D",
+                "AH3N2/HONG_KONG/2286/2017_MDCKx/SIAT1_h75857CD5",
+                "AH3N2/HONG_KONG/2286/2017_E7_h6B9A08A4",
+                "AH3N2/HONG_KONG/2286/2017_EGG_CLN_23-74_hCF491C22",
+                "AH3N2/HONG_KONG/2286/2017_E7/E1_h2E64DCBC",
+                "AH3N2/WISCONSIN/327/2017_OR_hB1B4681C",
+            ],
+            # before 2020-02-10  "args": ["--flu", "h3", "--recent-matched", "3000,4000", "--host", "human"],
+        "args": ["--flu", "h3", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--length", "1650", "--minimum-nuc-length", "1650", "--nuc-hamming-distance-mean-threshold", "140"],
+        }
+    },
+
+    "bv": {
+        "export": {
+            "base": "B/VICTORIA/830/2013_MDCK2", # MELB: B/BRISBANE/60/2008, B/CHONGQING BANAN/1840/2017 (V1A)
+            "prepend": [],
+            "args": ["--flu", "b", "--lineage", "vic", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
+        }
+    },
+
+    "by": {
+        "export": {
+            "base": "B/MINNESOTA/2/2014_MDCK1_hF5650512", # MELB uses B/Florida/4/2006 as base (Y1 clade), B/MASSACHUSETTS/02/2012 egg (Y2), B/HUBEI WUJIAGANG/20158/2009
+            "prepend": ["B/IDAHO/1/2014_MDCK1_h45F759E9", "B/MASSACHUSETTS/7/2014_MK1/MDCK1_h42B3D3E5"],
+            "args": ["--flu", "b", "--lineage", "yam", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
+        }
+    },
+}
+
+SEQDB3_COMMON_ARGS = ["--db", "../seqdb.json.xz", "--name-format", "{seq_id}", "--nucs", "--wrap", "--remove-with-front-back-deletions"]
+
+# ======================================================================
+
+def export_sequences(subtype :str, working_dir :Path):
+    source_fas = working_dir.joinpath("source.fas")
+    if not source_fas.exists():
+        data = CONFIG[subtype]["export"]
+        if data.get("exclude"):
+            exclude = " ".join(f"--exclude-seq-id '{name}'" for name in data["exclude"])
+        else:
+            exclude = ""
+        if data.get("prepend"):
+            prepend = " ".join(f"--prepend '{name}'" for name in data["prepend"])
+        else:
+            prepend = ""
+        command = f"""seqdb3 '{"' '".join(SEQDB3_COMMON_ARGS)}' '{"' '".join(data["args"])}' --base-seq-id '{data["base"]}' {exclude} {prepend} --fasta source.fas"""
+
+        script_path = working_dir.joinpath("export.sh")
+        with script_path.open("w") as script:
+            script.write(f"#! /bin/bash\n{command}\n")
+        script_path.chmod(0o755)
+
+        logging.info(f"running export.sh in {working_dir}")
+        subprocess.check_call(["export.sh"], cwd=working_dir)
+    subprocess.check_call(["ls", "-l", str(source_fas)])
+
+# ----------------------------------------------------------------------
+
+sTreeRootDir = "/syn/eu/ac/results/trees"
+
+def check_cwd():
+    if Path(os.getcwd()).parent != sTreeRootDir:
+        raise Error(f"invalid CWD, subdir of {sTreeRootDir} expected, e.g. {sTreeRootDir}/{datetime.date.today().strftime('%Y-%m%d')}")
+
+# ======================================================================
+
+import argparse, traceback
+
+try:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-d', '-v', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+
+    parser.add_argument("subtype", choices=["h1", "h3", "bvic", "byam"])
+
+    args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    exit_code = main(args)
+except Error as err:
+    logging.error(err)
+    exit_code = 1
+except Exception as err:
+    logging.error(f"{err}\n{traceback.format_exc()}")
+    exit_code = 1
+exit(exit_code)
+
+# ======================================================================
+### Local Variables:
+### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
+### End:
