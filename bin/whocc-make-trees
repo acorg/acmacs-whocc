@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-import sys, os, datetime, subprocess, shutil, concurrent.futures, time, logging
+import sys, os, datetime, subprocess, shutil, concurrent.futures, time, random, logging
 from pathlib import Path
 
 class Error (RuntimeError): pass
@@ -197,6 +197,7 @@ def check_cwd():
 def raxml_ng(subtype, working_dir):
     output_dir = working_dir.joinpath(f"raxml-ng.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
     output_dir.mkdir()
+    random_gen = random.SystemRandom()
     cmd = [
         "/syn/bin/raxml-ng",
         "--search",         # (raxml: -f d) run topology search to find the best-scoring ML tree
@@ -205,16 +206,15 @@ def raxml_ng(subtype, working_dir):
         "--msa-format", "FASTA",
         "--outgroup", CONFIG[subtype]["export"]["base"],
         "--tree", "pars{1}",
-        "--seed", "{seed}",
-        "--prefix", f"{output_dir.name}/{{run_id}}",
         "--log", "PROGRESS", # VERBOSE, DEBUG
         "--threads", "1",
     ]
     # "--silent", "--no-seq-check"
 
     def run_raxml_ng(run_id):
-        print(run_id)
-        time.sleep(3)
+        srun_cmd = ["srun", "x"] + cmd + ["--prefix", f"{output_dir.name}/{run_id}", "--seed", str(random_gen.randint(1, 0xFFFFFFF))]
+        print(srun_cmd)
+        subprocess.check_call(srun_cmd)
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["raxml-ng"]["num_runs"]))}
