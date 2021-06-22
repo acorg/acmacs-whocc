@@ -108,7 +108,7 @@ CONFIG = {
 
     "bvic": {
         "export": {
-            "base": "B/VICTORIA/830/2013_MDCK2", # MELB: B/BRISBANE/60/2008, B/CHONGQING BANAN/1840/2017 (V1A)
+            "base": "B/VICTORIA/830/2013_MDCK2_hA7D58234", # MELB: B/BRISBANE/60/2008, B/CHONGQING BANAN/1840/2017 (V1A)
             "prepend": [],
             "exclude": [
                 # 6DEL2019
