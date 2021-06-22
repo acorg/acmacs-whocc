@@ -68,7 +68,7 @@ CONFIG = {
                 "AH3N2/ABU_DHABI/240/2018_OR",                        # 2018-01-01    2a1b 135K
                 "AH3N2/JAMAICA/1447/2018_OR",                         # 2018-02-19    2a1b 131K
 
-            # Strains before and after T135N substitution to have a better 135N branch placement
+                # Strains before and after T135N substitution to have a better 135N branch placement
                 # Sarah 2021-02-08 17:05
                 "AH3N2/WISCONSIN/85/2016_OR_h2A1A947B",
                 "AH3N2/SRI_LANKA/56/2017_SIAT1_hBE9667B3",
@@ -103,6 +103,16 @@ CONFIG = {
         "export": {
             "base": "B/VICTORIA/830/2013_MDCK2", # MELB: B/BRISBANE/60/2008, B/CHONGQING BANAN/1840/2017 (V1A)
             "prepend": [],
+            "exclude": [
+                # 6DEL2019
+                "B/YOKOHAMA/1/2019_h27650573",
+                "B/KANAGAWA/ZC1825/2019_hF6E9C34C",
+                "B/NAGASAKI/579/2019_h54DB0674",
+                "B/SAITAMA/1/2019_h1E975EEA",
+                "B/KANAGAWA/AC1867/2019_hB8B69E0F",
+                # 4-del or garbage in the middle
+                "B/MIE/1/2019_h2C1CA3AE",
+                ],
             "args": ["--flu", "b", "--lineage", "vic", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
         }
     },
