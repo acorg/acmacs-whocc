@@ -47,11 +47,11 @@ def main(args):
             resulting_chart.keep_projections(args.keep_projections)
             resulting_chart.export(args.output_chart)
             if args.grid:
-                proc_result = chart_grid(args.output_chart, args.output_chart)
-                if proc_result.returncode != 0:
+                if proc_result := chart_grid(args.output_chart, args.output_chart).returncode:
                     logging.warning(f"grid test failed:\n{proc_result.stderr}")
             if args.reorient:
-                subprocess.check_call(["chart-reorient", args.reorient, args.output_chart])
+                if subprocess.run(["chart-reorient", args.reorient, args.output_chart]).returncode:
+                    logging.warning(f"chart-reorient failed")
             subprocess.check_call(["chart-info", args.output_chart])
 
 # ----------------------------------------------------------------------
