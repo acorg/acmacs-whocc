@@ -282,9 +282,7 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
     output_dir = working_dir.joinpath(f"garli.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
     output_dir.mkdir()
     output_dir.chmod(0o777)
-    garli_cmd = [
-        "/syn/bin/garli"
-        ]
+    garli_cmd = "/syn/bin/garli"
     srun_cmd = [
         "srun",
         "--cpus-per-task=2",
@@ -294,14 +292,16 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
         f"--nodelist={CONFIG[subtype]['garli']['slurm-nodelist']}",
     ]
 
-    def make_conf(run_id):
+    # ----------------------------------------------------------------------
+
+    def make_conf(run_id, availablememory):
         """Returns filename of the written conf file"""
         # if not outgroup or not isinstance(outgroup, list) or not all(isinstance(e, int) and e > 0 for e in outgroup):
         #     raise ValueError("outgroup must be non-empty list of taxa indices in the fasta file starting with 1")
         global GARLI_CONF, CONFIG
         garli_args = {
             "source": str(source_fas.resolve()),
-            "availablememory": CONFIG[subtype]["garli"]["availablememory"],
+            "availablememory": availablememory or CONFIG[subtype]["garli"]["availablememory"],
             "streefname": str(best_tree_file.resolve()),
             "output_prefix": str(output_dir.joinpath(run_id)),
             "attachmentspertaxon": CONFIG["garli"]["attachmentspertaxon"],
@@ -316,6 +316,55 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
         with conf_filename.open("w") as f:
             f.write(conf)
         return conf_filename
+
+    # ----------------------------------------------------------------------
+
+    def find_memory_requirements():
+        sGreat = re.compile(r"\s*great\s+>=\s+(\d+)\s+MB", re.I)
+        conf_file = make_conf(run_id="find_memory_requirements", availablememory=None)
+        start = time_m.time()
+        proc = subprocess.Popen([garli_cmd, str(conf_file)], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        availablememory = None # default, in case the code below fails or times out
+        timeout = 60
+        while availablememory is None:
+            line = proc.stdout.readline().decode("utf-8")
+            if mm := self.sGreat.match(line):
+                availablememory = mm.group(1)
+            elif (time_m.time() - start) > timeout:
+                availablememory = CONFIG[subtype]["garli"]["availablememory"]
+                module_logger.warning(f"Cannot obtain availablememory required by garli in {timeout} seconds: default for {subtype}: {availablememory} will be used")
+        proc.kill()
+        return availablememory
+
+    # ----------------------------------------------------------------------
+
+    def run_garli(run_id, availablememory):
+        conf_file = make_conf(run_id=run_id, availablememory=availablememory)
+        cmd = (srun_cmd + [f"--job-name='garli {subtype} {run_id}'", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+               + [garli_cmd, str(conf_file)])
+        with output_dir.joinpath("commands.txt").open("a") as commands_txt:
+            print(" ".join(cmd), file=commands_txt)
+        # print(cmd)
+        subprocess.check_call(cmd)
+
+    # ----------------------------------------------------------------------
+
+    availablememory = find_memory_requirements()
+    failures = 0
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_runid = {executor.submit(run_garli, run_id, availablememory): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["garli"]["num_runs"]))}
+        for future in concurrent.futures.as_completed(future_to_runid):
+            try:
+                future.result()
+            except Exception as err:
+                logging.error(f"garli {subtype} {future_to_runid[future]} FAILED: {err}")
+                failures += 1
+            else:
+                logging.info(f"garli run {subtype} {future_to_runid[future]} completed")
+    if failures:
+        logging.error(f"garli {subtype} FAILED: {failures} runs failed")
+    else:
+        logging.info("garli completed")
 
 # ----------------------------------------------------------------------
 
