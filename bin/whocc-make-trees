@@ -43,7 +43,7 @@ CONFIG = {
         },
         "garli": {
             "slurm-nodelist": "i20",
-            "availablememory": 3000,
+            "required_memory": 3000,
         },
     },
 
@@ -112,7 +112,7 @@ CONFIG = {
         },
         "garli": {
             "slurm-nodelist": "i22",
-            "availablememory": 7000,
+            "required_memory": 7000,
         },
     },
 
@@ -137,7 +137,7 @@ CONFIG = {
         },
         "garli": {
             "slurm-nodelist": "i21",
-            "availablememory": 3000,
+            "required_memory": 3000,
         },
     },
 
@@ -152,7 +152,7 @@ CONFIG = {
         },
         "garli": {
             "slurm-nodelist": "i18",
-            "availablememory": 3000,
+            "required_memory": 3000,
         },
     },
 
@@ -294,14 +294,14 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
 
     # ----------------------------------------------------------------------
 
-    def make_conf(run_id, availablememory):
+    def make_conf(run_id, required_memory):
         """Returns filename of the written conf file"""
         # if not outgroup or not isinstance(outgroup, list) or not all(isinstance(e, int) and e > 0 for e in outgroup):
         #     raise ValueError("outgroup must be non-empty list of taxa indices in the fasta file starting with 1")
         global GARLI_CONF, CONFIG
         garli_args = {
             "source": str(source_fas.resolve()),
-            "availablememory": availablememory or CONFIG[subtype]["garli"]["availablememory"],
+            "availablememory": required_memory or CONFIG[subtype]["garli"]["required_memory"],
             "streefname": str(best_tree_file.resolve()),
             "output_prefix": str(output_dir.joinpath(run_id)),
             "attachmentspertaxon": CONFIG["garli"]["attachmentspertaxon"],
@@ -321,26 +321,27 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
 
     def find_memory_requirements():
         sGreat = re.compile(r"\s*great\s+>=\s+(\d+)\s+MB", re.I)
-        conf_file = make_conf(run_id="find_memory_requirements", availablememory=None)
+        conf_file = make_conf(run_id="find_memory_requirements", required_memory=None)
         start = time_m.time()
         proc = subprocess.Popen([garli_cmd, str(conf_file)], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        availablememory = None # default, in case the code below fails or times out
+        required_memory = None # default, in case the code below fails or times out
         timeout = 60
-        while availablememory is None:
+        while required_memory is None:
             line = proc.stdout.readline().decode("utf-8")
             if mm := self.sGreat.match(line):
-                availablememory = mm.group(1)
+                required_memory = mm.group(1)
             elif (time_m.time() - start) > timeout:
-                availablememory = CONFIG[subtype]["garli"]["availablememory"]
-                module_logger.warning(f"Cannot obtain availablememory required by garli in {timeout} seconds: default for {subtype}: {availablememory} will be used")
+                required_memory = CONFIG[subtype]["garli"]["required_memory"]
+                module_logger.warning(f"Cannot obtain memory required by garli in {timeout} seconds: default for {subtype}: {required_memory} will be used")
         proc.kill()
-        return availablememory
+        return required_memory
 
     # ----------------------------------------------------------------------
 
-    def run_garli(run_id, availablememory):
-        conf_file = make_conf(run_id=run_id, availablememory=availablememory)
-        cmd = (srun_cmd + [f"--job-name='garli {subtype} {run_id}'", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+    def run_garli(run_id, required_memory):
+        conf_file = make_conf(run_id=run_id, required_memory=required_memory)
+        # --mem-per-cpu is half of required_memory because we allocate whole 2 cpus per run to prevent from hyperthreading
+        cmd = (srun_cmd + [f"--mem-per-cpu={int(required_memory / 2) + 1}", f"--job-name='garli {subtype} {run_id}'", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
                + [garli_cmd, str(conf_file)])
         with output_dir.joinpath("commands.txt").open("a") as commands_txt:
             print(" ".join(cmd), file=commands_txt)
@@ -349,10 +350,10 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
 
     # ----------------------------------------------------------------------
 
-    availablememory = find_memory_requirements()
+    required_memory = find_memory_requirements()
     failures = 0
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_runid = {executor.submit(run_garli, run_id, availablememory): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["garli"]["num_runs"]))}
+        future_to_runid = {executor.submit(run_garli, run_id, required_memory): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["garli"]["num_runs"]))}
         for future in concurrent.futures.as_completed(future_to_runid):
             try:
                 future.result()
