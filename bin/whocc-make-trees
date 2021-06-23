@@ -383,22 +383,48 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
 
     # ----------------------------------------------------------------------
 
-    required_memory = find_memory_requirements()
-    failures = 0
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_runid = {executor.submit(run_garli, run_id, required_memory): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["garli"]["num_runs"]))}
-        for future in concurrent.futures.as_completed(future_to_runid):
-            try:
-                future.result()
-            except Exception as err:
-                logging.error(f"garli {subtype} {future_to_runid[future]} FAILED: {err}")
-                failures += 1
-            else:
-                logging.info(f"garli run {subtype} {future_to_runid[future]} completed")
-    if failures:
-        logging.error(f"garli {subtype} FAILED: {failures} runs failed")
-    else:
-        logging.info("garli completed")
+    def submit():
+        required_memory = find_memory_requirements()
+        failures = 0
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_to_runid = {executor.submit(run_garli, run_id, required_memory): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["garli"]["num_runs"]))}
+            for future in concurrent.futures.as_completed(future_to_runid):
+                try:
+                    future.result()
+                except Exception as err:
+                    logging.error(f"garli {subtype} {future_to_runid[future]} FAILED: {err}")
+                    failures += 1
+                else:
+                    logging.info(f"garli run {subtype} {future_to_runid[future]} completed")
+        if failures:
+            logging.error(f"garli {subtype} FAILED: {failures} runs failed")
+        else:
+            logging.info("garli completed")
+
+    # ----------------------------------------------------------------------
+
+    def results_available():
+        return len(output_dir.glob("*.best.phy")) > (CONFIG["garli"]["num_runs"] / 2)
+
+    # ----------------------------------------------------------------------
+
+    sReFinalScore = re.compile(r"Final\t-(\d+\.\d+)")
+
+    def find_best_result():
+        # scores in results are positive numbers
+        results = [[log_file_name, float(sReFinalScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.log00.log")]
+        best = min(results, key=lambda en: en[1])
+        return [Path(str(best[0]).replace(".log00.log", ".best.phy")), best[1]]
+
+    # ----------------------------------------------------------------------
+
+    if not results_available():
+        start = datetime.datetime.now()
+        submit()
+        with working_dir.joinpath("log").open("a") as log:
+            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: garli elapsed: {datetime.datetime.now() - start}", file=log)
+    best_tree_file, best_score = find_best_result()
+    return best_tree_file
 
 # ----------------------------------------------------------------------
 
