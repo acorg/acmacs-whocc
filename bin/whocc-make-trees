@@ -18,6 +18,7 @@ def main(args):
     with email.send_after():
         best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas)
         best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas)
+        tjz, pdf = generate_results(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file)
 
 # ======================================================================
 
@@ -304,9 +305,9 @@ def raxml_ng(subtype, working_dir, source_fas):
     if not results_available():
         start = datetime.datetime.now()
         submit()
-        with working_dir.joinpath("log").open("a") as log:
-            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: raxml-ng elapsed: {datetime.datetime.now() - start}", file=log)
+        log(working_dir, f"raxml-ng elapsed: {datetime.datetime.now() - start}")
     best_tree_file, best_score = find_best_result()
+    log(working_dir, f"raxml-ng best: {best_tree_file}  score: {best_score}")
     return best_tree_file
 
 # ======================================================================
@@ -421,9 +422,9 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
     if not results_available():
         start = datetime.datetime.now()
         submit()
-        with working_dir.joinpath("log").open("a") as log:
-            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: garli elapsed: {datetime.datetime.now() - start}", file=log)
+        log(working_dir, f"garli elapsed: {datetime.datetime.now() - start}")
     best_tree_file, best_score = find_best_result()
+    log(working_dir, f"garli best: {best_tree_file}  score: {best_score}")
     return best_tree_file
 
 # ----------------------------------------------------------------------
@@ -682,6 +683,20 @@ uniqueswapbias = 0.1
 distanceswapbias = 1.0
 """
 
+# ======================================================================
+
+def generate_results(subtype, working_dir, best_tree_file):
+    tjz = working_dir.joinpath(f"{subtype}.tjz")
+    pdf = tjz.with_suffix(".pdf")
+    subprocess.check_call(["tal", "--seqdb", "../seqdb.json.xz", "-D", "whocc", str(best_tree_file), str(tjz)], cwd=working_dir)
+    subprocess.check_call(["tal", str(tjz), str(pdf)], cwd=working_dir)
+    return [tjz, pdf]
+
+# ======================================================================
+
+def log(working_dir, message):
+    with working_dir.joinpath("log").open("a") as log:
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message}", file=log)
 
 # ======================================================================
 
