@@ -252,29 +252,62 @@ def raxml_ng(subtype, working_dir, source_fas):
         f"--nodelist={CONFIG[subtype]['raxml-ng']['slurm-nodelist']}",
     ]
 
+    # ----------------------------------------------------------------------
+
+    def prefix(run_id):
+        return f"{output_dir.joinpath(run_id)}"
+
     def run_raxml_ng(run_id):
         cmd = (srun_cmd + [f"--job-name='raxml-ng {subtype} {run_id}'", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
-               + raxml_cmd + ["--prefix", f"{output_dir.joinpath(run_id)}", "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
+               + raxml_cmd + ["--prefix", prefix(run_id), "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
         with output_dir.joinpath("commands.txt").open("a") as commands_txt:
             print(" ".join(cmd), file=commands_txt)
         # print(cmd)
         subprocess.check_call(cmd)
 
-    failures = 0
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["raxml-ng"]["num_runs"]))}
-        for future in concurrent.futures.as_completed(future_to_runid):
-            try:
-                future.result()
-            except Exception as err:
-                logging.error(f"raxml-ng {subtype} {future_to_runid[future]} FAILED: {err}")
-                failures += 1
-            else:
-                logging.info(f"raxml-ng run {subtype} {future_to_runid[future]} completed")
-    if failures:
-        logging.error(f"raxml-ng {subtype} FAILED: {failures} runs failed")
-    else:
-        logging.info("raxml-ng completed")
+    # ----------------------------------------------------------------------
+
+    def submit():
+        failures = 0
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["raxml-ng"]["num_runs"]))}
+            for future in concurrent.futures.as_completed(future_to_runid):
+                try:
+                    future.result()
+                except Exception as err:
+                    logging.error(f"raxml-ng {subtype} {future_to_runid[future]} FAILED: {err}")
+                    failures += 1
+                else:
+                    logging.info(f"raxml-ng run {subtype} {future_to_runid[future]} completed")
+        if failures:
+            logging.error(f"raxml-ng {subtype} FAILED: {failures} runs failed")
+        else:
+            logging.info("raxml-ng completed")
+
+    # ----------------------------------------------------------------------
+
+    def results_available():
+        return len(output_dir.glob("*.raxml.bestTree")) > (CONFIG["raxml-ng"]["num_runs"] / 2)
+
+    # ----------------------------------------------------------------------
+
+    sBestScore = re.compile(r"Final LogLikelihood: -([\d\.]+)", re.I)
+
+    def find_best_result():
+        # scores in results are positive numbers
+        results = [[log_file_name, float(sBestScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.raxml.log")]
+        best = min(results, key=lambda en: en[1])
+        return [best[0].with_suffix(".bestTree"), best[1]]
+
+    # ----------------------------------------------------------------------
+
+    if not results_available():
+        start = datetime.datetime.now()
+        submit()
+        with working_dir.joinpath("log").open("a") as log:
+            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: raxml-ng elapsed: {datetime.datetime.now() - start}", file=log)
+    best_tree_file, best_score = find_best_result()
+    return best_tree_file
 
 # ======================================================================
 
@@ -322,7 +355,7 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
     def find_memory_requirements():
         sGreat = re.compile(r"\s*great\s+>=\s+(\d+)\s+MB", re.I)
         conf_file = make_conf(run_id="find_memory_requirements", required_memory=None)
-        start = time_m.time()
+        start = time.time()
         proc = subprocess.Popen([garli_cmd, str(conf_file)], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         required_memory = None # default, in case the code below fails or times out
         timeout = 60
@@ -330,7 +363,7 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
             line = proc.stdout.readline().decode("utf-8")
             if mm := self.sGreat.match(line):
                 required_memory = mm.group(1)
-            elif (time_m.time() - start) > timeout:
+            elif (time.time() - start) > timeout:
                 required_memory = CONFIG[subtype]["garli"]["required_memory"]
                 module_logger.warning(f"Cannot obtain memory required by garli in {timeout} seconds: default for {subtype}: {required_memory} will be used")
         proc.kill()
