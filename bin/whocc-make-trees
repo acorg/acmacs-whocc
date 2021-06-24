@@ -230,9 +230,9 @@ def check_cwd():
 sRandomGen = random.SystemRandom()
 
 def raxml_ng(subtype, working_dir, source_fas):
-    output_dir = working_dir.joinpath(f"raxml-ng.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
-    output_dir.mkdir()
-    output_dir.chmod(0o777)
+
+    output_dir = get_output_dir(working_dir, "raxml-ng.")
+
     raxml_cmd = [
         "/syn/bin/raxml-ng",
         "--search",         # (raxml: -f d) run topology search to find the best-scoring ML tree
@@ -314,9 +314,9 @@ def raxml_ng(subtype, working_dir, source_fas):
 # ======================================================================
 
 def garli(subtype, working_dir, best_tree_file, source_fas):
-    output_dir = working_dir.joinpath(f"garli.{datetime.datetime.now().strftime('%Y-%m%d-%H%M%S')}")
-    output_dir.mkdir()
-    output_dir.chmod(0o777)
+
+    output_dir = get_output_dir(working_dir, "garli.")
+
     garli_cmd = "/syn/bin/garli"
     srun_cmd = [
         "srun",
@@ -363,10 +363,10 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
         timeout = 60
         while required_memory is None:
             line = proc.stdout.readline().decode("utf-8")
-            if mm := self.sGreat.match(line):
-                required_memory = mm.group(1)
+            if mm := sGreat.match(line):
+                required_memory = int(mm.group(1))
             elif (time.time() - start) > timeout:
-                required_memory = CONFIG[subtype]["garli"]["required_memory"]
+                required_memory = int(CONFIG[subtype]["garli"]["required_memory"])
                 module_logger.warning(f"Cannot obtain memory required by garli in {timeout} seconds: default for {subtype}: {required_memory} will be used")
         proc.kill()
         return required_memory
@@ -406,7 +406,7 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
     # ----------------------------------------------------------------------
 
     def results_available():
-        return len(output_dir.glob("*.best.phy")) > (CONFIG["garli"]["num_runs"] / 2)
+        return len(list(output_dir.glob("*.best.phy"))) > (CONFIG["garli"]["num_runs"] / 2)
 
     # ----------------------------------------------------------------------
 
@@ -415,6 +415,8 @@ def garli(subtype, working_dir, best_tree_file, source_fas):
     def find_best_result():
         # scores in results are positive numbers
         results = [[log_file_name, float(sReFinalScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.log00.log")]
+        if not results:
+            raise Error(f"no results found in {output_dir}/*.log00.log")
         best = min(results, key=lambda en: en[1])
         return [Path(str(best[0]).replace(".log00.log", ".best.phy")), best[1]]
 
@@ -694,6 +696,18 @@ def generate_results(subtype, working_dir, best_tree_file):
     return [tjz, pdf]
 
 # ======================================================================
+
+def get_output_dir(working_dir, prefix):
+    output_dirs = list(working_dir.glob(prefix + "*"))
+    if output_dirs:
+        output_dir = max(output_dirs)
+    else:
+        output_dir = working_dir.joinpath(prefix + datetime.datetime.now().strftime('%Y-%m%d-%H%M%S'))
+        output_dir.mkdir()
+        output_dir.chmod(0o777)
+    return output_dir
+
+# ----------------------------------------------------------------------
 
 def log(working_dir, message):
     with working_dir.joinpath("log").open("a") as log:
