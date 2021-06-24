@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-import sys, os, datetime, subprocess, shutil, concurrent.futures, time, random, logging
+import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random, logging
 from pathlib import Path
 from acmacs_py import email
 
@@ -15,7 +15,7 @@ def main(args):
     copy_seqdb()
     source_fas = export_sequences(subtype=args.subtype, working_dir=working_dir)
     # fork
-    with email.send_after() as email_data:
+    with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}") as email_data:
         best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas)
         best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas)
         tjz, pdf = generate_results(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file)
@@ -260,7 +260,7 @@ def raxml_ng(subtype, working_dir, source_fas):
         return f"{output_dir.joinpath(run_id)}"
 
     def run_raxml_ng(run_id):
-        cmd = (srun_cmd + [f"--job-name='raxml-ng {subtype} {run_id}'", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+        cmd = (srun_cmd + [f"--job-name=raxml-ng {subtype} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
                + raxml_cmd + ["--prefix", prefix(run_id), "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
         with output_dir.joinpath("commands.txt").open("a") as commands_txt:
             print(" ".join(cmd), file=commands_txt)
@@ -289,7 +289,7 @@ def raxml_ng(subtype, working_dir, source_fas):
     # ----------------------------------------------------------------------
 
     def results_available():
-        return len(output_dir.glob("*.raxml.bestTree")) > (CONFIG["raxml-ng"]["num_runs"] / 2)
+        return len(list(output_dir.glob("*.raxml.bestTree"))) > (CONFIG["raxml-ng"]["num_runs"] / 2)
 
     # ----------------------------------------------------------------------
 
