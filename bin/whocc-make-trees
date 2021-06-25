@@ -692,7 +692,7 @@ def generate_results(subtype, working_dir, best_tree_file):
     tjz = working_dir.joinpath(f"{subtype}.tjz")
     pdf = tjz.with_suffix(".pdf")
     subprocess.check_call(["tal", "--seqdb", "../seqdb.json.xz", "-D", "whocc", str(best_tree_file), str(tjz)], cwd=working_dir)
-    subprocess.check_call(["tal", "-D", "whocc", str(tjz), str(pdf)], cwd=working_dir)
+    subprocess.check_call(["tal", "-D", "whocc", str(tjz), str(pdf), str(tjz.with_suffix(".txt.xz"))], cwd=working_dir)
     return [tjz, pdf]
 
 # ======================================================================
