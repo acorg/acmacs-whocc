@@ -37,6 +37,9 @@ CONFIG = {
                 "AH1N1/ANKARA/14015-736/2019_hF435606A",
                 # 2021-06-22 deletion at the end
                 "AH1N1/BADEN-WURTTEMBERG/1/2020_OR_h287EF0FC",
+                # long branch 2021-0622
+                "AH1N1/DENMARK/1/2021_h541D5B4E",
+                "AH1N1/MANITOBA/2/2021_V_X1_h93388217",
             ],
             "args": ["--flu", "h1", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--most-common-length", "--nuc-hamming-distance-mean-threshold", "140"],
         },
@@ -106,6 +109,10 @@ CONFIG = {
                 "AH3N2/HONG_KONG/2286/2017_EGG_CLN_23-74_hCF491C22",
                 "AH3N2/HONG_KONG/2286/2017_E7/E1_h2E64DCBC",
             ],
+            "exclude": [
+                # long branch (2021-0622)
+                "AH3N2/WISCONSIN/1/2021_OR_hAED90E00",
+            ],
             # before 2020-02-10  "args": ["--flu", "h3", "--recent-matched", "3000,4000", "--host", "human"],
             "args": ["--flu", "h3", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--length", "1650", "--minimum-nuc-length", "1650", "--nuc-hamming-distance-mean-threshold", "140"],
         },
@@ -147,6 +154,23 @@ CONFIG = {
         "export": {
             "base": "B/MINNESOTA/2/2014_MDCK1_hF5650512", # MELB uses B/Florida/4/2006 as base (Y1 clade), B/MASSACHUSETTS/02/2012 egg (Y2), B/HUBEI WUJIAGANG/20158/2009
             "prepend": ["B/IDAHO/1/2014_MDCK1_h45F759E9", "B/MASSACHUSETTS/7/2014_MK1/MDCK1_h42B3D3E5"],
+            "exclude": [
+                # Y2, long branch (2021-0622)
+                "B/IZMIR/396/2017_SIAT1_h208926F8",
+                "B/IRAN/48/2017_hBD8ED1F9",
+                "B/CONGO/620/2016_OR_h6C605576",
+                "B/VIETNAM/6039/2016_MDCK2_hEBF3FACA",
+                "B/VIETNAM/6027/2016_MDCK2_h9E5D9DAA",
+                "B/GUANGXI_JIANGZHOU/1265/2016_MDCK1/MDCK1_h4A52F736",
+                "B/IDAHO/1/2014_MDCK1_h45F759E9",
+                "B/JIANGSU_RUNZHOU/1894/2016_E1/E1_hD45F52DA",
+                "B/MASSACHUSETTS/7/2014_MK1/MDCK1_h42B3D3E5",
+                "B/RWANDA/618/2016_OR_h895EBB2E",
+                "B/RWANDA/637/2016_OR_h895EBB2E",
+                "B/RWANDA/621/2016_OR_hF3ABB22E",
+                "B/RWANDA/615/2016_MDCK1_h0D578810",
+                "B/RWANDA/639/2016_MDCK1_hABF1BA6B",
+            ],
             "args": ["--flu", "b", "--lineage", "yam", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
         },
         "raxml-ng": {
