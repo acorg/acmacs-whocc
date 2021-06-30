@@ -106,7 +106,7 @@ class Extractor:
     def get_test_subtype(self, field_value, raw_data):
         if field_value == "H1 swl":
             raw_data["table"]["virus_type"] = "A(H1N1)"
-            raw_data["table"]["lineage"] = "PDM09"
+            # raw_data["table"]["lineage"] = "PDM09"
             raw_data["table"]["virus_type_low"] = "h1pdm"
         elif field_value == "H3":
             raw_data["table"]["virus_type"] = "A(H3N2)"
