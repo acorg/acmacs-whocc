@@ -265,7 +265,7 @@ def raxml_ng(subtype, working_dir, source_fas, args):
         "--model", "GTR+G+I", # raxml: -m GTRGAMMAI -c 4
         "--msa", str(source_fas),
         "--msa-format", "FASTA",
-        "--outgroup", CONFIG[subtype]["export"]["base"],
+        "--outgroup", args.base_seq_id or CONFIG[subtype]["export"]["base"],
         "--tree", "pars{1}",
         "--log", "PROGRESS", # VERBOSE, DEBUG
         "--threads", "1",
@@ -749,6 +749,7 @@ try:
     parser.add_argument('-d', '-v', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
 
     parser.add_argument("--node", default=None, choices=["o16", "o17", "i18", "19", "i20", "i21", "i22"])
+    parser.add_argument("--base-seq-id", default=None)
     parser.add_argument("--working-subdir", default=None)
 
     parser.add_argument("subtype", choices=["h1", "h3", "bvic", "byam"])
