@@ -16,9 +16,9 @@ def main(args):
     source_fas = export_sequences(subtype=args.subtype, working_dir=working_dir)
     # fork
     with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}") as email_data:
-        best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas)
-        best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas)
-        tjz, pdf = generate_results(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file)
+        best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas, args=args)
+        best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas, args=args)
+        tjz, pdf = generate_results(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, args=args)
         email_data["body"] += f"{tjz}\n\n{pdf}\n\n{str(pdf).replace('/syn/eu/ac/results/', 'https://notebooks.antigenic-cartography.org/eu/results/')}"
 
 # ======================================================================
@@ -253,9 +253,10 @@ def check_cwd():
 
 sRandomGen = random.SystemRandom()
 
-def raxml_ng(subtype, working_dir, source_fas):
+def raxml_ng(subtype, working_dir, source_fas, args):
 
     output_dir = get_output_dir(working_dir, "raxml-ng.")
+    node = args.node or CONFIG[subtype]['raxml-ng']['slurm-nodelist']
 
     raxml_cmd = [
         "/syn/bin/raxml-ng",
@@ -275,7 +276,7 @@ def raxml_ng(subtype, working_dir, source_fas):
         "--nodes=1",
         "--ntasks=1",
         "--threads=1",
-        f"--nodelist={CONFIG[subtype]['raxml-ng']['slurm-nodelist']}",
+        f"--nodelist={node}",
     ]
 
     # ----------------------------------------------------------------------
@@ -337,9 +338,10 @@ def raxml_ng(subtype, working_dir, source_fas):
 
 # ======================================================================
 
-def garli(subtype, working_dir, best_tree_file, source_fas):
+def garli(subtype, working_dir, best_tree_file, source_fas, args):
 
     output_dir = get_output_dir(working_dir, "garli.")
+    node = args.node or CONFIG[subtype]['garli']['slurm-nodelist']
 
     garli_cmd = "/syn/bin/garli"
     srun_cmd = [
@@ -712,7 +714,7 @@ distanceswapbias = 1.0
 
 # ======================================================================
 
-def generate_results(subtype, working_dir, best_tree_file):
+def generate_results(subtype, working_dir, best_tree_file, args):
     tjz = working_dir.joinpath(f"{subtype}.tjz")
     pdf = tjz.with_suffix(".pdf")
     subprocess.check_call(["tal", "--seqdb", "../seqdb.json.xz", "-D", "whocc", str(best_tree_file), str(tjz)], cwd=working_dir)
@@ -745,6 +747,7 @@ try:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-d', '-v', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
 
+    parser.add_argument("--node", default=None, choices=["o16", "o17", "i18", "19", "i20", "i21", "i22"])
     parser.add_argument("subtype", choices=["h1", "h3", "bvic", "byam"])
 
     args = parser.parse_args()
