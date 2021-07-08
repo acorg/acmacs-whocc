@@ -1,16 +1,24 @@
 #! /usr/bin/env python3
 import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random, logging
-sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py")]
 from pathlib import Path
-from acmacs_py import email
+sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py")]
+import acmacs
 
 class Error (RuntimeError): pass
+
+sSeqeunceLength = {             # aa's
+    "H1": 550,
+    "H3": 550,
+    "BVIC": 570,
+    "BYAM": 570
+    }
 
 # ======================================================================
 
 def main(args):
-    p
-
+    nuc_length = sSeqeunceLength[args.subtype.upper()] * 3
+    subset = acmacs.seqdb().all().filter_human().filter_subtype(args.subtype).remove_nuc_duplicates().filter_out_with_front_back_deletions(length=nuc_length).sort("date")
+    print(f"num seq: {len(subset)}")
 
 # ======================================================================
 
