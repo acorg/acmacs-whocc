@@ -7,17 +7,32 @@ import acmacs
 class Error (RuntimeError): pass
 
 sSeqeunceLength = {             # aa's
-    "H1": 550,
+    "H1": 549,
     "H3": 550,
     "BVIC": 570,
     "BYAM": 570
     }
 
+sDeletionsThreshold = { # aa
+    "H1": 1,
+    "H3": 1,
+    "BVIC": 3,
+    "BYAM": 3
+    }
+
 # ======================================================================
 
 def main(args):
-    nuc_length = sSeqeunceLength[args.subtype.upper()] * 3
-    subset = acmacs.seqdb().all().filter_human().filter_subtype(args.subtype).remove_nuc_duplicates().filter_out_with_front_back_deletions(length=nuc_length).sort("date")
+    subtype = args.subtype.upper()
+    nuc_length = sSeqeunceLength[subtype] * 3
+    subset = (acmacs.seqdb().all()
+              .filter_human()
+              .filter_subtype(args.subtype)
+              .remove_nuc_duplicates()
+              .filter_out_with_deletions(sDeletionsThreshold[subtype])
+              .filter_out_with_front_back_deletions(length=nuc_length)
+              .sort("date"))
+    subset.fasta()
     print(f"num seq: {len(subset)}")
 
 # ======================================================================
