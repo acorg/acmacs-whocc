@@ -21,7 +21,7 @@ sDeletionsThreshold = { # aa
     }
 
 sBaseSeq = {
-    "H1": "AH1N1/CALIFORNIA/7/2009_h87A2A7F3",
+    "H1": "AH1N1/CALIFORNIA/7/2009_hDB02A0AA",
     "H3": "",
     "BVIC": "",
     "BYAM": ""
@@ -44,10 +44,13 @@ def main(args):
     subtype = args.subtype.upper()
     nuc_length = sSeqeunceLength[subtype] * 3
 
-    subset = get_subset_for_making_tree(subtype=subtype, nuc_length=nuc_length)
+    subset = get_subset_for_making_tree(subtype=subtype, nuc_length=nuc_length, base_seq_id=sBaseSeq[subtype])
+    open("/r/all.fas", "w").write(subset.fasta(nucs=True, length=nuc_length)[1])
     subsets = split_for_tree_makers(subset)
     for no, ss in enumerate(subsets):
+        print(">> WARNING: make root first in fasta", file=sys.stderr)
         print(f"subset {no}: {len(ss)}")
+        open(f"/r/{no:03d}.fas", "w").write(ss.fasta(nucs=True, length=nuc_length)[1])
     # subset.fasta()
 
 # ----------------------------------------------------------------------
@@ -60,13 +63,13 @@ def split_for_tree_makers(subset):
             boundaries.insert(0, 0)
         else:
             boundaries.insert(0, boundaries[0] - (tree_size - sRootSize))
-    print(boundaries)
-    subsets = []
+    # print(boundaries)
+    subsets = [subset.subset(boundaries[off], boundaries[off + 1]) for off in range(len(boundaries) - 1)]
     return subsets
 
 # ----------------------------------------------------------------------
 
-def get_subset_for_making_tree(subtype, nuc_length):
+def get_subset_for_making_tree(subtype, nuc_length, base_seq_id):
 
     years_ago = datetime.datetime.now() - datetime.timedelta(days=366*3) # 3 years, keep all recent sequences
 
@@ -87,7 +90,9 @@ def get_subset_for_making_tree(subtype, nuc_length):
                 to_keep = ind
         to_remove.discard(to_keep)
         to_keep_recent = set(ind for ind in to_remove if parse_date(subset[ind].date()) >= years_ago)
-        return sorted(to_remove - to_keep_recent)
+        # always keep base_seq_id
+        to_remove = to_remove - to_keep_recent - set(ind for ind in to_remove if subset[ind].seq_id() == base_seq_id)
+        return sorted(to_remove)
 
     subset = (acmacs.seqdb().all()
               .filter_human()
