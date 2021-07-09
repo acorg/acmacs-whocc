@@ -34,13 +34,41 @@ sStartDate = {
     "BYAM": ""
     }
 
+sRootSize = 1000                # number of sequences to keep from the previous tree
+sIntermediateTreeSize = 4000    # number of sequences in the non-final trees (includes sRootSize)
+sFinalTreeSize = 8000           # size of the resulting tree (includes sRootSize)
+
 # ======================================================================
 
 def main(args):
     subtype = args.subtype.upper()
     nuc_length = sSeqeunceLength[subtype] * 3
-    now = datetime.datetime.now()
-    years_ago = now - datetime.timedelta(days=366*3) # 3 years
+
+    subset = get_subset_for_making_tree(subtype=subtype, nuc_length=nuc_length)
+    subsets = split_for_tree_makers(subset)
+    for no, ss in enumerate(subsets):
+        print(f"subset {no}: {len(ss)}")
+    # subset.fasta()
+
+# ----------------------------------------------------------------------
+
+def split_for_tree_makers(subset):
+    boundaries = [len(subset)]
+    while boundaries[0] > 0:
+        tree_size = sFinalTreeSize if len(boundaries) == 1 else sIntermediateTreeSize
+        if boundaries[0] <= tree_size:
+            boundaries.insert(0, 0)
+        else:
+            boundaries.insert(0, boundaries[0] - (tree_size - sRootSize))
+    print(boundaries)
+    subsets = []
+    return subsets
+
+# ----------------------------------------------------------------------
+
+def get_subset_for_making_tree(subtype, nuc_length):
+
+    years_ago = datetime.datetime.now() - datetime.timedelta(days=366*3) # 3 years, keep all recent sequences
 
     def parse_date(date):
         for fm in ["%Y-%m-%d", "%Y-%m", "%Y"]:
@@ -48,14 +76,14 @@ def main(args):
                 return datetime.datetime.strptime(date, fm)
             except ValueError:
                 pass
-        return today - datetime.timedelta(days=366*100) # 100 years ago
+        return years_ago - datetime.timedelta(days=366*100) # unknown date -> 100 years ago
 
     def mark_for_removal(subset, first, after_last):
         # keep most recent, do not remove isolated within last two years
-        to_remove = set(range(first, after_last))
-        to_keep = None
+        to_keep = first
+        to_remove = set(range(first + 1, after_last))
         for ind in to_remove:
-            if not to_keep or subset[to_keep].date() < subset[ind].date():
+            if subset[to_keep].date() < subset[ind].date():
                 to_keep = ind
         to_remove.discard(to_keep)
         to_keep_recent = set(ind for ind in to_remove if parse_date(subset[ind].date()) >= years_ago)
@@ -70,8 +98,7 @@ def main(args):
               .filter_out_with_front_back_deletions(length=nuc_length)
               .remove_nuc_duplicates_by_aligned_truncated(mark_for_removal, truncate_at=nuc_length)
               .sort("date"))
-    subset.fasta()
-    print(f"num seq: {len(subset)}")
+    return subset
 
 # ======================================================================
 
