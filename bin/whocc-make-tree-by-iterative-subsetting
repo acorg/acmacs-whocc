@@ -40,7 +40,7 @@ def main(args):
     subtype = args.subtype.upper()
     nuc_length = sSeqeunceLength[subtype] * 3
     now = datetime.datetime.now()
-    two_years_ago = now - datetime.timedelta(days=366*2)
+    years_ago = now - datetime.timedelta(days=366*3) # 3 years
 
     def parse_date(date):
         for fm in ["%Y-%m-%d", "%Y-%m", "%Y"]:
@@ -58,11 +58,8 @@ def main(args):
             if not to_keep or subset[to_keep].date() < subset[ind].date():
                 to_keep = ind
         to_remove.discard(to_keep)
-        to_keep_recent = set(ind for ind in to_remove if parse_date(subset[ind].date()) >= two_years_ago)
-        to_remove = to_remove - to_keep_recent
-        # print(f"mark_for_removal {to_remove}")
-        for ind in to_remove:
-            subset[ind].mark_for_removal()
+        to_keep_recent = set(ind for ind in to_remove if parse_date(subset[ind].date()) >= years_ago)
+        return sorted(to_remove - to_keep_recent)
 
     subset = (acmacs.seqdb().all()
               .filter_human()
