@@ -39,9 +39,30 @@ sStartDate = {
 def main(args):
     subtype = args.subtype.upper()
     nuc_length = sSeqeunceLength[subtype] * 3
+    now = datetime.datetime.now()
+    two_years_ago = now - datetime.timedelta(days=366*2)
+
+    def parse_date(date):
+        for fm in ["%Y-%m-%d", "%Y-%m", "%Y"]:
+            try:
+                return datetime.datetime.strptime(date, fm)
+            except ValueError:
+                pass
+        return today - datetime.timedelta(days=366*100) # 100 years ago
 
     def mark_for_removal(subset, first, after_last):
-        print(f"mark_for_removal {after_last - first}")
+        # keep most recent, do not remove isolated within last two years
+        to_remove = set(range(first, after_last))
+        to_keep = None
+        for ind in to_remove:
+            if not to_keep or subset[to_keep].date() < subset[ind].date():
+                to_keep = ind
+        to_remove.discard(to_keep)
+        to_keep_recent = set(ind for ind in to_remove if parse_date(subset[ind].date()) >= two_years_ago)
+        to_remove = to_remove - to_keep_recent
+        # print(f"mark_for_removal {to_remove}")
+        for ind in to_remove:
+            subset[ind].mark_for_removal()
 
     subset = (acmacs.seqdb().all()
               .filter_human()
