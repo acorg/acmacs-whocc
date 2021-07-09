@@ -20,17 +20,37 @@ sDeletionsThreshold = { # aa
     "BYAM": 3
     }
 
+sBaseSeq = {
+    "H1": "AH1N1/CALIFORNIA/7/2009_h87A2A7F3",
+    "H3": "",
+    "BVIC": "",
+    "BYAM": ""
+    }
+
+sStartDate = {
+    "H1": "2009",
+    "H3": "",
+    "BVIC": "",
+    "BYAM": ""
+    }
+
 # ======================================================================
 
 def main(args):
     subtype = args.subtype.upper()
     nuc_length = sSeqeunceLength[subtype] * 3
+
+    def mark_for_removal(subset, first, after_last):
+        print(f"mark_for_removal {after_last - first}")
+
     subset = (acmacs.seqdb().all()
               .filter_human()
               .filter_subtype(args.subtype)
               .remove_nuc_duplicates()
+              .filter_dates(start=sStartDate[subtype])
               .filter_out_with_deletions(sDeletionsThreshold[subtype])
               .filter_out_with_front_back_deletions(length=nuc_length)
+              .remove_nuc_duplicates_by_aligned_truncated(mark_for_removal, truncate_at=nuc_length)
               .sort("date"))
     subset.fasta()
     print(f"num seq: {len(subset)}")
