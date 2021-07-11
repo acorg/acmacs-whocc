@@ -59,7 +59,7 @@ def make_tree(working_dir, step, subtype):
     if not step_dir.exists():
         step_dir.mkdir(exist_ok=True)
         if step == 0:
-            raxml(output_dir=step_dir, source_fasta=working_dir.joinpath(f"source.{step:03d}.raw.fasta"), subtype=subtype)
+            raxml(output_dir=step_dir, source_fasta=working_dir.joinpath(f"source.{step:03d}.raw.fasta"), subtype=subtype, step=step)
         else:
             raise RuntimeError(f"unsupported step {step}")
 
@@ -67,7 +67,7 @@ def make_tree(working_dir, step, subtype):
 
 sRandomGen = random.SystemRandom()
 
-def raxml(output_dir, source_fasta, subtype):
+def raxml(output_dir, source_fasta, subtype, step):
 
     raxml_cmd = [
         "/syn/bin/raxml-ng",
@@ -96,7 +96,7 @@ def raxml(output_dir, source_fasta, subtype):
         return f"{output_dir.joinpath(run_id)}"
 
     def run_raxml_ng(run_id):
-        cmd = (srun_cmd + [f"--job-name=raxml-ng {subtype} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+        cmd = (srun_cmd + [f"--job-name=raxml-ng {subtype} {step:03d} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
                + raxml_cmd + ["--prefix", prefix(run_id), "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
         with output_dir.joinpath("commands.txt").open("a") as commands_txt:
             print(" ".join(cmd), file=commands_txt)
