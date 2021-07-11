@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random, logging
+import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random
 from pathlib import Path
 sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py")]
 import acmacs
@@ -38,20 +38,126 @@ sRootSize = 1000                # number of sequences to keep from the previous 
 sIntermediateTreeSize = 4000    # number of sequences in the non-final trees (includes sRootSize)
 sFinalTreeSize = 8000           # size of the resulting tree (includes sRootSize)
 
+sSlurm = {
+    "nodelist": "i22",
+    "num_runs": 16,
+}
+
 # ======================================================================
 
 def main(args):
-    subtype = args.subtype.upper()
+    working_dir = set_working_dir(subtype=args.subtype)
+    generate_source_fasta(working_dir=working_dir, subtype=args.subtype.upper())
+    make_tree(working_dir=working_dir, step=0, subtype=args.subtype.upper())
+
+# ----------------------------------------------------------------------
+
+def make_tree(working_dir, step, subtype):
+    step_dir = working_dir.joinpath(f"raxml.{step:03d}")
+    if not step_dir.exists():
+        if step == 0:
+            raxml(output_dir=step_dir, source_fasta=working_dir.joinpath(f"source.{step:03d}.raw.fasta"), subtype=subtype)
+        else:
+            raise RuntimeError(f"unsupported step {step}")
+
+# ----------------------------------------------------------------------
+
+sRandomGen = random.SystemRandom()
+
+def raxml(output_dir, source_fasta, subtype):
+
+    raxml_cmd = [
+        "/syn/bin/raxml-ng",
+        "--search",         # (raxml: -f d) run topology search to find the best-scoring ML tree
+        "--model", "GTR+G+I", # raxml: -m GTRGAMMAI -c 4
+        "--msa", str(source_fasta),
+        "--msa-format", "FASTA",
+        "--outgroup", sBaseSeq[subtype],
+        "--tree", "pars{1}",
+        "--log", "PROGRESS", # VERBOSE, DEBUG
+        "--threads", "1",
+    ]
+    # "--silent", "--no-seq-check"
+    srun_cmd = [
+        "srun",
+        "--cpus-per-task=2",
+        "--nodes=1",
+        "--ntasks=1",
+        "--threads=1",
+        f"""--nodelist={sSlurm["nodelist"]}""",
+    ]
+
+    # ----------------------------------------------------------------------
+
+    def prefix(run_id):
+        return f"{output_dir.joinpath(run_id)}"
+
+    def run_raxml_ng(run_id):
+        cmd = (srun_cmd + [f"--job-name=raxml-ng {subtype} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+               + raxml_cmd + ["--prefix", prefix(run_id), "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
+        with output_dir.joinpath("commands.txt").open("a") as commands_txt:
+            print(" ".join(cmd), file=commands_txt)
+        # print(cmd)
+        subprocess.check_call(cmd)
+
+    # ----------------------------------------------------------------------
+
+    def submit():
+        failures = 0
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(sSlurm["num_runs"]))}
+            for future in concurrent.futures.as_completed(future_to_runid):
+                try:
+                    future.result()
+                except Exception as err:
+                    log_error(f"raxml-ng {subtype} {future_to_runid[future]} FAILED: {err}")
+                    failures += 1
+                else:
+                    log(f"raxml-ng run {subtype} {future_to_runid[future]} completed")
+        if failures:
+            log_error(f"raxml-ng {subtype} FAILED: {failures} runs failed")
+        else:
+            log("raxml-ng completed")
+
+    # ----------------------------------------------------------------------
+
+    def results_available():
+        return len(list(output_dir.glob("*.raxml.bestTree"))) > (sSlurm["num_runs"] / 2)
+
+    # ----------------------------------------------------------------------
+
+    sBestScore = re.compile(r"Final LogLikelihood: -([\d\.]+)", re.I)
+
+    def find_best_result():
+        # scores in results are positive numbers
+        results = [[log_file_name, float(sBestScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.raxml.log")]
+        best = min(results, key=lambda en: en[1])
+        return [best[0].with_suffix(".bestTree"), best[1]]
+
+    # ----------------------------------------------------------------------
+
+    if not results_available():
+        start = datetime.datetime.now()
+        submit()
+        log(f"raxml-ng elapsed: {datetime.datetime.now() - start}")
+    best_tree_file, best_score = find_best_result()
+    log(f"raxml-ng best: {best_tree_file}  score: {best_score}")
+    return best_tree_file
+
+# ----------------------------------------------------------------------
+
+def generate_source_fasta(working_dir, subtype):
     nuc_length = sSeqeunceLength[subtype] * 3
 
-    subset = get_subset_for_making_tree(subtype=subtype, nuc_length=nuc_length, base_seq_id=sBaseSeq[subtype])
-    open("/r/all.fas", "w").write(subset.fasta(nucs=True, length=nuc_length)[1])
-    subsets = split_for_tree_makers(subset)
-    for no, ss in enumerate(subsets):
-        print(">> WARNING: make root first in fasta", file=sys.stderr)
-        print(f"subset {no}: {len(ss)}")
-        open(f"/r/{no:03d}.fas", "w").write(ss.fasta(nucs=True, length=nuc_length)[1])
-    # subset.fasta()
+    source_all = working_dir.joinpath("source.all.fasta")
+    if not source_all.exists():
+        subset = get_subset_for_making_tree(subtype=subtype, nuc_length=nuc_length, base_seq_id=sBaseSeq[subtype])
+        source_all.open("w").write(subset.fasta(nucs=True, length=nuc_length)[1])
+        subsets = split_for_tree_makers(subset)
+        for no, ss in enumerate(subsets):
+            print(">> WARNING: make root first in fasta", file=sys.stderr)
+            print(f"subset {no}: {len(ss)}")
+            working_dir.joinpath(f"source.{no:03d}.raw.fasta").open("w").write(ss.fasta(nucs=True, length=nuc_length)[1])
 
 # ----------------------------------------------------------------------
 
@@ -105,24 +211,88 @@ def get_subset_for_making_tree(subtype, nuc_length, base_seq_id):
               .sort("date"))
     return subset
 
+# ----------------------------------------------------------------------
+
+def set_working_dir(subtype):
+    check_cwd()
+    copy_seqdb()
+    working_dir = Path(subtype)
+    working_dir.mkdir(exist_ok=True)
+    working_dir = working_dir.resolve()
+    setup_log(working_dir=working_dir)
+    return working_dir
+
+# ----------------------------------------------------------------------
+
+def copy_seqdb():
+    source_seqdb = Path("/syn/eu/AD/data/seqdb.json.xz")
+    target_seqdb = Path("seqdb.json.xz")
+    if not target_seqdb.exists():
+        log(f"copying seqdb")
+        shutil.copy(source_seqdb, target_seqdb)
+    # subprocess.check_call(["ls", "-l", str(target_seqdb)])
+
+# ----------------------------------------------------------------------
+
+sTreeRootDir = Path("/syn/eu/ac/results/trees")
+
+def check_cwd():
+    if Path(os.getcwd()).parent != sTreeRootDir:
+        raise Error(f"invalid CWD, subdir of {sTreeRootDir} expected, e.g. {sTreeRootDir.joinpath(datetime.date.today().strftime('%Y-%m%d'))}")
+
+# ----------------------------------------------------------------------
+
+sLog = None
+
+class Log:
+
+    def __init__(self, working_dir):
+        self.filename = working_dir.joinpath("log")
+
+    def message(self, message):
+        with self.filename.open("a") as log:
+            msg = f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message}"
+            print(msg)
+            print(msg, file=log)
+
+    def error(self, message):
+        with self.filename.open("a") as log:
+            msg = f"> ERROR {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message}"
+            print(msg)
+            print(msg, file=log)
+
+def setup_log(working_dir):
+    global sLog
+    if not sLog:
+        sLog = Log(working_dir=working_dir)
+        sLog.message("starting")
+
+def log(message):
+    global sLog
+    sLog.message(message)
+
+def log_error(message):
+    global sLog
+    sLog.error(message)
+
 # ======================================================================
 
 import argparse, traceback
 
 try:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-d', '-v', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
+    # parser.add_argument('-d', '-v', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO, help='Enable debugging output.')
 
     parser.add_argument("subtype", choices=["h1", "h3", "bvic", "byam"])
 
     args = parser.parse_args()
-    logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
+    # logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
     exit_code = main(args)
 except Error as err:
-    logging.error(err)
+    print(err, file=sys.stderr)
     exit_code = 1
 except Exception as err:
-    logging.error(f"{err}\n{traceback.format_exc()}")
+    print(f"{err}\n{traceback.format_exc()}", file=sys.stderr)
     exit_code = 1
 exit(exit_code)
 
