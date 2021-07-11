@@ -47,6 +47,7 @@ sSlurm = {
 
 def main(args):
     working_dir = set_working_dir(subtype=args.subtype)
+    setup_log(working_dir=working_dir)
     generate_source_fasta(working_dir=working_dir, subtype=args.subtype.upper())
     make_tree(working_dir=working_dir, step=0, subtype=args.subtype.upper())
 
@@ -219,7 +220,6 @@ def set_working_dir(subtype):
     working_dir = Path(subtype)
     working_dir.mkdir(exist_ok=True)
     working_dir = working_dir.resolve()
-    setup_log(working_dir=working_dir)
     return working_dir
 
 # ----------------------------------------------------------------------
