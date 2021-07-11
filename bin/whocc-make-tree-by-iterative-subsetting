@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random
 from pathlib import Path
-sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py")]
+sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py"), os.path.join(os.environ["ACMACSD_ROOT"], "lib")]
 import acmacs
 
 class Error (RuntimeError): pass
