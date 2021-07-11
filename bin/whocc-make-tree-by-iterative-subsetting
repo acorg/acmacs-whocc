@@ -3,6 +3,7 @@ import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, rand
 from pathlib import Path
 sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py"), os.path.join(os.environ["ACMACSD_ROOT"], "lib")]
 import acmacs
+from acmacs_py import email
 
 class Error (RuntimeError): pass
 
@@ -48,13 +49,15 @@ sSlurm = {
 def main(args):
     working_dir = set_working_dir(subtype=args.subtype)
     generate_source_fasta(working_dir=working_dir, subtype=args.subtype.upper())
-    make_tree(working_dir=working_dir, step=0, subtype=args.subtype.upper())
+    with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}"): # as email_data:
+        make_tree(working_dir=working_dir, step=0, subtype=args.subtype.upper())
 
 # ----------------------------------------------------------------------
 
 def make_tree(working_dir, step, subtype):
     step_dir = working_dir.joinpath(f"raxml.{step:03d}")
     if not step_dir.exists():
+        step_dir.mkdir(exist_ok=True)
         if step == 0:
             raxml(output_dir=step_dir, source_fasta=working_dir.joinpath(f"source.{step:03d}.raw.fasta"), subtype=subtype)
         else:
