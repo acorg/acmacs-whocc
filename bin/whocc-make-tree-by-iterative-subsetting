@@ -53,11 +53,14 @@ def main(args):
     log(f"number of steps: {num_steps}")
     with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}"): # as email_data:
         for step in range(num_steps):
-            make_tree(working_dir=working_dir, step=step, subtype=args.subtype.upper())
+            make_tree_using_raxml(working_dir=working_dir, step=step, subtype=args.subtype.upper())
+        # make final tree using garli
+        # convert final tree to tjz
+        # draw final tree
 
 # ----------------------------------------------------------------------
 
-def make_tree(working_dir, step, subtype):
+def make_tree_using_raxml(working_dir, step, subtype):
     step_dir = raxml_step_dir(working_dir=working_dir, step=step)
     if not step_dir.exists():
         step_dir.mkdir(exist_ok=True)
@@ -65,10 +68,6 @@ def make_tree(working_dir, step, subtype):
             raxml(output_dir=step_dir, source_fasta=raw_source(working_dir=working_dir, step=step), subtype=subtype, step=step)
         else:
             raxml(output_dir=step_dir, source_fasta=make_source(working_dir=working_dir, step_dir=step_dir, step=step), subtype=subtype, step=step)
-            # raise RuntimeError(f"unsupported step {step}")
-    # best_tree_file, best_score = find_best_result(output_dir=step_dir)
-    # log(f"step {step} best: {best_tree_file}  score: {best_score}")
-    # return best_tree_file
 
 # ----------------------------------------------------------------------
 
@@ -92,13 +91,23 @@ def make_source(working_dir, step_dir, step):
     tal = acmacs.Tal(best_tree_file)
     tal.prepare()
     intermediate_nodes = tal.tree().closest_leaf_subtree_size()
-    seqids_to_prepend = [node.closest_leaf().seq_id for node in intermediate_nodes[:sRootSize]]
+    # the same closest leaf may be referenced by different intermediate nodes
+    # collect sRootSize unique leaves with max parent node subtree size
+    seqids_to_prepend_d = {}      # seqid to number of leaves
+    for node in intermediate_nodes:
+        seqids_to_prepend_d.setdefault(node.closest_leaf().seq_id, node.number_leaves_in_subtree())
+        if len(seqids_to_prepend_d) >= sRootSize:
+            break
+    seqids_to_prepend = sorted(seqids_to_prepend_d, key=lambda seqid: - seqids_to_prepend_d[seqid])
+    # with step_dir.joinpath("prepend.txt").open("w") as out:
+    #     out.write("\n".join(sorted(seqids_to_prepend)))
     prev_step_sequences = fasta.read(raw_source(working_dir=working_dir, step=step-1))
-    with step_dir.joinpath("source.fasta").open("w") as out:
+    source_fasta = step_dir.joinpath("source.fasta")
+    with source_fasta.open("w") as out:
         for seqid in seqids_to_prepend:
             out.write(f">{seqid}\n{prev_step_sequences[seqid]}\n")
         out.write(raw_source(working_dir, step=step).open().read())
-    exit(1)
+    return source_fasta
 
 # ----------------------------------------------------------------------
 
@@ -166,16 +175,6 @@ def raxml(output_dir, source_fasta, subtype, step):
 
     # ----------------------------------------------------------------------
 
-    # sBestScore = re.compile(r"Final LogLikelihood: -([\d\.]+)", re.I)
-
-    # def find_best_result():
-    #     # scores in results are positive numbers
-    #     results = [[log_file_name, float(sBestScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.raxml.log")]
-    #     best = min(results, key=lambda en: en[1])
-    #     return [best[0].with_suffix(".bestTree"), best[1]]
-
-    # ----------------------------------------------------------------------
-
     if not results_available():
         start = datetime.datetime.now()
         submit()
@@ -190,7 +189,6 @@ sBestScore = re.compile(r"Final LogLikelihood: -([\d\.]+)", re.I)
 
 def find_best_result(output_dir):
     # scores in results are positive numbers
-    log(f"find_best_result in {output_dir}")
     results = [[log_file_name, float(sBestScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.raxml.log")]
     best = min(results, key=lambda en: en[1])
     return [best[0].with_suffix(".bestTree"), best[1]]
