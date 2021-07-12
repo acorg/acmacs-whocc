@@ -49,19 +49,46 @@ sSlurm = {
 def main(args):
     working_dir = set_working_dir(subtype=args.subtype)
     generate_source_fasta(working_dir=working_dir, subtype=args.subtype.upper())
+    num_steps = number_of_steps(working_dir=working_dir)
+    log(f"number of steps: {num_steps}")
     with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}"): # as email_data:
-        make_tree(working_dir=working_dir, step=0, subtype=args.subtype.upper())
+        for step in range(num_steps):
+            make_tree(working_dir=working_dir, step=step, subtype=args.subtype.upper())
 
 # ----------------------------------------------------------------------
 
 def make_tree(working_dir, step, subtype):
-    step_dir = working_dir.joinpath(f"raxml.{step:03d}")
+    step_dir = raxml_step_dir(working_dir=working_dir, step=step)
     if not step_dir.exists():
         step_dir.mkdir(exist_ok=True)
         if step == 0:
             raxml(output_dir=step_dir, source_fasta=working_dir.joinpath(f"source.{step:03d}.raw.fasta"), subtype=subtype, step=step)
         else:
-            raise RuntimeError(f"unsupported step {step}")
+            raxml(output_dir=step_dir, source_fasta=make_source(working_dir=working_dir, step=step), subtype=subtype, step=step)
+            # raise RuntimeError(f"unsupported step {step}")
+    # best_tree_file, best_score = find_best_result(output_dir=step_dir)
+    # log(f"step {step} best: {best_tree_file}  score: {best_score}")
+    # return best_tree_file
+
+# ----------------------------------------------------------------------
+
+def number_of_steps(working_dir):
+    return max(int(src_name.name.split(".")[1]) for src_name in working_dir.glob("source.*.raw.fasta")) + 1
+
+# ----------------------------------------------------------------------
+
+def raxml_step_dir(working_dir, step):
+    return working_dir.joinpath(f"raxml.{step:03d}")
+
+# ----------------------------------------------------------------------
+
+def make_source(working_dir, step):
+    best_tree_file = find_best_result(output_dir=raxml_step_dir(working_dir=working_dir, step=step-1))[0]
+    tal = acmacs.Tal(best_tree_file)
+    nodes = tal.tree().closest_leaf_subtree_size()
+    for no, node in enumerate(nodes):
+        print(f"{no:4d} {node.number_leaves_in_subtree():4d} {node.closest_leaf().seq_id}")
+    exit(1)
 
 # ----------------------------------------------------------------------
 
@@ -129,13 +156,13 @@ def raxml(output_dir, source_fasta, subtype, step):
 
     # ----------------------------------------------------------------------
 
-    sBestScore = re.compile(r"Final LogLikelihood: -([\d\.]+)", re.I)
+    # sBestScore = re.compile(r"Final LogLikelihood: -([\d\.]+)", re.I)
 
-    def find_best_result():
-        # scores in results are positive numbers
-        results = [[log_file_name, float(sBestScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.raxml.log")]
-        best = min(results, key=lambda en: en[1])
-        return [best[0].with_suffix(".bestTree"), best[1]]
+    # def find_best_result():
+    #     # scores in results are positive numbers
+    #     results = [[log_file_name, float(sBestScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.raxml.log")]
+    #     best = min(results, key=lambda en: en[1])
+    #     return [best[0].with_suffix(".bestTree"), best[1]]
 
     # ----------------------------------------------------------------------
 
@@ -143,9 +170,20 @@ def raxml(output_dir, source_fasta, subtype, step):
         start = datetime.datetime.now()
         submit()
         log(f"raxml-ng elapsed: {datetime.datetime.now() - start}")
-    best_tree_file, best_score = find_best_result()
-    log(f"raxml-ng best: {best_tree_file}  score: {best_score}")
+    best_tree_file, best_score = find_best_result(output_dir)
+    log(f"step {step} best tree: {best_tree_file}  score: {best_score}")
     return best_tree_file
+
+# ----------------------------------------------------------------------
+
+sBestScore = re.compile(r"Final LogLikelihood: -([\d\.]+)", re.I)
+
+def find_best_result(output_dir):
+    # scores in results are positive numbers
+    log(f"find_best_result in {output_dir}")
+    results = [[log_file_name, float(sBestScore.search(log_file_name.open().read()).group(1))] for log_file_name in output_dir.glob("*.raxml.log")]
+    best = min(results, key=lambda en: en[1])
+    return [best[0].with_suffix(".bestTree"), best[1]]
 
 # ----------------------------------------------------------------------
 
