@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
-import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random
+import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random, pprint
 from pathlib import Path
 sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py"), os.path.join(os.environ["ACMACSD_ROOT"], "lib")]
 import acmacs
-from acmacs_py import email
+from acmacs_py import email, fasta
 
 class Error (RuntimeError): pass
 
@@ -62,9 +62,9 @@ def make_tree(working_dir, step, subtype):
     if not step_dir.exists():
         step_dir.mkdir(exist_ok=True)
         if step == 0:
-            raxml(output_dir=step_dir, source_fasta=working_dir.joinpath(f"source.{step:03d}.raw.fasta"), subtype=subtype, step=step)
+            raxml(output_dir=step_dir, source_fasta=raw_source(working_dir=working_dir, step=step), subtype=subtype, step=step)
         else:
-            raxml(output_dir=step_dir, source_fasta=make_source(working_dir=working_dir, step=step), subtype=subtype, step=step)
+            raxml(output_dir=step_dir, source_fasta=make_source(working_dir=working_dir, step_dir=step_dir, step=step), subtype=subtype, step=step)
             # raise RuntimeError(f"unsupported step {step}")
     # best_tree_file, best_score = find_best_result(output_dir=step_dir)
     # log(f"step {step} best: {best_tree_file}  score: {best_score}")
@@ -77,18 +77,27 @@ def number_of_steps(working_dir):
 
 # ----------------------------------------------------------------------
 
+def raw_source(working_dir, step):
+    return working_dir.joinpath(f"source.{step:03d}.raw.fasta")
+
+# ----------------------------------------------------------------------
+
 def raxml_step_dir(working_dir, step):
     return working_dir.joinpath(f"raxml.{step:03d}")
 
 # ----------------------------------------------------------------------
 
-def make_source(working_dir, step):
+def make_source(working_dir, step_dir, step):
     best_tree_file = find_best_result(output_dir=raxml_step_dir(working_dir=working_dir, step=step-1))[0]
     tal = acmacs.Tal(best_tree_file)
     tal.prepare()
-    nodes = tal.tree().closest_leaf_subtree_size()
-    for no, node in enumerate(nodes[:100]):
-        print(f"{no:4d} {node.number_leaves_in_subtree():4d} {node.closest_leaf().seq_id}")
+    intermediate_nodes = tal.tree().closest_leaf_subtree_size()
+    seqids_to_prepend = [node.closest_leaf().seq_id for node in intermediate_nodes[:sRootSize]]
+    prev_step_sequences = fasta.read(raw_source(working_dir=working_dir, step=step-1))
+    with step_dir.joinpath("source.fasta").open("w") as out:
+        for seqid in seqids_to_prepend:
+            out.write(f">{seqid}\n{prev_step_sequences[seqid]}\n")
+        out.write(raw_source(working_dir, step=step).open().read())
     exit(1)
 
 # ----------------------------------------------------------------------
