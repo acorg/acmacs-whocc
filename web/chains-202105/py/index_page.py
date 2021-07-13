@@ -30,7 +30,6 @@ def index_page():
 
     remote_scripts = [
         "js/jquery.js",
-        # "js/directories.js",
         "js/chain-index.js",
         ]
     stylesheets = [

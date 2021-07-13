@@ -1,4 +1,4 @@
-import pprint
+import json, pprint
 from pathlib import Path
 from aiohttp import web
 
@@ -27,22 +27,23 @@ def table_page(subtype_id, table_date):
 
     remote_scripts = [
         "js/jquery.js",
-        "js/directories.js",
-        # "js/chain-index.js",
+        "js/table-page.js",
         ]
     stylesheets = [
-        # "js/chain-index.css",
-        ]
-    inline_scripts = [
-        # f"index_subtypes =\n{json.dumps(collect_index_subtypes(), separators=(',', ':'))};",
+        "js/table-page.css",
         ]
 
     data = collect_table_data(subtype_id=subtype_id, table_date=table_date)
+
+    inline_scripts = [
+        f"table_page_data =\n{json.dumps(data, separators=(',', ':'))};",
+        ]
+
     return web.Response(
         text=sTablePage.format(
             remote_scripts="\n    ".join(f'<script src="{script}"></script>' for script in remote_scripts),
-            inline_scripts="\n    ".join(f'<script>\n{code}\n    </script>' for code in inline_scripts),
             stylesheets="\n    ".join(f'<link rel="stylesheet" href="{stylesheet}">' for stylesheet in stylesheets),
+            inline_scripts="\n    ".join(f'<script>\n{code}\n    </script>' for code in inline_scripts),
             table_name=f"{subtype_id} {table_date}",
             body=f"<pre>\n{pprint.pformat(data)}</pre>"
     ),
