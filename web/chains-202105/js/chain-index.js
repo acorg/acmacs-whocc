@@ -39,13 +39,24 @@ function show_subtype_tabs() {
 
 // ----------------------------------------------------------------------
 
+function api(url, callback) {
+    $.getJSON(url, (response) => {
+        if (response.ERROR)
+            console.error(response.ERROR, response.tb || response);
+        else
+            callback(response);
+    });
+}
+
+// ----------------------------------------------------------------------
+
 function load_subtype_tab_data(tabcontent, subtype_data) {
     add_years(tabcontent.find("table.labs"), sToday.getFullYear() - 1);
     for (let lab of sLabOrder) {
         const en = subtype_data[lab];
         if (en) {
             for (let en of subtype_data[lab]) {
-                $.getJSON(`api/subtype-data/?subtype_id=${en.id}`, (data) => {
+                api(`api/subtype-data/?subtype_id=${en.id}`, (data) => {
                     console.log(data);
                     const years = Object.keys(data.tables).sort()
                     add_years(tabcontent.find("table.labs"), Object.keys(data.tables).sort()[0]);
