@@ -60,6 +60,7 @@ function load_subtype_tab_data(tabcontent, subtype_data) {
                             }
                         }
                     }
+                    tabcontent.find(".loading-message").remove();
                 });
             }
         }
