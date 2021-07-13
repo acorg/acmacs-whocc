@@ -76,7 +76,7 @@ function add_years(tbody, first) {
             const months = (year === sToday.getFullYear() ? [...Array(sToday.getMonth() + 1).keys()] : [...Array(12).keys()]).map(x => ++x).reverse();;
             for (let month of months) {
                 month2 = month.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})
-                const tr = $(`<tr year-month='${year}-${month2}'><td>${sMonthNames[month]}</td></tr>`).appendTo(tbody);
+                const tr = $(`<tr year-month='${year}-${month2}'><td month='${month2}'>${sMonthNames[month]}</td></tr>`).appendTo(tbody);
                 for (let lab of sLabOrder)
                     tr.append(`<td lab='${lab}'><ul></ul></td>`);
             }

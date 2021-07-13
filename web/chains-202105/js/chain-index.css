@@ -44,26 +44,46 @@
     /* border-top: none; */
 }
 
-.tabcontent .labs {
+.tabcontent table.labs {
     border-collapse: collapse;
+    /* table-layout: fixed; */
 }
 
-.tabcontent .labs th {
+.tabcontent table.labs th {
+    font-size: 1.2em;
     border: 1px solid black;
-    min-width: 12em;
     padding: 1em 0;
 }
 
-.tabcontent .labs td {
+.tabcontent table.labs td {
     border: 1px solid black;
 }
 
 .tabcontent table.labs tr[year] td {
-    border-top: 3px solid black;
+    /* border-top: 3px solid black; */
+    padding: 5px 2em;
+    font-size: 1.2em;
+    font-weight: bold;
+    background-color: #F0F0F0;
 }
 
-.tabcontent table.labs tr[year-month] ul {
+.tabcontent table.labs tr[year-month] td[month] {
+    font-size: 1.2em;
+    padding: 1em;
+}
+
+.tabcontent table.labs tr[year-month] td[lab] {
+    padding: 0.2em 3em;
+    min-width: 4em;
+}
+
+.tabcontent table.labs tr[year-month] td[lab] ul {
     list-style-type: none;
+    padding: 0;
+}
+
+.tabcontent table.labs tr[year-month] td[lab] li {
+    padding: 0.2em 0;
 }
 
 .loading-message {
