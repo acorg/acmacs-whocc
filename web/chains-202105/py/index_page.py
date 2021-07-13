@@ -30,7 +30,7 @@ def index_page():
 
     remote_scripts = [
         "js/jquery.js",
-        "js/directories.js",
+        # "js/directories.js",
         "js/chain-index.js",
         ]
     stylesheets = [
@@ -42,7 +42,7 @@ def index_page():
 
     return web.Response(
         text=sINDEX.format(
-            remote_scripts="\n    ".join(f'<script src="{script}"></script>' for script in remote_scripts),
+            remote_scripts="\n    ".join(f'<script src="{script}" type="module"></script>' for script in remote_scripts),
             inline_scripts="\n    ".join(f'<script>\n{code}\n    </script>' for code in inline_scripts),
             stylesheets="\n    ".join(f'<link rel="stylesheet" href="{stylesheet}">' for stylesheet in stylesheets),
             body=""

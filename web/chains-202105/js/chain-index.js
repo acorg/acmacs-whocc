@@ -1,9 +1,8 @@
 const sSubtypeOrder = ["h1pdm", "h3-hint", "h3-neut", "h3-hi", "bvic", "byam"];
-const sSubtypeTitle = {"h1pdm" : "H1pdm", "h3-hint": "H3 HINT", "h3-neut": "H3 Neut", "h3-hi": "H3 HI", "bvic": "B/Vic", "byam": "B/Yam"};
 const sLabOrder = ["cdc", "cnic", "crick", "niid", "vidrl"]
-const sLabDisplay = {"cdc": "CDC", "cnic": "CNIC", "crick": "Crick", "niid": "NIID", "vidrl": "VIDRL"};
 const sToday = new Date();
-const sMonthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+import * as DIR from "./directories.js";
 
 // ----------------------------------------------------------------------
 
@@ -16,7 +15,7 @@ function show_subtype_tabs() {
     const tablinks = $("<div></div>").addClass("tablinks").prependTo(subtype_tabs);
     for (let subtype_assay of sSubtypeOrder) {
         if (index_subtypes[subtype_assay]) {
-            const title = sSubtypeTitle[subtype_assay];
+            const title = DIR.subtype_title[subtype_assay];
             const tabcontent = $("<div><table class='labs'><tr class='labs'><th></th></tr></table></div>")
                   .addClass("tabcontent")
                   .append(`<div class='loading-message'>Loading ${title}, please wait</div>`)
@@ -84,9 +83,9 @@ function add_years(tbody, first) {
     const year_header = function(year, add_year_separator) {
         if (add_year_separator)
             tbody.append(`<tr class='year-separator'><td colspan=${sLabOrder.length + 1}><div></div></td></tr>`)
-        tr = $(`<tr year='${year}'><td>${year}</td></tr>`).appendTo(tbody);
+        const tr = $(`<tr year='${year}'><td>${year}</td></tr>`).appendTo(tbody);
         for (let lab of sLabOrder)
-            tr.append(`<td class='lab-name'>${sLabDisplay[lab]}</td>`);
+            tr.append(`<td class='lab-name'>${DIR.lab_to_display[lab]}</td>`);
     };
 
     for (let year = sToday.getFullYear(); year >= first; --year) {
@@ -94,8 +93,8 @@ function add_years(tbody, first) {
             year_header(year, true); // year != sToday.getFullYear());
             const months = (year === sToday.getFullYear() ? [...Array(sToday.getMonth() + 1).keys()] : [...Array(12).keys()]).map(x => ++x).reverse();;
             for (let month of months) {
-                month2 = month.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})
-                const tr = $(`<tr year-month='${year}-${month2}'><td month='${month2}'>${sMonthNames[month]}</td></tr>`).appendTo(tbody);
+                const month2 = month.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})
+                const tr = $(`<tr year-month='${year}-${month2}'><td month='${month2}'>${DIR.month_name[month]}</td></tr>`).appendTo(tbody);
                 for (let lab of sLabOrder)
                     tr.append(`<td lab='${lab}'><ul></ul></td>`);
             }
