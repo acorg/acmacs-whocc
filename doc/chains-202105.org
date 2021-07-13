@@ -1,10 +1,10 @@
-# Time-stamp: <2021-06-09 08:38:46 eu>
+# Time-stamp: <2021-07-13 11:13:37 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
   /syn/eu/ac/results/chains-202105
 
-* programs
+* run chain
 
 ** run
 whocc-chain /syn/eu/ac/results/chains-202105/<subtype-assay-lab>
@@ -19,6 +19,15 @@ make -C ~/AD/sources/acmacs-py && make -C ~/AD/sources/acmacs-whocc
 /ssh:i22:/home/eu/AD/sources/acmacs-py/py/acmacs_py/chain202105/
 
 * web interface
+
+** development
+
+- edit:
+  localhost: $ACMACSD_ROOT/sources/acmacs-whocc/web/chains-202105/py/application.py
+  localhost: $ACMACSD_ROOT/sources/acmacs-whocc/web/chains-202105/js
+
+- restart:
+  gmake -C ${ACMACSD_ROOT}/sources/acmacs-whocc/web/chains-202105 CHAINS_ROOT=o:/syn/eu/ac/results/chains-202105 && open https://notebooks.antigenic-cartography.org/chains-202105/
 
 ** gunicorn
 

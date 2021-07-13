@@ -8,7 +8,7 @@ const sMonthNames = ["", "January", "February", "March", "April", "May", "June",
 // ----------------------------------------------------------------------
 
 function show_subtype_tabs() {
-    console.log(index_subtypes);
+    // console.log(index_subtypes);
     // split_subtypes(index_subtypes);
     // sort split_subtypes keys
     // index_subtypes = sort_subtypes(index_subtypes); // {subtype-assay: {lab: [entry]}}
@@ -47,12 +47,13 @@ function load_subtype_tab_data(tabcontent, subtype_data) {
         if (en) {
             for (let en of subtype_data[lab]) {
                 $.getJSON(`api/subtype-data/?subtype_id=${en.id}`, (data) => {
-                    console.log(data);
+                    // console.log(data);
                     const years = Object.keys(data.tables).sort()
                     add_years(tabcontent.find("table.labs"), Object.keys(data.tables).sort()[0]);
                     for (let year in data.tables) {
-                        console.log("year", year);
+                        // console.log("year", year);
                         for (let month in data.tables[year]) {
+                            // console.log(year, month, data.tables[year][month]);
                             data.tables[year][month].sort((en1,en2) => en2.date.localeCompare(en1.date));
                             for (let en of data.tables[year][month]) {
                                 tabcontent.find(`tr[year-month='${year}-${month}'] td[lab='${lab}'] ul`).append(`<li><a href="">${en.date}</a></li>`)
@@ -72,7 +73,7 @@ function add_years(tbody, first) {
         if (!tbody.find(`tr[year=${year}]`).length) {
             // tbody.children("tr")[0]
             tbody.append(`<tr year='${year}'><td colspan=${sLabOrder.length + 1}>${year}</td></tr>`)
-            const months = (year === sToday.getFullYear() ? [...Array(sToday.getMonth() + 1).keys()] : [...Array(10).keys()]).map(x => ++x).reverse();;
+            const months = (year === sToday.getFullYear() ? [...Array(sToday.getMonth() + 1).keys()] : [...Array(12).keys()]).map(x => ++x).reverse();;
             for (let month of months) {
                 month2 = month.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})
                 const tr = $(`<tr year-month='${year}-${month2}'><td>${sMonthNames[month]}</td></tr>`).appendTo(tbody);

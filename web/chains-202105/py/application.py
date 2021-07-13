@@ -91,7 +91,7 @@ def collect_tables_of_subtype(subtype_id):
     for name in names:
         if mm := sReTableDate.search(name):
             data.setdefault(mm["year"], {}).setdefault(mm["month"], []).append({"date": mm["date"], "id": name})
-        else:
+        elif "orient" not in name:
             data.setdefault("unknown", []).append(name)
     return data
 
