@@ -42,12 +42,11 @@ function show_subtype_tabs() {
 function load_subtype_tab_data(tabcontent, subtype_data) {
     add_years(tabcontent.find("table.labs"), sToday.getFullYear() - 1);
     for (let lab of sLabOrder) {
-        tabcontent.find("tr.labs").append(`<th>${sLabDisplay[lab]}</th>`);
         const en = subtype_data[lab];
         if (en) {
             for (let en of subtype_data[lab]) {
                 $.getJSON(`api/subtype-data/?subtype_id=${en.id}`, (data) => {
-                    // console.log(data);
+                    console.log(data);
                     const years = Object.keys(data.tables).sort()
                     add_years(tabcontent.find("table.labs"), Object.keys(data.tables).sort()[0]);
                     for (let year in data.tables) {
@@ -56,7 +55,7 @@ function load_subtype_tab_data(tabcontent, subtype_data) {
                             // console.log(year, month, data.tables[year][month]);
                             data.tables[year][month].sort((en1,en2) => en2.date.localeCompare(en1.date));
                             for (let en of data.tables[year][month]) {
-                                tabcontent.find(`tr[year-month='${year}-${month}'] td[lab='${lab}'] ul`).append(`<li><a href="">${en.date}</a></li>`)
+                                tabcontent.find(`tr[year-month='${year}-${month}'] td[lab='${lab}'] ul`).append(`<li><a href="tables?subtype_id=${data.subtype_id}&date=${en.date}" target="_blank">${en.date}</a></li>`)
                             }
                         }
                     }
@@ -70,10 +69,18 @@ function load_subtype_tab_data(tabcontent, subtype_data) {
 // ----------------------------------------------------------------------
 
 function add_years(tbody, first) {
+
+    const year_header = function(year, add_year_separator) {
+        if (add_year_separator)
+            tbody.append(`<tr class='year-separator'><td colspan=${sLabOrder.length + 1}><div></div></td></tr>`)
+        tr = $(`<tr year='${year}'><td>${year}</td></tr>`).appendTo(tbody);
+        for (let lab of sLabOrder)
+            tr.append(`<td class='lab-name'>${sLabDisplay[lab]}</td>`);
+    };
+
     for (let year = sToday.getFullYear(); year >= first; --year) {
         if (!tbody.find(`tr[year=${year}]`).length) {
-            // tbody.children("tr")[0]
-            tbody.append(`<tr year='${year}'><td colspan=${sLabOrder.length + 1}>${year}</td></tr>`)
+            year_header(year, true); // year != sToday.getFullYear());
             const months = (year === sToday.getFullYear() ? [...Array(sToday.getMonth() + 1).keys()] : [...Array(12).keys()]).map(x => ++x).reverse();;
             for (let month of months) {
                 month2 = month.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})

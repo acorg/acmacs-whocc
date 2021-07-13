@@ -20,10 +20,10 @@ sINDEX = """<!DOCTYPE html>
     {stylesheets}
     {remote_scripts}
     {inline_scripts}
-    <title>Chains 202105</title>
+    <title>WHO CC tables</title>
   </head>
   <body>
-    <h2>Chains 202105</h2>
+    <h2>WHO CC tables</h2>
 {body}
   </body>
 </html>
@@ -58,11 +58,25 @@ async def index(request):
 @routes.get('/api/subtype-data/')
 async def subtype_data(request):
     try:
-        tables = collect_tables_of_subtype(request.query["subtype_id"])
-        return web.json_response({"tables": tables})
+        subtype_id = request.query["subtype_id"]
+        tables = collect_tables_of_subtype(subtype_id)
+        return web.json_response({"tables": tables, "subtype_id": subtype_id})
     except Exception as err:
         return web.json_response({"error": err, "tb": traceback.format_exc()})
 
+# ======================================================================
+
+@routes.get('/tables')
+async def table_data(request):
+    try:
+        print(request.query)
+        print(list(Path(request.query["subtype_id"]).glob("*")))
+        raise RuntimeError("table_data")
+        # subtype_id = request.query["subtype_id"]
+        # tables = collect_tables_of_subtype(subtype_id)
+        # return web.json_response({"tables": tables, "subtype_id": subtype_id})
+    except Exception as err:
+        return web.json_response({"error": str(err), "tb": traceback.format_exc()})
 
 # ======================================================================
 

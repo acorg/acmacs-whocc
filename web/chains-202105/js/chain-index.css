@@ -1,5 +1,13 @@
 /* Tabs https://www.w3schools.com/howto/howto_js_tabs.asp */
 
+h2 {
+    margin: 1em;
+}
+
+.subtype-tabs {
+    margin: 0 1em;
+}
+
 .subtype-tabs .tablinks {
     overflow: hidden;
     border: none;
@@ -46,25 +54,36 @@
 
 .tabcontent table.labs {
     border-collapse: collapse;
-    /* table-layout: fixed; */
 }
 
-.tabcontent table.labs th {
-    font-size: 1.2em;
-    border: 1px solid black;
-    padding: 1em 0;
-}
+/* .tabcontent table.labs th { */
+/*     font-size: 1.2em; */
+/*     border: 1px solid black; */
+/*     padding: 1em 0; */
+/* } */
 
 .tabcontent table.labs td {
     border: 1px solid black;
 }
 
+.tabcontent table.labs tr.year-separator td {
+    border: none;
+}
+
+.tabcontent table.labs tr.year-separator td div {
+    min-height: 1em;
+}
+
+.tabcontent table.labs tr[year] {
+    background-color: #F0F0F0;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+}
+
 .tabcontent table.labs tr[year] td {
     /* border-top: 3px solid black; */
     padding: 5px 2em;
-    font-size: 1.2em;
-    font-weight: bold;
-    background-color: #F0F0F0;
 }
 
 .tabcontent table.labs tr[year-month] td[month] {
