@@ -55,7 +55,7 @@ function load_subtype_tab_data(tabcontent, subtype_data) {
                             // console.log(year, month, data.tables[year][month]);
                             data.tables[year][month].sort((en1,en2) => en2.date.localeCompare(en1.date));
                             for (let en of data.tables[year][month]) {
-                                tabcontent.find(`tr[year-month='${year}-${month}'] td[lab='${lab}'] ul`).append(`<li><a href="tables?subtype_id=${data.subtype_id}&date=${en.date}" target="_blank">${en.date}</a></li>`)
+                                tabcontent.find(`tr[year-month='${year}-${month}'] td[lab='${lab}'] ul`).append(`<li><a href="table?subtype_id=${data.subtype_id}&date=${en.date}" target="_blank">${en.date}</a></li>`)
                             }
                         }
                     }

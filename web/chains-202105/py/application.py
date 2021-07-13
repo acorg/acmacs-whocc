@@ -66,15 +66,51 @@ async def subtype_data(request):
 
 # ======================================================================
 
-@routes.get('/tables')
+sTablePage = """<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    {stylesheets}
+    {remote_scripts}
+    {inline_scripts}
+    <title>{table_name}</title>
+  </head>
+  <body>
+    <h2>{table_name}</h2>
+{body}
+  </body>
+</html>
+"""
+
+@routes.get('/table')
 async def table_data(request):
+    global sINDEX
+    remote_scripts = [
+        "js/jquery.js",
+        "js/directories.js",
+        # "js/chain-index.js",
+        ]
+    stylesheets = [
+        # "js/chain-index.css",
+        ]
+    inline_scripts = [
+        # f"index_subtypes =\n{json.dumps(collect_index_subtypes(), separators=(',', ':'))};",
+        ]
+
     try:
-        print(request.query)
-        print(list(Path(request.query["subtype_id"]).glob("*")))
-        raise RuntimeError("table_data")
-        # subtype_id = request.query["subtype_id"]
-        # tables = collect_tables_of_subtype(subtype_id)
-        # return web.json_response({"tables": tables, "subtype_id": subtype_id})
+        # print(request.query)
+        subtype_id = request.query["subtype_id"]
+        table_date = request.query["date"]
+        print(list(Path(subtype_id).glob("*")))
+        return web.Response(
+            text=sTablePage.format(
+                remote_scripts="\n    ".join(f'<script src="{script}"></script>' for script in remote_scripts),
+                inline_scripts="\n    ".join(f'<script>\n{code}\n    </script>' for code in inline_scripts),
+                stylesheets="\n    ".join(f'<link rel="stylesheet" href="{stylesheet}">' for stylesheet in stylesheets),
+                table_name=f"{subtype_id} {table_date}",
+                body=""
+        ),
+        content_type='text/html')
     except Exception as err:
         return web.json_response({"error": str(err), "tb": traceback.format_exc()})
 
