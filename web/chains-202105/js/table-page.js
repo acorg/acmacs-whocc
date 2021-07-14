@@ -37,14 +37,28 @@ function show_individual_table_maps(data) {
         const req = make_request_data({type: "map", ace: data.ace, coloring: coloring, size: IMAGE_SIZE})
         tr.append(`<td><a href=""><img src="png?${req}"></a></td>`);
     }
-    // grid test
-    // serum correlation widget
-    // table widget
+    // TODO: grid test
+    // TODO: serum correlation widget
+    // TODO: table widget
 }
 
 // ----------------------------------------------------------------------
 
 function show_chain_maps(data) {
+    const table = $("<table></table>").appendTo("body");
+    for (let coloring of table_page_data.coloring) {
+        const tr = $("<tr></tr>").appendTo(table);
+        for (let merge_type of ["incremental", "scratch"]) {
+            if (data[merge_type] && data[merge_type].ace) {
+                const req = make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: IMAGE_SIZE})
+                tr.append(`<td><a href=""><img src="png?${req}"></a></td>`);
+            }
+        }
+        // TODO: pc incremental vs. scratch
+        for (let merge_type of ["incremental", "scratch"]) {
+            // TODO: grid test
+        }
+    }
 }
 
 // ----------------------------------------------------------------------
