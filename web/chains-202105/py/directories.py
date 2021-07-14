@@ -15,6 +15,9 @@ class CladeData:
         names = [name for name in self.data if name.startswith(subtype_prefix)]
         return names
 
+    def entry(self, name):
+        return self.data.get(name, [])
+
 # ======================================================================
 
 def load(app):
