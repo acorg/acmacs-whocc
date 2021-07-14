@@ -13,7 +13,27 @@ function main() {
 // ----------------------------------------------------------------------
 
 function show_part(part_data) {
-    $("body").append(`<h3>${part_data.chain_id} ${part_data.date}</h3>`);
+    const part_title_text = part_title(part_data);
+    if (part_title_text)
+        $("body").append(`<h3>${part_title_text} ${part_data.date} (${part_data.chain_id})</h3>`);
+}
+
+// ----------------------------------------------------------------------
+
+function part_title(part_data) {
+    switch (part_data.type) {
+    case "individual":
+        return null;
+    case "chain":
+        switch (part_data.chain_id[0]) {
+        case "f":
+            return "Chain";
+        case "b":
+            return "Backward chain";
+        }
+        break;
+    }
+    return null;
 }
 
 // ----------------------------------------------------------------------
