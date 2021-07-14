@@ -14,7 +14,7 @@ sTablePage = """<!DOCTYPE html>
     <title>{table_name}</title>
   </head>
   <body>
-    <h2>{table_name}</h2>
+    <h2 id="title"></h2>
 {body}
   </body>
 </html>
@@ -41,11 +41,11 @@ def table_page(request, subtype_id, table_date):
 
     return web.Response(
         text=sTablePage.format(
-            remote_scripts="\n    ".join(f'<script src="{script}"></script>' for script in remote_scripts),
+            remote_scripts="\n    ".join(f'<script src="{script}" type="module"></script>' for script in remote_scripts),
             stylesheets="\n    ".join(f'<link rel="stylesheet" href="{stylesheet}">' for stylesheet in stylesheets),
             inline_scripts="\n    ".join(f'<script>\n{code}\n    </script>' for code in inline_scripts),
             table_name=f"{subtype_id} {table_date}",
-            body=f"<pre>\n{pprint.pformat(data)}</pre>"
+            body="", # f"<pre>\n{pprint.pformat(data)}</pre>"
     ),
     content_type='text/html')
 
@@ -56,25 +56,35 @@ def collect_table_data(request, subtype_id, table_date):
     def collect_table_data_part():
         for patt in ["i-none", "i-1280", "f-*", "b-*"]:
             for subdir in Path(subtype_id).glob(patt):
-                yield {
-                    "type": "individual" if patt[0] == "i" else "chain",
-                    **dict(make_entry(en) for en in subdir.glob(f"*-{table_date}.*"))
-                    }
+                entries = make_entries(subdir)
+                if entries:
+                    yield {
+                        "type": "individual" if patt[0] == "i" else "chain",
+                        "chain_id": subdir.name,
+                        **entries
+                        }
 
-    def make_entry(filename):
+    def make_entries(subdir):
+        entries = {}
+        for filename in subdir.glob(f"*-{table_date}.*"):
+            key1, key2 = keys_for_filename(filename)
+            entries.setdefault(key1, {})[key2] = str(filename)
+        return entries
+
+    def keys_for_filename(filename):
         suffx = filename.suffixes
         if suffx[-1] == ".ace":
-            if len(suffx) == 2:
-                return (suffx[0][1:], str(filename))
+            if len(suffx) >= 2: # 123.20160113-20210625.incremental.ace
+                return (suffx[-2][1:], "ace")
             else:
-                return ("scratch", str(filename))
+                return ("scratch", "ace")
         elif suffx[-1] == ".json":
-            if len(suffx) == 3:
-                return (f"{suffx[1][1:]}_{suffx[0][1:]}", str(filename))
+            if len(suffx) >= 3: # 123.20160113-20210625.scratch.grid.json
+                return (suffx[-3][1:], suffx[-2][1:])
             else:
-                return (f"scratch_{suffx[0][1:]}", str(filename))
+                return ("scratch", suffx[-2][1:])
         else:
-            return (f"unknown-{''.join(suffx)}", str(filename))
+            return ("unknown", "".join(suffx))
 
     return {
         "subtype_id": subtype_id,

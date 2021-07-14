@@ -10,6 +10,7 @@ async def app():
     app.add_routes(routes)
     app.router.add_static("/js/", path="js", name="js")
     directories.load(app)
+    app["charts"] = {}          # loaded charts: {ace-path: acmacs.Chart}, loading is done on demand
     return app
 
 # ======================================================================
