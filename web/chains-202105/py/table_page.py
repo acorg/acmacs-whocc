@@ -52,7 +52,7 @@ def table_page(request, subtype_id, table_date):
 # ----------------------------------------------------------------------
 
 def collect_table_data(request, subtype_id, table_date):
-    from web_chains_202105.chart import chart as get_chart
+    from web_chains_202105.chart import get_chart
 
     def collect_table_data_part():
         for patt in ["i-none", "i-1280", "f-*", "b-*"]:

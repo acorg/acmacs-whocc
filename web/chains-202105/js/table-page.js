@@ -34,7 +34,8 @@ function show_part(part_data) {
 function show_individual_table_maps(data) {
     const tr = $("<table><tr></tr></table>").appendTo("body").find("tr");
     for (let coloring of table_page_data.coloring) {
-        tr.append(`<td><a href=""><img src="png?type=map&ace=${(data.ace)}&coloring=${encodeURIComponent(coloring)}&size=${IMAGE_SIZE}"></a></td>`);
+        const req = make_request_data({type: "map", ace: data.ace, coloring: coloring, size: IMAGE_SIZE})
+        tr.append(`<td><a href=""><img src="png?${req}"></a></td>`);
     }
     // grid test
     // serum correlation widget
@@ -44,6 +45,12 @@ function show_individual_table_maps(data) {
 // ----------------------------------------------------------------------
 
 function show_chain_maps(data) {
+}
+
+// ----------------------------------------------------------------------
+
+function make_request_data(data) {
+    return Object.entries(data).map((en) => `${en[0]}=${encodeURIComponent(en[1])}`).join('&')
 }
 
 // ----------------------------------------------------------------------
