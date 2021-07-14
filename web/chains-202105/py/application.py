@@ -5,9 +5,11 @@ from aiohttp import web
 routes = web.RouteTableDef()
 
 async def app():
+    from web_chains_202105 import directories
     app = web.Application(middlewares=[exception_middleware])
     app.add_routes(routes)
     app.router.add_static("/js/", path="js", name="js")
+    directories.load(app)
     return app
 
 # ======================================================================
@@ -32,14 +34,14 @@ async def exception_middleware(request, handler):
 @routes.get("/")
 async def index(request):
     from web_chains_202105.index_page import index_page
-    return index_page()
+    return index_page(request=request)
 
 # ----------------------------------------------------------------------
 
 @routes.get("/table")
 async def table_data(request):
     from web_chains_202105.table_page import table_page
-    return table_page(subtype_id=request.query["subtype_id"], table_date=request.query["date"])
+    return table_page(request=request, subtype_id=request.query["subtype_id"], table_date=request.query["date"])
 
 # ======================================================================
 # api

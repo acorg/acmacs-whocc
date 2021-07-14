@@ -6,7 +6,7 @@ ifeq ($(CHAINS_ROOT),)
 endif
 
 install:
-	rsync -av bin js py $(CHAINS_ROOT)
+	rsync -av --copy-unsafe-links bin js py $(ACMACSD_ROOT)/share/conf/clades.json $(CHAINS_ROOT)
 
 # ======================================================================
 ### Local Variables:

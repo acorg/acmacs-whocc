@@ -25,7 +25,7 @@ sINDEX = """<!DOCTYPE html>
 
 # ----------------------------------------------------------------------
 
-def index_page():
+def index_page(request):
     global sINDEX
 
     remote_scripts = [
