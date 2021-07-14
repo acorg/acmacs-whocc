@@ -52,6 +52,7 @@ def table_page(request, subtype_id, table_date):
 # ----------------------------------------------------------------------
 
 def collect_table_data(request, subtype_id, table_date):
+    from web_chains_202105.chart import chart as get_chart
 
     def collect_table_data_part():
         for patt in ["i-none", "i-1280", "f-*", "b-*"]:
@@ -66,9 +67,15 @@ def collect_table_data(request, subtype_id, table_date):
 
     def make_entries(subdir):
         entries = {}
-        for filename in subdir.glob(f"*-{table_date}.*"):
+        filenames = list(subdir.glob(f"*-{table_date}.*"))
+        if not filenames and subdir.name[0] == "b": # workaround for the backward chain step naming problem
+            filenames = list(subdir.glob(f"*.{table_date}-*"))
+        for filename in filenames:
             key1, key2 = keys_for_filename(filename)
             entries.setdefault(key1, {})[key2] = str(filename)
+            if key2 == "ace":
+                chart = get_chart(request=request, filename=filename)
+                entries[key1]["date"] = chart.date()
         return entries
 
     def keys_for_filename(filename):

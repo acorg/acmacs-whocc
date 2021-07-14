@@ -10,7 +10,10 @@ async def app():
     app.add_routes(routes)
     app.router.add_static("/js/", path="js", name="js")
     directories.load(app)
+
     app["charts"] = {}          # loaded charts: {ace-path: acmacs.Chart}, loading is done on demand
+    sys.path[:0] = ["lib"] # to be abel to import acmacs module (acmacs_py) by web_chains_202105.chart
+
     return app
 
 # ======================================================================

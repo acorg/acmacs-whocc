@@ -1,4 +1,4 @@
-# Time-stamp: <2021-07-13 17:48:34 eu>
+# Time-stamp: <2021-07-14 11:45:58 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -31,6 +31,13 @@ make -C ~/AD/sources/acmacs-py && make -C ~/AD/sources/acmacs-whocc
   #+BEGIN_SRC bash
   gmake -C ${ACMACSD_ROOT}/sources/acmacs-whocc/web/chains-202105 CHAINS_ROOT=o:/syn/eu/ac/results/chains-202105 && open https://notebooks.antigenic-cartography.org/chains-202105/
   #+END_SRC
+
+- update acmacs core (oriane)
+
+  #+BEGIN_SRC bash
+  mkdir -p /syn/eu/ac/results/chains-202105/lib; rsync  -av --copy-unsafe-links --exclude cmake --exclude pkgconfig --exclude '.nfs*' ${ACMACSD_ROOT}/lib/ /syn/eu/ac/results/chains-202105/lib
+  #+END_SRC
+
 
 ** gunicorn
 
