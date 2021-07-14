@@ -5,21 +5,26 @@ from acmacs_py import utils
 
 # ======================================================================
 
-def get_chart(request, filename):
+def get_chart(request, filename :Path):
+    filename_s = str(filename)
     charts = request.app["charts"]
-    chart = charts.get(filename)
+    chart = charts.get(filename_s)
     if not chart:
-        chart = charts[filename] = acmacs.Chart(filename)
+        chart = charts[filename_s] = acmacs.Chart(filename_s)
     return chart
 
 # ======================================================================
 
 def get_map(request, ace, coloring, size):
-    ace = Path(ace)
-    output_filename = png_dir(ace).joinpath(f"{ace.stem}.{encode_for_filename(coloring)}.{size}.png")
-    if utils.older_than(output_filename, ace):
-        make_map(request, output=output_filename, ace=ace, coloring=coloring, size=int(size))
-    return output_filename.open("rb").read()
+    ace_filename = Path(ace)
+    reorient_master_filename = find_reorient_master(ace_filename.parent)
+    output_filename = png_dir(ace_filename).joinpath(f"{ace_filename.stem}.{encode_for_filename(coloring)}.{size}.png")
+    if utils.older_than(output_filename, ace_filename, reorient_master_filename):
+        make_map(request, output=output_filename, ace_filename=ace_filename, coloring=coloring, size=int(size), reorient_master_filename=reorient_master_filename)
+    if output_filename.exists():
+        return output_filename.open("rb").read()
+    else:
+        return b""
 
 # ======================================================================
 
@@ -30,15 +35,22 @@ sSerumSize = sReferenceAntigenSize
 
 # ----------------------------------------------------------------------
 
-def make_map(request, output, ace, coloring, size):
-    chart = get_chart(request, ace)
-    drw = acmacs.ChartDraw(chart)
-    draw_reset(drw)
-    draw_color(request, drw, coloring)
-    drw.title(lines=["{stress}"])
-    drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
-    drw.calculate_viewport()
-    drw.draw(output)
+def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int, reorient_master_filename :Path = None):
+    try:
+        chart = get_chart(request, ace_filename)
+        if reorient_master_filename:
+            chart.orient_to(master=get_chart(request, reorient_master_filename))
+        chart.populate_from_seqdb()
+
+        drw = acmacs.ChartDraw(chart)
+        draw_reset(drw)
+        draw_color(request, drw, coloring)
+        drw.title(lines=["{stress}"])
+        drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
+        drw.calculate_viewport()
+        drw.draw(output, size=size, open=False)
+    except Exception as err:
+        print(f"> ERROR: chart::make_map failed: {err}")
 
 # ----------------------------------------------------------------------
 
@@ -106,5 +118,17 @@ sReEncoder = re.compile(r"[\(\)\[\]/\"']")
 
 def encode_for_filename(name):
     return sReEncoder.sub("-", name)
+
+# ----------------------------------------------------------------------
+
+sReorientMasterName = "reorient-master.ace"
+
+def find_reorient_master(ace_dir):
+    reorient_master_filename = ace_dir.joinpath(sReorientMasterName)
+    if not reorient_master_filename.exists():
+        reorient_master_filename = ace_dir.parent.joinpath(sReorientMasterName)
+        if not reorient_master_filename.exists():
+            reorient_master_filename = None
+    return reorient_master_filename
 
 # ----------------------------------------------------------------------

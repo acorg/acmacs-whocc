@@ -9,7 +9,7 @@ function main() {
     make_title();
     for (let part_data of table_page_data.parts)
         show_part(part_data);
-    $("body").append(`<pre>\n${JSON.stringify(table_page_data, null, 2)}\n</pre>`);
+    // $("body").append(`<pre>\n${JSON.stringify(table_page_data, null, 2)}\n</pre>`);
 }
 
 // ----------------------------------------------------------------------
@@ -17,7 +17,7 @@ function main() {
 function show_part(part_data) {
     const part_title_text = part_title(part_data);
     if (part_title_text)
-        $("body").append(`<h3>${part_title_text} ${part_data.date} (${part_data.chain_id})</h3>`);
+        $("body").append(`<hr>\n<h3>${part_title_text} ${part_data.date} (${part_data.chain_id})</h3>`);
     switch (part_data.type) {
     case "individual":
         show_individual_table_maps(part_data.scratch);
@@ -47,10 +47,12 @@ function show_individual_table_maps(data) {
 function show_chain_maps(data) {
     const table = $("<table></table>").appendTo("body");
     for (let coloring of table_page_data.coloring) {
+        const tr_title = $("<tr></tr>").appendTo(table);
         const tr = $("<tr></tr>").appendTo(table);
         for (let merge_type of ["incremental", "scratch"]) {
             if (data[merge_type] && data[merge_type].ace) {
                 const req = make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: IMAGE_SIZE})
+                tr_title.append(`<td>${merge_type}</td>`);
                 tr.append(`<td><a href=""><img src="png?${req}"></a></td>`);
             }
         }
@@ -76,9 +78,9 @@ function part_title(part_data) {
     case "chain":
         switch (part_data.chain_id[0]) {
         case "f":
-            return "Chain";
+            return `<a href="chain?chain_id=${part_data.chain_id}" target="blank_">Chain</a>`;
         case "b":
-            return "Backward chain";
+            return `<a href="chain?chain_id=${part_data.chain_id}" target="blank_">Backward chain</a>`;
         }
         break;
     }
