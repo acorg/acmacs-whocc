@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random, pprint
+import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random, pprint, traceback
 from pathlib import Path
 sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py"), os.path.join(os.environ["ACMACSD_ROOT"], "lib")]
 import acmacs
@@ -51,12 +51,16 @@ def main(args):
     generate_source_fasta(working_dir=working_dir, subtype=args.subtype.upper())
     num_steps = number_of_steps(working_dir=working_dir)
     log(f"number of steps: {num_steps}")
-    with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}"): # as email_data:
-        for step in range(num_steps):
-            make_tree_using_raxml(working_dir=working_dir, step=step, subtype=args.subtype.upper())
-        # make final tree using garli
-        # convert final tree to tjz
-        # draw final tree
+    try:
+        with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}"): # as email_data:
+            for step in range(num_steps):
+                make_tree_using_raxml(working_dir=working_dir, step=step, subtype=args.subtype.upper())
+            # make final tree using garli
+            # convert final tree to tjz
+            # draw final tree
+    except Exception as err:
+        log_error(f"{err}\n{traceback.fromat_exc()}")
+        raise
 
 # ----------------------------------------------------------------------
 
@@ -101,7 +105,9 @@ def make_source(working_dir, step_dir, step):
     seqids_to_prepend = sorted(seqids_to_prepend_d, key=lambda seqid: - seqids_to_prepend_d[seqid])
     # with step_dir.joinpath("prepend.txt").open("w") as out:
     #     out.write("\n".join(sorted(seqids_to_prepend)))
-    prev_step_sequences = fasta.read(raw_source(working_dir=working_dir, step=step-1))
+    prev_step_sequences = {}
+    for prev_step in range(step):
+        prev_step_sequences.update(fasta.read(raw_source(working_dir=working_dir, step=prev_step)))
     source_fasta = step_dir.joinpath("source.fasta")
     with source_fasta.open("w") as out:
         for seqid in seqids_to_prepend:
