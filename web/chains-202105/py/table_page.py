@@ -56,7 +56,7 @@ def collect_table_data(request, subtype_id, table_date):
 
     def collect_table_data_part():
         for patt in ["i-none", "i-1280", "f-*", "b-*"]:
-            for subdir in Path(subtype_id).glob(patt):
+            for subdir in sorted(Path(subtype_id).glob(patt), reverse=True):
                 entries = make_entries(subdir)
                 if entries:
                     yield {
@@ -75,7 +75,9 @@ def collect_table_data(request, subtype_id, table_date):
             entries.setdefault(key1, {})[key2] = str(filename)
             if key2 == "ace":
                 chart = get_chart(request=request, filename=filename)
-                entries[key1]["date"] = chart.date()
+                chart_date = chart.date()
+                entries[key1]["date"] = chart_date
+                entries.setdefault("date", chart_date)
         return entries
 
     def keys_for_filename(filename):
