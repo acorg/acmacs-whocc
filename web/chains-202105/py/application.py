@@ -48,6 +48,19 @@ async def table_data(request):
     return table_page(request=request, subtype_id=request.query["subtype_id"], table_date=request.query["date"])
 
 # ======================================================================
+# images
+# ======================================================================
+
+@routes.get("/png")
+async def png(request):
+    if request.query["type"] == "map":
+        from web_chains_202105.chart import make_map
+        return web.Response(body=make_map(), content_type="image/png")
+    else:
+        print(">> WARNING: unsupported png:", request.query)
+        return web.Response(text=str(request.query), status=418, headers={"Error": "unsupported png"})
+
+# ======================================================================
 # api
 # ======================================================================
 

@@ -1,5 +1,7 @@
 import * as DIR from "./directories.js";
 
+const IMAGE_SIZE = 800;
+
 // ----------------------------------------------------------------------
 
 function main() {
@@ -16,6 +18,32 @@ function show_part(part_data) {
     const part_title_text = part_title(part_data);
     if (part_title_text)
         $("body").append(`<h3>${part_title_text} ${part_data.date} (${part_data.chain_id})</h3>`);
+    switch (part_data.type) {
+    case "individual":
+        show_individual_table_maps(part_data.scratch);
+        break;
+    case "chain":
+        show_chain_maps(part_data);
+        break;
+    }
+
+}
+
+// ----------------------------------------------------------------------
+
+function show_individual_table_maps(data) {
+    const tr = $("<table><tr></tr></table>").appendTo("body").find("tr");
+    for (let coloring of table_page_data.coloring) {
+        tr.append(`<td><a href=""><img src="png?type=map&ace=${(data.ace)}&coloring=${encodeURIComponent(coloring)}&size=${IMAGE_SIZE}"></a></td>`);
+    }
+    // grid test
+    // serum correlation widget
+    // table widget
+}
+
+// ----------------------------------------------------------------------
+
+function show_chain_maps(data) {
 }
 
 // ----------------------------------------------------------------------
