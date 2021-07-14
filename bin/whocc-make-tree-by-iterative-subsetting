@@ -59,7 +59,7 @@ def main(args):
             # convert final tree to tjz
             # draw final tree
     except Exception as err:
-        log_error(f"{err}\n{traceback.fromat_exc()}")
+        log_error(f"{err}\n{traceback.format_exc()}")
         raise
 
 # ----------------------------------------------------------------------
@@ -97,14 +97,14 @@ def make_source(working_dir, step_dir, step):
     intermediate_nodes = tal.tree().closest_leaf_subtree_size()
     # the same closest leaf may be referenced by different intermediate nodes
     # collect sRootSize unique leaves with max parent node subtree size
-    seqids_to_prepend_d = {}      # seqid to number of leaves
+    seqids_to_prepend_d = {}      # seqid to [number of leaves, cumulative_edge_length]
     for node in intermediate_nodes:
-        seqids_to_prepend_d.setdefault(node.closest_leaf().seq_id, node.number_leaves_in_subtree())
+        seqids_to_prepend_d.setdefault(node.closest_leaf().seq_id, [node.number_leaves_in_subtree(), node.cumulative_edge_length])
         if len(seqids_to_prepend_d) >= sRootSize:
             break
-    seqids_to_prepend = sorted(seqids_to_prepend_d, key=lambda seqid: - seqids_to_prepend_d[seqid])
-    # with step_dir.joinpath("prepend.txt").open("w") as out:
-    #     out.write("\n".join(sorted(seqids_to_prepend)))
+    seqids_to_prepend = sorted(seqids_to_prepend_d, key=lambda seqid: - (seqids_to_prepend_d[seqid][0] - seqids_to_prepend_d[seqid][1]))
+    with step_dir.joinpath("prepend.txt").open("w") as out:
+        out.write("\n".join(f"{seqids_to_prepend_d[seqid][0]:5d}  {seqids_to_prepend_d[seqid][1]:8.6f}  {seqid}" for seqid in seqids_to_prepend))
     prev_step_sequences = {}
     for prev_step in range(step):
         prev_step_sequences.update(fasta.read(raw_source(working_dir=working_dir, step=prev_step)))
