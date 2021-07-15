@@ -12,7 +12,7 @@ class CladeData:
 
     def entry_names_for_subtype(self, subtype):
         subtype_prefix = self.sSubtypeToCladePrefix[subtype]
-        names = [name for name in self.data if name.startswith(subtype_prefix)]
+        names = sorted(name for name in self.data if name.startswith(subtype_prefix))
         return names
 
     def entry(self, name):

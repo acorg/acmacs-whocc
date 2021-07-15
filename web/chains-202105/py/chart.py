@@ -95,9 +95,9 @@ def draw_color_by(drw, data):
                     good = ag.antigen.sequenced()
                 if good and (clade := selector.get("clade")):
                     good = clade_match(clade, ag.antigen.clades())
-                if good and (clade_all := selector.get("clade-all")):
+                if good and (clade_all := selector.get("clade-all") or selector.get("clade_all")):
                     good = all(clade_match(clade, ag.antigen.clades()) for clade in clade_all)
-                if good and (aas := selector.get("amino-acid")):
+                if good and (aas := selector.get("amino-acid") or selector.get("amino_acid")):
                     good = ag.antigen.sequence_aa().matches_all(aas)
                 return good
             selected = drw.chart().select_antigens(sel)
