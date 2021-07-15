@@ -55,7 +55,7 @@ async def table_data(request):
 async def png(request):
     if request.query["type"] == "map":
         from web_chains_202105.chart import get_map
-        args = {kk: v for kk, v in ((k, request.query.get(k)) for k in ["ace", "coloring", "size"]) if v is not None}
+        args = {kk: v for kk, v in ((k, request.query.get(k)) for k in ["ace", "coloring", "size", "save_chart"]) if v is not None}
         return web.Response(body=get_map(request=request, **args), content_type="image/png", headers={"pid": str(os.getpid())})
     else:
         print(">> WARNING: unsupported png:", request.query)

@@ -13,14 +13,22 @@ def get_chart(request, filename :Path):
         chart = charts[filename_s] = acmacs.Chart(filename_s)
     return chart
 
+# ----------------------------------------------------------------------
+
+def export_chart(request, filename :Path, chart :acmacs.Chart):
+    filename_s = str(filename)
+    charts = request.app["charts"]
+    charts[filename_s] = chart
+    chart.export(filename)
+
 # ======================================================================
 
-def get_map(request, ace, coloring, size):
+def get_map(request, ace :str, coloring :str, size :int, save_chart :bool = False):
     ace_filename = Path(ace)
     reorient_master_filename = find_reorient_master(ace_filename.parent)
     output_filename = png_dir(ace_filename).joinpath(f"{ace_filename.stem}.{encode_for_filename(coloring)}.{size}.png")
     if utils.older_than(output_filename, ace_filename, reorient_master_filename):
-        make_map(request, output=output_filename, ace_filename=ace_filename, coloring=coloring, size=int(size), reorient_master_filename=reorient_master_filename)
+        make_map(request, output=output_filename, ace_filename=ace_filename, coloring=coloring, size=int(size), reorient_master_filename=reorient_master_filename, save_chart=save_chart)
     if output_filename.exists():
         return output_filename.open("rb").read()
     else:
@@ -35,7 +43,7 @@ sSerumSize = sReferenceAntigenSize
 
 # ----------------------------------------------------------------------
 
-def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int, reorient_master_filename :Path = None):
+def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int, reorient_master_filename :Path = None, save_chart :bool = False):
     try:
         chart = get_chart(request, ace_filename)
         if reorient_master_filename:
@@ -49,6 +57,8 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
         drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
         drw.calculate_viewport()
         drw.draw(output, size=size, open=False)
+        if save_chart:
+            export_chart(request, ace_filename, drw.chart())
     except Exception as err:
         print(f"> ERROR: chart::make_map failed: {err}")
 
