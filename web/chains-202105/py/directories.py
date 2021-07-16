@@ -1,22 +1,26 @@
 import json
 from pathlib import Path
+from acmacs_py.mapi_utils import MapiSettings
 
 # ======================================================================
 
 class CladeData:
 
-    sSubtypeToCladePrefix = {"h1pdm": "clades-A(H1N1)PDM09", "h3": "clades-A(H3N2)", "bvic": "clades-BVICTORIA", "byam": "clades-BYAMAGATA"}
+    sSubtypeToCladePrefix = {"h1pdm": "clades-A(H1N1)2009pdm", "h3": "clades-A(H3N2)", "bvic": "clades-B/Vic", "byam": "clades-B/Yam"}
 
     def __init__(self):
-        self.data = json.load(Path("clades.mapi").open())
+        self.mapi_settings = MapiSettings("clades.mapi")
 
     def entry_names_for_subtype(self, subtype):
         subtype_prefix = self.sSubtypeToCladePrefix[subtype]
-        names = sorted(name for name in self.data if name.startswith(subtype_prefix))
+        names = sorted(name for name in self.mapi_settings.names() if name.startswith(subtype_prefix))
         return names
 
-    def entry(self, name):
-        return self.data.get(name, [])
+    def chart_draw_modify(self, *args, **kw):
+        self.mapi_settings.chart_draw_modify(*args, **kw)
+
+    def chart_draw_reset(self, *args, **kw):
+        self.mapi_settings.chart_draw_reset(*args, **kw)
 
 # ======================================================================
 
