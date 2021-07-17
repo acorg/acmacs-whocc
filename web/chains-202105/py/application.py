@@ -47,6 +47,11 @@ async def table_data(request):
     from web_chains_202105.table_page import table_page
     return table_page(request=request, subtype_id=request.query["subtype_id"], table_date=request.query["date"])
 
+@routes.get("/chain")
+async def chain_data(request):
+    from web_chains_202105.chain_page import chain_page
+    return chain_page(request=request, subtype_id=request.query["subtype_id"], chain_id=request.query["chain_id"])
+
 # ======================================================================
 # images
 # ======================================================================

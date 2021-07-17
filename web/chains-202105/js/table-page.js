@@ -8,14 +8,14 @@ function main() {
     console.log(table_page_data);
     make_title();
     for (let part_data of table_page_data.parts)
-        show_part(part_data);
+        show_part(part_data, table_page_data.subtype_id);
     // $("body").append(`<pre>\n${JSON.stringify(table_page_data, null, 2)}\n</pre>`);
 }
 
 // ----------------------------------------------------------------------
 
-function show_part(part_data) {
-    const part_title_text = part_title(part_data);
+function show_part(part_data, subtype_id) {
+    const part_title_text = part_title(part_data, subtype_id);
     if (part_title_text)
         $("body").append(`<hr>\n<h3>${part_title_text} ${part_data.date} (${part_data.chain_id})</h3>`);
     switch (part_data.type) {
@@ -71,16 +71,16 @@ function make_request_data(data) {
 
 // ----------------------------------------------------------------------
 
-function part_title(part_data) {
+function part_title(part_data, subtype_id) {
     switch (part_data.type) {
     case "individual":
         return null;
     case "chain":
         switch (part_data.chain_id[0]) {
         case "f":
-            return `<a href="chain?chain_id=${part_data.chain_id}" target="blank_">Chain</a>`;
+            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="blank_">Chain</a>`;
         case "b":
-            return `<a href="chain?chain_id=${part_data.chain_id}" target="blank_">Backward chain</a>`;
+            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="blank_">Backward chain</a>`;
         }
         break;
     }
