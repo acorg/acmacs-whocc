@@ -1,4 +1,4 @@
-import re, json
+import re, json, pprint
 from pathlib import Path
 from aiohttp import web
 
@@ -60,6 +60,7 @@ def collect_index_subtypes():
             else:
                 subtype_assay = fn_m.group("subtype")
             index_subtypes.setdefault(subtype_assay, {}).setdefault(fn_m.group("lab"), []).append({"id": fn.name, **fn_m.groupdict()})
+    # pprint.pprint(index_subtypes)
     return index_subtypes
 
 # ======================================================================
@@ -69,7 +70,7 @@ def collect_index_subtypes():
 sReTableDate = re.compile(r"-(?P<date>(?P<year>(?:19|20)\d\d)(?P<month>\d\d)\d+[^\.]*)\.")
 
 def collect_tables_of_subtype(subtype_id):
-    names = [fn.name for fn in Path(subtype_id, "i-none").glob("*.ace")]
+    names = [fn.name for i_none_1280 in ["i-none", "i-1280"] for fn in Path(subtype_id, i_none_1280).glob("*.ace")]
     data = {}
     for name in names:
         if mm := sReTableDate.search(name):
