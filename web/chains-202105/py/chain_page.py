@@ -1,4 +1,4 @@
-import json, pprint
+import re, json, pprint
 from pathlib import Path
 from aiohttp import web
 
@@ -33,7 +33,7 @@ def chain_page(request, subtype_id, chain_id):
         "js/chain-page.css",
         ]
 
-    data = {} # collect_chain_data(request=request, subtype_id=subtype_id, chain_id=chain_id)
+    data = collect_chain_data(request=request, subtype_id=subtype_id, chain_id=chain_id)
 
     inline_scripts = [
         f"chain_page_data =\n{json.dumps(data, separators=(',', ':'))};",
@@ -48,5 +48,26 @@ def chain_page(request, subtype_id, chain_id):
             body=f"<pre>\n{pprint.pformat(data)}</pre>"
     ),
     content_type='text/html')
+
+# ----------------------------------------------------------------------
+
+sReAceName = re.compile(r"^(?P<step_no>\d+)\.(?:\d+-)(?P<date>\d+)\.(?P<type>[a-z]+)\.ace$")
+
+def collect_chain_data(request, subtype_id, chain_id):
+
+    def collect_chain_data_part():
+        parts_by_date = {}
+        for ace_file in sorted(Path(subtype_id, chain_id).glob("*.ace"), reverse=True):
+            if mm := sReAceName.match(ace_file.name):
+                parts_by_date.setdefault(mm["date"], {})[mm["type"]] = str(ace_file)
+                parts_by_date[mm["date"]]["step"] = int(mm["step_no"])
+        return parts_by_date
+
+    return {
+        "subtype_id": subtype_id,
+        "chain_id": chain_id,
+        "parts": collect_chain_data_part(), # [part_data for part_data in collect_chain_data_part() if part_data],
+        # **format_subtype(request=request, subtype_id=subtype_id)
+    }
 
 # ======================================================================
