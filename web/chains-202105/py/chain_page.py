@@ -68,7 +68,8 @@ def collect_chain_data(request, subtype_id, chain_id):
         for ace_file in sorted(Path(subtype_id, chain_id).glob("*.ace"), reverse=True):
             if mm := sReAceName.match(ace_file.name):
                 parts_by_step.setdefault(mm["step_no"], {})[mm["type"]] = str(ace_file)
-                parts_by_step[mm["step_no"]]["date"] = int(mm["date"])
+                parts_by_step[mm["step_no"]]["date"] = mm["date"]
+                parts_by_step[mm["step_no"]]["step"] = int(mm["step_no"])
         parts = [update_with_individual(parts_by_step[step]) for step in sorted(parts_by_step, reverse=True)]
         return parts
 

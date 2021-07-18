@@ -14,9 +14,9 @@ function main() {
 // ----------------------------------------------------------------------
 
 function show_part(part_data, subtype_id) {
-    // const part_title_text = part_title(part_data, subtype_id);
-    // if (part_title_text)
-    //     $("body").append(`<hr>\n<h3>${part_title_text} ${part_data.date} (${part_data.chain_id})</h3>`);
+    const part_title_text = part_title(part_data, subtype_id);
+    if (part_title_text)
+        $("body").append(`<hr>\n<h3>${part_title_text}</h3>`);
     // switch (part_data.type) {
     // case "individual":
     //     show_individual_table_maps(part_data.scratch);
@@ -25,6 +25,12 @@ function show_part(part_data, subtype_id) {
     //     show_chain_maps(part_data);
     //     break;
     // }
+}
+
+// ----------------------------------------------------------------------
+
+function part_title(part_data, subtype_id) {
+    return `${part_data.step} ${part_data.date}`;
 }
 
 // ----------------------------------------------------------------------
