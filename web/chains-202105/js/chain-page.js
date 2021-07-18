@@ -30,10 +30,11 @@ function show_part(part_data, subtype_id) {
 // ----------------------------------------------------------------------
 
 function make_title() {
+    let prefix = `${DIR.lab_to_display[chain_page_data.lab]} ${DIR.subtype_to_display[chain_page_data.subtype]}`;
     if (chain_page_data.subtype === "h3")
-        $("#title").html(`${DIR.lab_to_display[chain_page_data.lab]} ${DIR.subtype_to_display[chain_page_data.subtype]} ${DIR.assay_to_display[chain_page_data.assay]} ${chain_page_data.rbc || ""} ${chain_page_data.chain_id}`);
-    else
-        $("#title").html(`${DIR.lab_to_display[chain_page_data.lab]} ${DIR.subtype_to_display[chain_page_data.subtype]} ${chain_page_data.chain_id}`);
+        prefix += ` ${DIR.assay_to_display[chain_page_data.assay]} ${chain_page_data.rbc || ""}`;
+    const dates = `${chain_page_data.parts[chain_page_data.parts.length - 1].date}-${chain_page_data.parts[0].date}`;
+    $("#title").html(`${prefix} ${chain_page_data.type}: ${dates} ${chain_page_data.parts.length} tables (${chain_page_data.chain_id})`);
 }
 
 // ----------------------------------------------------------------------

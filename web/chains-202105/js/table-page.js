@@ -90,10 +90,10 @@ function part_title(part_data, subtype_id) {
 // ----------------------------------------------------------------------
 
 function make_title() {
+    let prefix = `${DIR.lab_to_display[table_page_data.lab]} ${DIR.subtype_to_display[table_page_data.subtype]}`;
     if (table_page_data.subtype === "h3")
-        $("#title").html(`${DIR.lab_to_display[table_page_data.lab]} ${DIR.subtype_to_display[table_page_data.subtype]} ${DIR.assay_to_display[table_page_data.assay]} ${table_page_data.rbc || ""} ${table_page_data.table_date}`);
-    else
-        $("#title").html(`${DIR.lab_to_display[table_page_data.lab]} ${DIR.subtype_to_display[table_page_data.subtype]} ${table_page_data.table_date}`);
+        prefix += ` ${DIR.assay_to_display[table_page_data.assay]} ${table_page_data.rbc || ""}`;
+    $("#title").html(`${prefix} ${table_page_data.table_date}`);
 }
 
 // ----------------------------------------------------------------------

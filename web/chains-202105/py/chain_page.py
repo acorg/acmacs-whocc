@@ -83,6 +83,7 @@ def collect_chain_data(request, subtype_id, chain_id):
         "subtype_id": subtype_id,
         "chain_id": chain_id,
         "parts": collect_chain_data_part(),
+        "type": "Chain" if chain_id[0] == "f" else "Backward chain",
         **utils.format_subtype(request=request, subtype_id=subtype_id)
     }
 
