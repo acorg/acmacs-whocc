@@ -55,18 +55,33 @@ sReAceName = re.compile(r"^(?P<step_no>\d+)\.(?:\d+-)(?P<date>\d+)\.(?P<type>[a-
 
 def collect_chain_data(request, subtype_id, chain_id):
 
+    def find_individual_dir():
+        individual_dir = Path(subtype_id, "i-" + chain_id.split("-")[-1])
+        if individual_dir.exists():
+            return individual_dir
+        else:
+            return None
+
     def collect_chain_data_part():
-        parts_by_date = {}
+        parts_by_step = {}
         for ace_file in sorted(Path(subtype_id, chain_id).glob("*.ace"), reverse=True):
             if mm := sReAceName.match(ace_file.name):
-                parts_by_date.setdefault(mm["date"], {})[mm["type"]] = str(ace_file)
-                parts_by_date[mm["date"]]["step"] = int(mm["step_no"])
-        return parts_by_date
+                parts_by_step.setdefault(mm["step_no"], {})[mm["type"]] = str(ace_file)
+                parts_by_step[mm["step_no"]]["date"] = int(mm["date"])
+        parts = [update_with_individual(parts_by_step[step]) for step in sorted(parts_by_step, reverse=True)]
+        return parts
+
+    individual_dir = find_individual_dir();
+
+    def update_with_individual(part):
+        if individual_files := list(individual_dir.glob(f"*-{part['date']}.ace")):
+            part["individual"] = str(individual_files[0])
+        return part
 
     return {
         "subtype_id": subtype_id,
         "chain_id": chain_id,
-        "parts": collect_chain_data_part(), # [part_data for part_data in collect_chain_data_part() if part_data],
+        "parts": collect_chain_data_part(),
         # **format_subtype(request=request, subtype_id=subtype_id)
     }
 
