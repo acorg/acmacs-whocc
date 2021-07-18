@@ -1,6 +1,7 @@
 import json, pprint
 from pathlib import Path
 from aiohttp import web
+from web_chains_202105 import utils
 
 # ======================================================================
 
@@ -99,25 +100,10 @@ def collect_table_data(request, subtype_id, table_date):
         "subtype_id": subtype_id,
         "table_date": table_date,
         "parts": [part_data for part_data in collect_table_data_part() if part_data],
-        **format_subtype(request=request, subtype_id=subtype_id)
+        **utils.format_subtype(request=request, subtype_id=subtype_id)
     }
 
 # ----------------------------------------------------------------------
 
-# sSubtypeDisplay = {"h1pdm": "A(H1N1)", "h3": "A(H3N2)", "bvic": "B/Vic", "byam": "B/Yam"}
-
-def format_subtype(request, subtype_id):
-    subtype, assay, *fields = subtype_id.split("-")
-    if assay == "hi":
-        rbc = "-".join(fields[:-1])
-    else:
-        rbc = None
-    return {
-        "subtype": subtype,
-        "assay": assay,
-        "rbc": rbc,
-        "lab": fields[-1],
-        "coloring": request.app["clade_data"].entry_names_for_subtype(subtype)
-        }
 
 # ======================================================================

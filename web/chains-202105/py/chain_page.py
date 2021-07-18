@@ -1,6 +1,7 @@
 import re, json, pprint
 from pathlib import Path
 from aiohttp import web
+from web_chains_202105 import utils
 
 # ======================================================================
 
@@ -45,7 +46,7 @@ def chain_page(request, subtype_id, chain_id):
             stylesheets="\n    ".join(f'<link rel="stylesheet" href="{stylesheet}">' for stylesheet in stylesheets),
             inline_scripts="\n    ".join(f'<script>\n{code}\n    </script>' for code in inline_scripts),
             chain_name=f"{subtype_id} {chain_id}",
-            body=f"<pre>\n{pprint.pformat(data)}</pre>"
+            body="", # f"<pre>\n{pprint.pformat(data)}</pre>",
     ),
     content_type='text/html')
 
@@ -82,7 +83,7 @@ def collect_chain_data(request, subtype_id, chain_id):
         "subtype_id": subtype_id,
         "chain_id": chain_id,
         "parts": collect_chain_data_part(),
-        # **format_subtype(request=request, subtype_id=subtype_id)
+        **utils.format_subtype(request=request, subtype_id=subtype_id)
     }
 
 # ======================================================================

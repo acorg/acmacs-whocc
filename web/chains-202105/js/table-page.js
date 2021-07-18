@@ -5,7 +5,7 @@ const IMAGE_SIZE = 800;
 // ----------------------------------------------------------------------
 
 function main() {
-    console.log(table_page_data);
+    console.log("table_page_data", table_page_data);
     make_title();
     for (let part_data of table_page_data.parts)
         show_part(part_data, table_page_data.subtype_id);
