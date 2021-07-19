@@ -1,6 +1,5 @@
 import * as DIR from "./directories.js";
-
-const IMAGE_SIZE = 800;
+import * as MAPS from "./maps.js";
 
 // ----------------------------------------------------------------------
 
@@ -51,9 +50,10 @@ function show_chain_maps(data) {
         const tr = $("<tr></tr>").appendTo(table);
         for (let merge_type of ["incremental", "scratch"]) {
             if (data[merge_type] && data[merge_type].ace) {
-                const req = make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: IMAGE_SIZE, save_chart: coloring_no === 0})
                 tr_title.append(`<td>${merge_type}</td>`);
-                tr.append(`<td><a href=""><img src="png?${req}"></a></td>`);
+                const req = MAPS.make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0})
+                const link = MAPS.make_link({ace: data[merge_type].ace})
+                tr.append(`<td><a href="${link}" target="blank_><img src="png?${req}"></a></td>`);
             }
         }
         // TODO: pc incremental vs. scratch
@@ -61,12 +61,6 @@ function show_chain_maps(data) {
             // TODO: grid test
         }
     });
-}
-
-// ----------------------------------------------------------------------
-
-function make_request_data(data) {
-    return Object.entries(data).map((en) => `${en[0]}=${encodeURIComponent(en[1])}`).join('&')
 }
 
 // ----------------------------------------------------------------------
