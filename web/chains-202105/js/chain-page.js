@@ -17,14 +17,34 @@ function show_part(part_data, subtype_id) {
     const part_title_text = part_title(part_data, subtype_id);
     if (part_title_text)
         $("body").append(`<hr>\n<h3>${part_title_text}</h3>`);
-    // switch (part_data.type) {
-    // case "individual":
-    //     show_individual_table_maps(part_data.scratch);
-    //     break;
-    // case "chain":
-    //     show_chain_maps(part_data);
-    //     break;
-    // }
+    show_maps(part_data);
+}
+
+// ----------------------------------------------------------------------
+
+function show_maps(data) {
+    const table = $("<table></table>").appendTo("body");
+    chain_page_data.coloring.forEach((coloring, coloring_no) => {
+        const tr_title = $("<tr></tr>").appendTo(table);
+        const tr = $("<tr></tr>").appendTo(table);
+        for (let merge_type of ["incremental", "scratch", "individual", "mcb"]) {
+            if (data[merge_type] && data[merge_type].ace) {
+                const req = make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: IMAGE_SIZE, save_chart: coloring_no === 0})
+                tr_title.append(`<td>${merge_type}</td>`);
+                tr.append(`<td><a href=""><img src="png?${req}"></a></td>`);
+            }
+        }
+        // TODO: pc incremental vs. scratch
+        for (let merge_type of ["incremental", "scratch"]) {
+            // TODO: grid test
+        }
+    });
+}
+
+// ----------------------------------------------------------------------
+
+function make_request_data(data) {
+    return Object.entries(data).map((en) => `${en[0]}=${encodeURIComponent(en[1])}`).join('&')
 }
 
 // ----------------------------------------------------------------------
@@ -40,7 +60,7 @@ function make_title() {
     if (chain_page_data.subtype === "h3")
         prefix += ` ${DIR.assay_to_display[chain_page_data.assay]} ${chain_page_data.rbc || ""}`;
     const dates = `${chain_page_data.parts[chain_page_data.parts.length - 1].date}-${chain_page_data.parts[0].date}`;
-    $("#title").html(`${prefix} ${chain_page_data.type}: ${dates} ${chain_page_data.parts.length} tables (${chain_page_data.chain_id})`);
+    $("#title").html(`${prefix}${chain_page_data.type}: ${dates} ${chain_page_data.parts.length} tables (${chain_page_data.chain_id})`);
 }
 
 // ----------------------------------------------------------------------
