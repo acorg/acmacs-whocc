@@ -33,7 +33,7 @@ function show_part(part_data, subtype_id) {
 function show_individual_table_maps(data) {
     const tr = $("<table><tr></tr></table>").appendTo("body").find("tr");
     table_page_data.coloring.forEach((coloring, coloring_no) => {
-        const req = make_request_data({type: "map", ace: data.ace, coloring: coloring, size: IMAGE_SIZE, save_chart: coloring_no === 0})
+        const req = MAPS.make_request_data({type: "map", ace: data.ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0})
         tr.append(`<td><a href=""><img src="png?${req}"></a></td>`);
     });
     // TODO: grid test
