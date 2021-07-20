@@ -35,7 +35,7 @@ function show_individual_table_maps(data) {
     table_page_data.coloring.forEach((coloring, coloring_no) => {
         const req = MAPS.make_request_data({type: "map", ace: data.ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0})
         const link = MAPS.make_link({ace: data.ace})
-        tr.append(`<td><a href="${link}" target="blank_"><img src="png?${req}"></a></td>`);
+        tr.append(`<td><a href="${link}" target="_blank"><img src="png?${req}"></a></td>`);
     });
     // TODO: grid test
     // TODO: serum correlation widget
@@ -54,7 +54,7 @@ function show_chain_maps(data) {
                 tr_title.append(`<td>${merge_type}</td>`);
                 const req = MAPS.make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0})
                 const link = MAPS.make_link({ace: data[merge_type].ace})
-                tr.append(`<td><a href="${link}" target="blank_"><img src="png?${req}"></a></td>`);
+                tr.append(`<td><a href="${link}" target="_blank"><img src="png?${req}"></a></td>`);
             }
         }
         // TODO: pc incremental vs. scratch
@@ -73,9 +73,9 @@ function part_title(part_data, subtype_id) {
     case "chain":
         switch (part_data.chain_id[0]) {
         case "f":
-            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="blank_">Chain</a>`;
+            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="_blank">Chain</a>`;
         case "b":
-            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="blank_">Backward chain</a>`;
+            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="_blank">Backward chain</a>`;
         }
         break;
     }
