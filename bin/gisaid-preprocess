@@ -24,9 +24,12 @@ class NameFixes:
     def f_a8_a9(cls, line):
         return line.replace("?A8", "(").replace("?A9", ")")
 
+    m_recombinant = re.compile(r"^>recombinant +(?P<subtype>[AB])/", re.I)
     @classmethod
     def f_recombinant(cls, line):
-        return line.replace(">recombinant A/", ">A/")
+        def repl(mm):
+            return f""">{mm["subtype"]}/"""
+        return cls.m_recombinant.sub(repl, line)
 
     m_date_after_year = re.compile(r"(?P<year>/20(?:1[89]|2[01]))[_\ ](?:20(?:1[89]|2[01])-\d\d-\d\d|[01]\d-[0-3]\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?P<next>_\|_a=)", re.I)
     @classmethod
@@ -70,7 +73,7 @@ class NameFixes:
             return f""">{mm["first"]}-{mm["second"]}("""
         return cls.m_broken_reassortant.sub(repl, line)
 
-    m_no_slash_after_subtype = re.compile(r"^>A\.(?P<next>[a-z\-]+)/", re.I)
+    m_no_slash_after_subtype = re.compile(r"^>A\.?(?P<next>[a-z\-]+)/", re.I) # dot or nothing after A, e.g. A.Hubei or AHubei
     @classmethod
     def f_no_slash_after_subtype(cls, line):
         def repl(mm):
