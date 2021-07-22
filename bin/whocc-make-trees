@@ -1,7 +1,8 @@
 #! /usr/bin/env python3
 import sys, os, re, datetime, subprocess, shutil, concurrent.futures, time, random, logging
-sys.path[:0] = [os.path.join(os.environ["ACMACSD_ROOT"], "py")]
 from pathlib import Path
+ACMACSD_ROOT = Path(os.environ["ACMACSD_ROOT"])
+sys.path[:0] = [str(ACMACSD_ROOT.joinpath("py"))]
 from acmacs_py import email
 
 class Error (RuntimeError): pass
@@ -30,6 +31,12 @@ CONFIG = {
             "base": "AH1N1/SOUTH_AUSTRALIA/30/2013_MDCK1_h67695CD8",  # 2009-04-09
             "prepend": [
                 "AH1N1/MICHIGAN/45/2015_QMC2MDCK3",                   # 2015-09-07
+                # 183S, trying to show "the different 183P clades has S183P independently"
+                # inferred from 2018-0924-ssm tree
+                "AH1N1/BRAZIL/5026/2017_OR_h6482B4C1",
+            ],
+            "prepend_from": [
+                ACMACSD_ROOT.joinpath("share", "conf", "h1.183S.2017-2018.seqids")
             ],
             "exclude": [
                 # 2020-08-10 Sarah: They're not sequenced by a CC or NIC, but by a company.  The sequences don't have obvious errors, but are very different (obviously) from the rest. My feeling is they're either variant viruses (from swine) or a sequencing error.
@@ -45,11 +52,11 @@ CONFIG = {
             "args": ["--flu", "h1", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--most-common-length", "--nuc-hamming-distance-mean-threshold", "140"],
         },
         "raxml-ng": {
-            "slurm-nodelist": "i20",
+            "slurm-nodelist": "i22",
         },
         "garli": {
-            "slurm-nodelist": "i20",
-            "required_memory": 3000,
+            "slurm-nodelist": "i22",
+            "required_memory": 7000,
         },
     },
 
@@ -118,11 +125,11 @@ CONFIG = {
             "args": ["--flu", "h3", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--length", "1650", "--minimum-nuc-length", "1650", "--nuc-hamming-distance-mean-threshold", "140"],
         },
         "raxml-ng": {
-            "slurm-nodelist": "i22",
+            "slurm-nodelist": "i20",
         },
         "garli": {
-            "slurm-nodelist": "i22",
-            "required_memory": 7000,
+            "slurm-nodelist": "i20",
+            "required_memory": 3500,
         },
     },
 
@@ -230,6 +237,8 @@ def export_sequences(subtype :str, working_dir :Path):
             prepend = " ".join(f"--prepend '{name}'" for name in data["prepend"])
         else:
             prepend = ""
+        if data.get("prepend_from"):
+            prepend += " " + " ".join(f"--prepend-from '{name}'" for name in data["prepend_from"])
         command = f"""seqdb3 '{"' '".join(SEQDB3_COMMON_ARGS)}' '{"' '".join(data["args"])}' --base-seq-id '{data["base"]}' {exclude} {prepend} --fasta source.fas"""
 
         script_path = working_dir.joinpath("export.sh")
