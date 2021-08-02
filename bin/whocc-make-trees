@@ -21,7 +21,7 @@ def main(args):
         best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas, args=args)
         best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas, args=args)
         tjz, pdf = generate_results(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, args=args)
-        email_data["body"] += f"{tjz}\n\n{pdf}\n\n{str(pdf).replace('/syn/eu/ac/results/', 'https://notebooks.antigenic-cartography.org/eu/results/')}"
+        email_data["body"] += f"\n\n{tjz}\n\n{pdf}\n\n{str(pdf).replace('/syn/eu/ac/results/', 'https://notebooks.antigenic-cartography.org/eu/results/')}"
 
 # ======================================================================
 
@@ -146,6 +146,8 @@ CONFIG = {
                 "B/KANAGAWA/AC1867/2019_hB8B69E0F",
                 # 4-del or garbage in the middle
                 "B/MIE/1/2019_h2C1CA3AE",
+                # garbage in 406-414 leading to a long branch (2021-0722)
+                "B/ANHUI_JINGHU/63/2019_hE7BC118B",
                 ],
             "args": ["--flu", "b", "--lineage", "vic", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
         },
