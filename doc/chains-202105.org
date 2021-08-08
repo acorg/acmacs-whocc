@@ -1,4 +1,4 @@
-# Time-stamp: <2021-08-08 11:49:52 eu>
+# Time-stamp: <2021-08-08 11:54:45 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -21,7 +21,7 @@ make -C ~/AD/sources/acmacs-py && make -C ~/AD/sources/acmacs-whocc
 ** update after editing on dael
 
 #+BEGIN_SRC bash
-gcop ~/AD/sources/acmacs-py 'chains-202105' && gcop ~/AD/sources/acmacs-whocc 'chains-202105'
+gcop ~/AD/sources/acmacs-py 'chains-202105' && gcop ~/AD/sources/acmacs-whocc 'chains-202105' && ssh o "ad-pull"
 #+END_SRC
 
 
