@@ -15,7 +15,7 @@ except Exception as err:
 # ======================================================================
 
 def main(args):
-    chain202105.run(args.chain_dir, args.setup or "Setup.py", force_local_runner=args.force_local_runner)
+    chain202105.run(chain_dir=args.chain_dir, setup_py_name=args.setup or "Setup.py", force_local_runner=args.force_local_runner)
     # with email.send_after():
     #     settings = setup(args)
 
