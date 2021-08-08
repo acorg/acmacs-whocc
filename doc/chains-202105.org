@@ -1,4 +1,4 @@
-# Time-stamp: <2021-07-16 12:13:03 eu>
+# Time-stamp: <2021-08-08 11:49:52 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -9,7 +9,7 @@ keywords: whocc chains
 ** run
 whocc-chain /syn/eu/ac/results/chains-202105/<subtype-assay-lab>
 
-** update after edit
+** update after edit on oriane
 make -C ~/AD/sources/acmacs-py && make -C ~/AD/sources/acmacs-whocc
 
 ** main script
@@ -17,6 +17,13 @@ make -C ~/AD/sources/acmacs-py && make -C ~/AD/sources/acmacs-whocc
 
 ** modules
 /ssh:i22:/home/eu/AD/sources/acmacs-py/py/acmacs_py/chain202105/
+
+** update after editing on dael
+
+#+BEGIN_SRC bash
+gcop ~/AD/sources/acmacs-py 'chains-202105' && gcop ~/AD/sources/acmacs-whocc 'chains-202105'
+#+END_SRC
+
 
 * web interface
 

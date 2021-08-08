@@ -15,7 +15,7 @@ except Exception as err:
 # ======================================================================
 
 def main(args):
-    chain202105.run(args.chain_dir, force_local_runner=args.force_local_runner)
+    chain202105.run(args.chain_dir, args.setup, force_local_runner=args.force_local_runner)
     # with email.send_after():
     #     settings = setup(args)
 
@@ -24,6 +24,7 @@ def main(args):
 
 execute_this_script(main, {
     "chain_dir": {"type": Path},
+    "setup": {"type": str, "default": "Setup.py"},
     "--force-local-runner": {"action": "store_true"},
     # ("-v", "--verbose"): {"action": "store_true"},
     })
