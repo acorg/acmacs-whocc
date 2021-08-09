@@ -31,6 +31,15 @@ class NameFixes:
             return f""">{mm["subtype"]}/"""
         return cls.m_recombinant.sub(repl, line)
 
+    # A_mallard_Denmark_12946-11_2020-10-26 -> A/mallard/Denmark/12946-11/2020
+    # before f_date_after_year and f_month_day_after_year
+    m_underscores_in_place_of_slashes = re.compile(r"^(>[AB]_[^/]+)(_\|_a=)", re.I)
+    @classmethod
+    def f_underscores_in_place_of_slashes(cls, line):
+        def repl(mm):
+            return mm[1].replace("_", "/") + mm[2]
+        return cls.m_underscores_in_place_of_slashes.sub(repl, line)
+
     m_date_after_year = re.compile(r"(?P<year>/20(?:1[89]|2[01]))[_\ ](?:20(?:1[89]|2[01])-\d\d-\d\d|[01]\d-[0-3]\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?P<next>_\|_a=)", re.I)
     @classmethod
     def f_date_after_year(cls, line):

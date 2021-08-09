@@ -1,8 +1,10 @@
-Time-stamp: <2021-06-22 11:40:09 eu>
+Time-stamp: <2021-08-09 10:40:30 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
 * [[https://platform.gisaid.org/epi3/start][GISAID]]
+ *Download A and B separately: perhaps bug in gisaid*
+
 ** SUBMISSION date (see last date in ~/ac/sequences/)
 ** Required Segments: HA (checkbox at the left of HA)
 ** Click Search
