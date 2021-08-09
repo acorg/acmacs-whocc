@@ -52,7 +52,7 @@ def chain_page(request, subtype_id, chain_id):
 
 # ----------------------------------------------------------------------
 
-sReAceName = re.compile(r"^(?P<step_no>\d+)\.(?:\d+-)?(?P<date>\d+)\.(?P<type>[a-z]+)\.ace$")
+sReAceName = re.compile(r"^(?P<step_no>\d+)\.(?:\d+(?:\.\d+)?-)?(?P<date>\d+(?:\.\d+)?)\.(?P<type>[a-z]+)\.ace$")
 
 def collect_chain_data(request, subtype_id, chain_id):
 
