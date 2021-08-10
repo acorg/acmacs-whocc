@@ -56,11 +56,14 @@ async def chain_data(request):
 # images
 # ======================================================================
 
+def bool_from_str(src):
+    return src.lower() in ["true", "yes", "1"]
+
 @routes.get("/png")
 async def png(request):
     if request.query["type"] == "map":
         from web_chains_202105.chart import get_map
-        args = {kk: v for kk, v in ((k, request.query.get(k)) for k in ["ace", "coloring", "size", "save_chart"]) if v is not None}
+        args = {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in [["ace", str], ["coloring", str], ["size", int], ["save_chart", bool_from_str]]) if v is not None}
         return web.Response(body=get_map(request=request, **args), content_type="image/png", headers={"pid": str(os.getpid())})
     else:
         print(">> WARNING: unsupported png:", request.query)

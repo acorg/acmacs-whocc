@@ -1,4 +1,4 @@
-import re, pprint
+import os, threading, re, pprint
 from pathlib import Path
 import acmacs
 from acmacs_py import utils, mapi_utils
@@ -19,7 +19,11 @@ def export_chart(request, filename :Path, chart :acmacs.Chart):
     filename_s = str(filename)
     charts = request.app["charts"]
     charts[filename_s] = chart
-    chart.export(filename)
+    # to avoid race of writing and reading the file by multiple processes, save it into another filename and then rename
+    export_filename = filename.with_suffix(f".{os.getpid()}.ace")
+    chart.export(export_filename)
+    os.rename(str(export_filename), filename_s)
+    # print(f">>> [{os.getpid()}.{threading.get_native_id()}] {filename} re-written")
 
 # ======================================================================
 
@@ -45,6 +49,7 @@ sSerumSize = sReferenceAntigenSize
 
 def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int, reorient_master_filename :Path = None, save_chart :bool = False):
     try:
+        # print(f">>> [{os.getpid()}.{threading.get_native_id()}] make_map {coloring} {ace_filename} save:{save_chart}")
         chart = get_chart(request, ace_filename)
         if reorient_master_filename:
             chart.orient_to(master=get_chart(request, reorient_master_filename))
@@ -58,6 +63,7 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
         drw.calculate_viewport()
         drw.draw(output, size=size, open=False)
         if save_chart:
+            # print(f">>> [{os.getpid()}.{threading.get_native_id()}] exporting chart {coloring} {ace_filename} save:{save_chart} {type(save_chart)} {save_chart == True}")
             export_chart(request, ace_filename, drw.chart())
     except Exception as err:
         print(f"> ERROR: chart::make_map failed: {err}")

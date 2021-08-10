@@ -29,7 +29,7 @@ function show_maps(data) {
         for (let merge_type of ["incremental", "scratch", "individual", "mcb"]) {
             if (data[merge_type] && data[merge_type].ace) {
                 tr_title.append(`<td>${merge_type}</td>`);
-                const req = MAPS.make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0})
+                const req = MAPS.make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0 ? 1 : 0}) // save_chart must be number to properly convert to bool!
                 const link = MAPS.make_link({ace: data[merge_type].ace})
                 tr.append(`<td><a href="${link}" target="_blank"><img src="png?${req}"></a></td>`);
             }
