@@ -115,7 +115,7 @@ class ChartData
             const auto mean = en.mean_logged_titer();
             for (size_t t_no = 0; t_no < tables_.size(); ++t_no) {
                 if (!en.titers[t_no].is_dont_care())
-                    fmt::print(" {}  {:>7s}  {:.2f}\n", tables_[t_no], en.titers[t_no], std::abs(en.titers[t_no].logged_with_thresholded() - mean));
+                    fmt::print(" {}  {:>7s}  {:.2f}\n", tables_[t_no], fmt::format("{}", en.titers[t_no]), std::abs(en.titers[t_no].logged_with_thresholded() - mean));
                 else
                     fmt::print(" {}\n", tables_[t_no]);
             }

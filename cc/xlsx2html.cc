@@ -24,7 +24,7 @@ int main(int argc, char* const argv[])
         Options opt(argc, argv);
 
         fmt::memory_buffer out;
-        fmt::format_to(out, R"(<!DOCTYPE html>
+        fmt::format_to_mb(out, R"(<!DOCTYPE html>
 <html>
     <head>
         <meta charset="utf-8" />
@@ -45,22 +45,22 @@ int main(int argc, char* const argv[])
                        fmt::arg("title", *opt.xlsx));
 
         const auto col_names = [&out](acmacs::sheet::ncol_t number_of_columns) {
-            fmt::format_to(out, "<tr><td></td>");
+            fmt::format_to_mb(out, "<tr><td></td>");
             for (acmacs::sheet::ncol_t col{0}; col < number_of_columns; ++col)
-                fmt::format_to(out, "<td class='col-row-no'>{}</td>", col);
-            fmt::format_to(out, "</tr>\n");
+                fmt::format_to_mb(out, "<td class='col-row-no'>{}</td>", col);
+            fmt::format_to_mb(out, "</tr>\n");
         };
 
         auto doc = acmacs::xlsx::open(opt.xlsx);
         for (const auto sheet_no : range_from_0_to(doc.number_of_sheets())) {
             if (sheet_no)
-                fmt::format_to(out, "<br><br><br><hr><br><br><br>\n");
+                fmt::format_to_mb(out, "<br><br><br><hr><br><br><br>\n");
             auto sheet = doc.sheet(sheet_no);
-            fmt::format_to(out, "<h1>{}. {}</h1>\n", sheet_no + 1, sheet->name());
-            fmt::format_to(out, "<table>\n");
+            fmt::format_to_mb(out, "<h1>{}. {}</h1>\n", sheet_no + 1, sheet->name());
+            fmt::format_to_mb(out, "<table>\n");
             col_names(sheet->number_of_columns());
             for (acmacs::sheet::nrow_t row{0}; row < sheet->number_of_rows(); ++row) {
-                fmt::format_to(out, "<tr><td class='col-row-no'>{}</td>", row);
+                fmt::format_to_mb(out, "<tr><td class='col-row-no'>{}</td>", row);
                 std::string prev_cell;
                 size_t colspan = 0;
                 for (acmacs::sheet::ncol_t col{0}; col < sheet->number_of_columns(); ++col) {
@@ -70,17 +70,17 @@ int main(int argc, char* const argv[])
                     // }
                     if (!cell.empty()) {
                         if (colspan)
-                            fmt::format_to(out, "<td colspan={}>{}</td>", colspan, prev_cell);
+                            fmt::format_to_mb(out, "<td colspan={}>{}</td>", colspan, prev_cell);
                         colspan = 1;
                         prev_cell = cell;
                     }
                     else
                         ++colspan;
                 }
-                fmt::format_to(out, "<td colspan={}>{}</td><td class='col-row-no'>{}</td></tr>\n", colspan, prev_cell, row);
+                fmt::format_to_mb(out, "<td colspan={}>{}</td><td class='col-row-no'>{}</td></tr>\n", colspan, prev_cell, row);
             }
             col_names(sheet->number_of_columns());
-            fmt::format_to(out, "</table>\n");
+            fmt::format_to_mb(out, "</table>\n");
         }
         file::write(opt.csv, fmt::to_string(out));
     }

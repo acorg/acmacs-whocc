@@ -82,29 +82,29 @@ std::string acmacs::sheet::v1::SheetToTorg::torg() const
     // ----------------------------------------------------------------------
 
     fmt::memory_buffer result;
-    fmt::format_to(result, "# -*- Org -*-\n\n");
+    fmt::format_to_mb(result, "# -*- Org -*-\n\n");
 
-    fmt::format_to(result, "- Lab: {}\n", extractor_->lab());
-    fmt::format_to(result, "- Date: {}\n", extractor_->date());
-    fmt::format_to(result, "- Assay: {}\n", extractor_->assay());
-    fmt::format_to(result, "- Subtype: {}\n", extractor_->subtype_without_lineage());
+    fmt::format_to_mb(result, "- Lab: {}\n", extractor_->lab());
+    fmt::format_to_mb(result, "- Date: {}\n", extractor_->date());
+    fmt::format_to_mb(result, "- Assay: {}\n", extractor_->assay());
+    fmt::format_to_mb(result, "- Subtype: {}\n", extractor_->subtype_without_lineage());
     if (const auto rbc = extractor_->rbc(); !rbc.empty())
-        fmt::format_to(result, "- Rbc: {}\n", rbc);
+        fmt::format_to_mb(result, "- Rbc: {}\n", rbc);
     if (const auto lineage = extractor_->lineage(); !lineage.empty())
-        fmt::format_to(result, "- Lineage: {}\n", lineage);
-    fmt::format_to(result, "\n");
+        fmt::format_to_mb(result, "- Lineage: {}\n", lineage);
+    fmt::format_to_mb(result, "\n");
 
     if (const auto titer_comment = extractor_->titer_comment(); !titer_comment.empty())
-        fmt::format_to(result, "titer value in the table: {}\n\n", titer_comment);
+        fmt::format_to_mb(result, "titer value in the table: {}\n\n", titer_comment);
 
     for (const auto& row : data) {
-        fmt::format_to(result, "|");
+        fmt::format_to_mb(result, "|");
         for (const auto col : range_from_0_to(row.size()))
-            fmt::format_to(result, " {:{}s} |", row[col], column_widths[col]);
-        fmt::format_to(result, "\n");
+            fmt::format_to_mb(result, " {:{}s} |", row[col], column_widths[col]);
+        fmt::format_to_mb(result, "\n");
     }
 
-    fmt::format_to(result, "\n* COMMENT local vars ----------------------------------------------------------------------\n"
+    fmt::format_to_mb(result, "\n* COMMENT local vars ----------------------------------------------------------------------\n"
                            ":PROPERTIES:\n:VISIBILITY: folded\n:END:\n\n"
                            "#+STARTUP: showall indent\n"
                            "Local Variables:\n"
@@ -133,7 +133,7 @@ std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view f
         //     return "neut";
     };
 
-    return fmt::format(format,                                               //
+    return fmt::format(fmt::runtime(format),                                 //
                        "virus_type"_a = extractor_->subtype(),               //
                        "lineage"_a = extractor_->lineage(),                  //
                        "virus_type_lineage"_a = extractor_->subtype_short(), //
@@ -141,10 +141,10 @@ std::string acmacs::sheet::v1::SheetToTorg::format_assay_data(std::string_view f
                        "virus_type_lineage_subset_short_low"_a = extractor_->subtype_short(), //
                        "assay_full"_a = extractor_->assay(),                                  //
                        "assay"_a = extractor_->assay(),                                       //
-                       "assay_low"_a = ::string::lower(extractor_->assay()),                    //
+                       "assay_low"_a = ::string::lower(extractor_->assay()),                  //
                        "assay_low_rbc"_a = assay_rbc(),                                       //
                        "lab"_a = extractor_->lab(),                                           //
-                       "lab_low"_a = ::string::lower(extractor_->lab()),                        //
+                       "lab_low"_a = ::string::lower(extractor_->lab()),                      //
                        "rbc"_a = extractor_->rbc(),                                           //
                        "table_date"_a = extractor_->date("%Y%m%d")                            //
     );

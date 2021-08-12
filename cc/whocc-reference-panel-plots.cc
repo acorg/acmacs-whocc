@@ -160,7 +160,7 @@ class ChartData
 // ----------------------------------------------------------------------
 
 template <> struct fmt::formatter<AntigenSerumData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
-    template <typename FormatCtx> auto format(const AntigenSerumData& aData, FormatCtx& ctx)
+    template <typename FormatCtx> auto format(const AntigenSerumData& aData, FormatCtx& ctx) const
     {
         constexpr const int titer_width = 7;
         format_to(ctx.out, "[{:>{}}({})]", *aData.median.first, titer_width, aData.median.second);
@@ -171,7 +171,7 @@ template <> struct fmt::formatter<AntigenSerumData> : fmt::formatter<acmacs::fmt
 };
 
 template <> struct fmt::formatter<ChartData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
-    template <typename FormatCtx> auto format(const ChartData& aData, FormatCtx& ctx)
+    template <typename FormatCtx> auto format(const ChartData& aData, FormatCtx& ctx) const
     {
         return aData.format(ctx);
     }

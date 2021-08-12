@@ -50,23 +50,23 @@ int main(int argc, char* const argv[])
                 auto& variant = hidb_variants.emplace_back(hidb_full_name, fmt::memory_buffer{});
                 // mark matching matching annotations, reassortant, passage, serum_id
                 if constexpr (is_antigen)
-                    fmt::format_to(variant.second, "{}",
+                    fmt::format_to_mb(variant.second, "{}",
                                    acmacs::string::join(acmacs::string::join_space,
                                                         /* hidb_antigen->name(), */ make_field(acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), annotations),
                                                         make_field(hidb_antigen->reassortant(), reassortant), make_field(hidb_antigen->passage(), ag_sr.passage())));
                 else
-                    fmt::format_to(variant.second, "{}",
+                    fmt::format_to_mb(variant.second, "{}",
                                    acmacs::string::join(acmacs::string::join_space,
                                                         /* hidb_antigen->name(), */ make_field(acmacs::string::join(acmacs::string::join_space, hidb_antigen->annotations()), annotations),
                                                         make_field(hidb_antigen->reassortant(), reassortant), make_field(hidb_antigen->serum_id(), ag_sr.serum_id())));
-                // fmt::format_to(variant.second, "        {{{}}}\n", hidb_full_name);
-                fmt::format_to(variant.second, "\n");
+                // fmt::format_to_mb(variant.second, "        {{{}}}\n", hidb_full_name);
+                fmt::format_to_mb(variant.second, "\n");
                 const auto by_lab_assay = hidb.tables(*hidb_antigen, hidb::lab_assay_rbc_table_t::recent_first);
                 for (auto entry : by_lab_assay) {
-                    fmt::format_to(variant.second, "        {{{} {}}} ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
+                    fmt::format_to_mb(variant.second, "        {{{} {}}} ({})", entry.lab, acmacs::chart::assay_rbc_short(entry.assay, entry.rbc), entry.tables.size());
                     for (auto table : entry.tables)
-                        fmt::format_to(variant.second, " {}", table->date());
-                    fmt::format_to(variant.second, "\n");
+                        fmt::format_to_mb(variant.second, " {}", table->date());
+                    fmt::format_to_mb(variant.second, "\n");
                 }
             }
             std::sort(std::begin(hidb_variants), std::end(hidb_variants), [&full_name](const auto& e1, const auto& e2) {
@@ -80,7 +80,7 @@ int main(int argc, char* const argv[])
             });
             // if (!full_name_match_present) {
             //     const auto new_var = hidb_variants.emplace(hidb_variants.begin(), "*** New ***", fmt::memory_buffer{});
-            //     fmt::format_to(new_var->second, "*** New ***\n");
+            //     fmt::format_to_mb(new_var->second, "*** New ***\n");
             // }
 
             fmt::print("{} {} {:3d} {}\n", full_name_match_present ? '+' : '-', is_antigen ? "AG" : "SR", no, full_name);

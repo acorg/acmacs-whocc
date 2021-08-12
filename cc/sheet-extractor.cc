@@ -228,10 +228,10 @@ template <acmacs::sheet::NRowCol nrowcol> inline std::string format(const number
     bool space{false};
     for (const auto& en : rngs) {
         if (space)
-            format_to(out, " ");
+            fmt::format_to_mb(out, " ");
         else
             space = true;
-        format_to(out, "{}-{}", en.first, en.second);
+        fmt::format_to_mb(out, "{}-{}", en.first, en.second);
     }
     return fmt::to_string(out);
 }
@@ -309,7 +309,7 @@ void acmacs::sheet::v1::Extractor::find_titers(warn_if_not_found winf)
     if (!ranges::all_of(rows, [&rows](const auto& en) { return en.second == rows[0].second; })) {
         fmt::memory_buffer report; // fmt::format(rows, "{}", "\n  "));
         for (const auto& [row_no, rng] : rows)
-            fmt::format_to(report, "    {}: {} ({})\n", row_no, rng, rng.length());
+            fmt::format_to_mb(report, "    {}: {} ({})\n", row_no, rng, rng.length());
         if (winf == warn_if_not_found::yes)
             AD_WARNING(winf == warn_if_not_found::yes, "sheet \"{}\": variable titer row ranges:\n{}", sheet().name(), fmt::to_string(report));
     }
@@ -667,7 +667,7 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_index_row(warn_if_not_found win
             break;
         }
         else if (matches)
-            fmt::format_to(report, "    re_CDC_serum_index row:{} matches:{}\n", row, matches);
+            fmt::format_to_mb(report, "    re_CDC_serum_index row:{} matches:{}\n", row, matches);
     }
 
     if (serum_index_row_.has_value())
@@ -950,7 +950,7 @@ void acmacs::sheet::v1::ExtractorCrick::find_serum_name_rows(warn_if_not_found w
             break;
         }
         else if (matches)
-            fmt::format_to(report, "    re_CRICK_serum_name_1 row:{} matches:{}\n", row, matches);
+            fmt::format_to_mb(report, "    re_CRICK_serum_name_1 row:{} matches:{}\n", row, matches);
     }
 
     if (serum_name_1_row_.has_value())
