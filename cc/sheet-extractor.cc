@@ -40,6 +40,7 @@ static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
+#define pattern_CRICK_serum_id "F[0-9]+/[0-2][0-9]"
 static const std::regex re_CRICK_serum_id{R"(^(?:[A-Z\s]+\s+)?\s*(F[0-9]+/[0-2][0-9]|SH[\s\d,/]+)(?:\*(\d)(?:,\d)?)?$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than{R"(^\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
 static const std::regex re_CRICK_less_than_2{R"(^Superscripts.*\s+(\d)\s*<\s*=\s*(<\d+)\s*$)", acmacs::regex::icase};
@@ -65,7 +66,8 @@ static const std::regex re_VIDRL_antigen_lab_id{"^(SL|VW)[0-9]{8}$", acmacs::reg
 static const std::regex re_VIDRL_antigen_date_column_title{"^\\s*Sample\\s*Date\\s*$", acmacs::regex::icase};
 static const std::regex re_VIDRL_antigen_lab_id_column_title{"^\\s*VW\\s*$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_name{"^(?:[AB]/)?([A-Z][A-Z ]+)/?([0-9]+)(?:_.*)?$", acmacs::regex::icase}; // optional mutant info at the end
-static const std::regex re_VIDRL_serum_id{"^[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?$", acmacs::regex::icase};
+#define pattern_VIDRL_serum_id "[AF][0-9][0-9][0-9][0-9](?:-[0-9]+D)?"
+static const std::regex re_VIDRL_serum_id{"^(" pattern_VIDRL_serum_id "|" pattern_CRICK_serum_id ")$", acmacs::regex::icase};
 static const std::regex re_VIDRL_serum_id_with_days{"^[AF][0-9][0-9][0-9][0-9]-[0-9]+D$", acmacs::regex::icase};
 
 static const std::regex re_human_who_serum{R"(^\s*(.*(HUMAN|WHO|NORMAL)|GOAT|POST? VAX)\b)", acmacs::regex::icase}; // "POST VAX" is in VIDRL H3 HI 2021
@@ -465,7 +467,8 @@ std::optional<acmacs::sheet::v1::nrow_t> acmacs::sheet::v1::Extractor::find_seru
             break;
         }
         else if (num_columns > 0) {
-            // AD_DEBUG("find_serum_row: row:{} columns:{}", row, num_columns);
+            if (row_name == "id")
+                AD_WARNING("find_serum_row {} (too few columns): row:{} columns:{} number of sera: {}", row_name, row, num_columns, number_of_sera());
         }
     }
 
