@@ -1,4 +1,4 @@
-# Time-stamp: <2021-08-08 12:00:47 eu>
+# Time-stamp: <2021-08-13 12:05:01 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -42,7 +42,7 @@ gcop ~/AD/sources/acmacs-py 'chains-202105' && gcop ~/AD/sources/acmacs-whocc 'c
 - update acmacs core (oriane)
 
   #+BEGIN_SRC bash
-  mkdir -p /syn/eu/ac/results/chains-202105/lib; rsync  -av --copy-unsafe-links --exclude cmake --exclude pkgconfig --exclude '.nfs*' ${ACMACSD_ROOT}/lib/ /syn/eu/ac/results/chains-202105/lib
+  mkdir -p /syn/eu/ac/results/chains-202105/lib; rsync -av --copy-unsafe-links --exclude cmake --exclude pkgconfig --exclude '.nfs*' ${ACMACSD_ROOT}/lib/ /syn/eu/ac/results/chains-202105/lib; rsync -av --copy-unsafe-links ${ACMACSD_ROOT}/share/conf/clades.mapi /syn/eu/ac/results/chains-202105/
   #+END_SRC
 
 
