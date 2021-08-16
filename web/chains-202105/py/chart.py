@@ -27,10 +27,10 @@ def export_chart(request, filename :Path, chart :acmacs.Chart):
 
 # ======================================================================
 
-def get_map(request, ace :str, coloring :str, size :int, save_chart :bool = False):
+def get_map(request, ace :str, coloring :str, size :int, image_type :str = "png", save_chart :bool = False):
     ace_filename = Path(ace)
     reorient_master_filename = find_reorient_master(ace_filename.parent)
-    output_filename = png_dir(ace_filename).joinpath(f"{ace_filename.stem}.{encode_for_filename(coloring)}.{size}.png")
+    output_filename = png_dir(ace_filename).joinpath(f"{ace_filename.stem}.{encode_for_filename(coloring)}.{size}.{image_type}")
     if utils.older_than(output_filename, ace_filename, reorient_master_filename):
         make_map(request, output=output_filename, ace_filename=ace_filename, coloring=coloring, size=int(size), reorient_master_filename=reorient_master_filename, save_chart=save_chart)
     if output_filename.exists():

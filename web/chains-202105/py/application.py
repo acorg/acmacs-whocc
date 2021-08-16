@@ -59,15 +59,38 @@ async def chain_data(request):
 def bool_from_str(src):
     return src.lower() in ["true", "yes", "1"]
 
-@routes.get("/png")
-async def png(request):
+sMimeType = {
+    "png": "image/png",
+    "pdf": "application/pdf",
+}
+
+def image(request, image_type):
     if request.query["type"] == "map":
         from web_chains_202105.chart import get_map
         args = {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in [["ace", str], ["coloring", str], ["size", int], ["save_chart", bool_from_str]]) if v is not None}
-        return web.Response(body=get_map(request=request, **args), content_type="image/png", headers={"pid": str(os.getpid())})
+        headers = {
+            "pid": str(os.getpid()),
+            "Content-Disposition": f'inline; filename="{args["ace"][:-4]}.{image_type}"',
+        }
+        return web.Response(body=get_map(request=request, image_type=image_type, **args), content_type=sMimeType[image_type], headers=headers)
     else:
-        print(">> WARNING: unsupported png:", request.query)
-        return web.Response(text=str(request.query), status=418, headers={"Error": "unsupported png"})
+        print(f">> WARNING: unsupported {image_type}:", request.query)
+        return web.Response(text=str(request.query), status=418, headers={"Error": f"unsupported {image_type}"})
+
+@routes.get("/png")
+async def png(request):
+    return image(request=request, image_type="png")
+    # if request.query["type"] == "map":
+    #     from web_chains_202105.chart import get_map
+    #     args = {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in [["ace", str], ["coloring", str], ["size", int], ["save_chart", bool_from_str]]) if v is not None}
+    #     return web.Response(body=get_map(request=request, **args), content_type="image/png", headers={"pid": str(os.getpid())})
+    # else:
+    #     print(">> WARNING: unsupported png:", request.query)
+    #     return web.Response(text=str(request.query), status=418, headers={"Error": "unsupported png"})
+
+@routes.get("/pdf")
+async def pdf(request):
+    return image(request=request, image_type="pdf")
 
 # ======================================================================
 # api
