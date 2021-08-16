@@ -57,7 +57,7 @@ def collect_table_data(request, subtype_id, table_date):
     from web_chains_202105.chart import get_chart
 
     def collect_table_data_part():
-        for patt in ["i-none", "i-1280", "f-*", "b-*"]:
+        for patt in ["i-*", "f-*", "b-*"]:
             for subdir in sorted(Path(subtype_id).glob(patt), reverse=True):
                 entries = make_entries(subdir, patt[0] == "i")
                 if entries:
@@ -69,7 +69,7 @@ def collect_table_data(request, subtype_id, table_date):
 
     def make_entries(subdir, individual):
         entries = {}
-        filenames = list(subdir.glob(f"*-{table_date}.*"))
+        filenames = list(subdir.glob(f"*{table_date}.*"))
         if not filenames and subdir.name[0] == "b": # workaround for the backward chain step naming problem
             filenames = list(subdir.glob(f"*.{table_date}-*"))
         for filename in filenames:

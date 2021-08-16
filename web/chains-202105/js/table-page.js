@@ -75,6 +75,9 @@ function show_chain_maps(data) {
                     MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, merge_type, data.individual[0], "individual", coloring));
                 }
             }
+            if (data_chain.mcb) {
+                MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, "mcb", coloring, coloring_no === 0));
+            }
             for (let merge_type of ["incremental", "scratch"]) {
                 // TODO: grid test
             }
