@@ -70,6 +70,11 @@ function show_chain_maps(data) {
                 MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, merge_type, coloring, coloring_no === 0));
             }
             MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, "incremental", data_chain, "scratch", coloring)); // pc incremental vs. scratch
+            if (data.individual && data.individual[0]) {
+                for (let merge_type of ["incremental", "scratch"]) {
+                    MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, merge_type, data.individual[0], "individual", coloring));
+                }
+            }
             for (let merge_type of ["incremental", "scratch"]) {
                 // TODO: grid test
             }
