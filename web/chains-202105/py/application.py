@@ -62,6 +62,7 @@ def bool_from_str(src):
 sMimeType = {
     "png": "image/png",
     "pdf": "application/pdf",
+    "ace": "application/octet-stream",
 }
 
 def image(request, image_type):
@@ -70,7 +71,7 @@ def image(request, image_type):
         args = {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in [["ace", str], ["coloring", str], ["size", int], ["save_chart", bool_from_str]]) if v is not None}
         headers = {
             "pid": str(os.getpid()),
-            "Content-Disposition": f'inline; filename="{args["ace"][:-4]}.{image_type}"',
+            "Content-Disposition": f'inline; filename="{Path(args["ace"]).with_suffix("." + image_type).name}"',
         }
         return web.Response(body=get_map(request=request, image_type=image_type, **args), content_type=sMimeType[image_type], headers=headers)
     else:
@@ -80,17 +81,24 @@ def image(request, image_type):
 @routes.get("/png")
 async def png(request):
     return image(request=request, image_type="png")
-    # if request.query["type"] == "map":
-    #     from web_chains_202105.chart import get_map
-    #     args = {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in [["ace", str], ["coloring", str], ["size", int], ["save_chart", bool_from_str]]) if v is not None}
-    #     return web.Response(body=get_map(request=request, **args), content_type="image/png", headers={"pid": str(os.getpid())})
-    # else:
-    #     print(">> WARNING: unsupported png:", request.query)
-    #     return web.Response(text=str(request.query), status=418, headers={"Error": "unsupported png"})
 
 @routes.get("/pdf")
 async def pdf(request):
     return image(request=request, image_type="pdf")
+
+# ======================================================================
+# ace
+# ======================================================================
+
+@routes.get("/ace")
+async def ace(request):
+    args = {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in [["ace", Path]]) if v is not None}
+    headers = {
+        "pid": str(os.getpid()),
+        "Content-Disposition": f'inline; filename="{args["ace"].name}"',
+    }
+    return web.Response(body=args["ace"].open("rb").read(), content_type=sMimeType["ace"], headers=headers)
+
 
 # ======================================================================
 # api

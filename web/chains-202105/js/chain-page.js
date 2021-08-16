@@ -30,7 +30,7 @@ function show_maps(data) {
             if (data[merge_type] && data[merge_type].ace) {
                 const req = MAPS.make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0 ? 1 : 0}) // save_chart must be number to properly convert to bool!
                 const link = MAPS.make_link({ace: data[merge_type].ace})
-                tr_title.append(`<td>${merge_type} <a href="" download>ace</a> <a href="pdf?${req}" download>pdf</a></td>`);
+                tr_title.append(`<td>${merge_type} <a href="ace?ace=${data[merge_type].ace}" download>ace</a> <a href="pdf?${req}" download>pdf</a></td>`);
                 tr.append(`<td><a href="${link}" target="_blank"><img src="png?${req}"></a></td>`);
             }
         }
