@@ -6,23 +6,29 @@ import * as MAPS from "./maps.js";
 function main() {
     console.log("table_page_data", table_page_data);
     make_title();
-    for (let part_data of table_page_data.parts)
-        show_part(part_data, table_page_data.subtype_id);
+    const parts = table_page_data.parts.reduce((accumulator, elt) => {
+        accumulator[elt.type] = [...(accumulator[elt.type] || []), elt];
+        return accumulator;
+    }, {});
+    show_parts(parts, "individual", table_page_data.subtype_id);
+    show_parts(parts, "chain", table_page_data.subtype_id);
+    // for (let part_data of table_page_data.parts)
+    //     show_part(part_data, table_page_data.subtype_id);
     // $("body").append(`<pre>\n${JSON.stringify(table_page_data, null, 2)}\n</pre>`);
 }
 
 // ----------------------------------------------------------------------
 
-function show_part(part_data, subtype_id) {
-    const part_title_text = part_title(part_data, subtype_id);
+function show_parts(parts, key, subtype_id) {
+    const part_title_text = part_title(parts[key][0], subtype_id);
     if (part_title_text)
-        $("body").append(`<hr>\n<h3>${part_title_text} ${part_data.date} (${part_data.chain_id})</h3>`);
-    switch (part_data.type) {
+        $("body").append(`<hr>\n<h3>${part_title_text} ${parts[key][0].date} (${parts[key][0].chain_id})</h3>`);
+    switch (key) {
     case "individual":
-        show_individual_table_maps(part_data.scratch);
+        show_individual_table_maps(parts);
         break;
     case "chain":
-        show_chain_maps(part_data);
+        show_chain_maps(parts);
         break;
     }
 
@@ -30,16 +36,22 @@ function show_part(part_data, subtype_id) {
 
 // ----------------------------------------------------------------------
 
-function show_individual_table_maps(data) {
+function show_individual_table_maps(data, chain_data) {
     const table = $("<table></table>").appendTo("body");
     const tr_title = $("<tr class='title'></tr>").appendTo(table);
     const tr = $("<tr class='image'></tr>").appendTo(table);
-    table_page_data.coloring.forEach((coloring, coloring_no) => {
-        const td_title = MAPS.map_td_with_title(data, "", coloring, coloring_no === 0);
-        if (td_title) {
-            tr_title.append(td_title.title);
-            tr.append(td_title.td);
-        }
+    data.individual.forEach((data_individual) => {
+        table_page_data.coloring.forEach((coloring, coloring_no) => {
+            MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_individual, "scratch", coloring, coloring_no === 0));
+        });
+    });
+    // procrustes
+    data.individual.forEach((data_individual) => {
+        data.chain.forEach((data_chain) => {
+            for (let merge_type of ["incremental", "scratch"]) {
+                MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_individual, "scratch", data_chain, merge_type, table_page_data.coloring[0]));
+            }
+        });
     });
     // TODO: grid test
     // TODO: serum correlation widget
@@ -49,17 +61,19 @@ function show_individual_table_maps(data) {
 // ----------------------------------------------------------------------
 
 function show_chain_maps(data) {
-    const table = $("<table></table>").appendTo("body");
-    table_page_data.coloring.forEach((coloring, coloring_no) => {
-        const tr_title = $("<tr class='title'></tr>").appendTo(table);
-        const tr = $("<tr class='image'></tr>").appendTo(table);
-        for (let merge_type of ["incremental", "scratch"]) {
-            MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data, merge_type, coloring, coloring_no === 0));
-        }
-        MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data, "incremental", "scratch", coloring)); // pc incremental vs. scratch
-        for (let merge_type of ["incremental", "scratch"]) {
-            // TODO: grid test
-        }
+    data.chain.forEach((data_chain) => {
+        const table = $("<table></table>").appendTo("body");
+        table_page_data.coloring.forEach((coloring, coloring_no) => {
+            const tr_title = $("<tr class='title'></tr>").appendTo(table);
+            const tr = $("<tr class='image'></tr>").appendTo(table);
+            for (let merge_type of ["incremental", "scratch"]) {
+                MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, merge_type, coloring, coloring_no === 0));
+            }
+            MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, "incremental", data_chain, "scratch", coloring)); // pc incremental vs. scratch
+            for (let merge_type of ["incremental", "scratch"]) {
+                // TODO: grid test
+            }
+        });
     });
 }
 
