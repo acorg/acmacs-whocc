@@ -27,12 +27,21 @@ def export_chart(request, filename :Path, chart :acmacs.Chart):
 
 # ======================================================================
 
-def get_map(request, ace :str, coloring :str, size :int, image_type :str = "png", save_chart :bool = False):
-    ace_filename = Path(ace)
-    reorient_master_filename = find_reorient_master(ace_filename.parent)
-    output_filename = png_dir(ace_filename).joinpath(f"{ace_filename.stem}.{encode_for_filename(coloring)}.{size}.{image_type}")
-    if utils.older_than(output_filename, ace_filename, reorient_master_filename):
-        make_map(request, output=output_filename, ace_filename=ace_filename, coloring=coloring, size=int(size), reorient_master_filename=reorient_master_filename, save_chart=save_chart)
+def get_map(request, coloring: str, size: int, ace: str = None, ace1: str = None, ace2: str = None, image_type: str = "png", save_chart: bool = False, type: str = "map"):
+    if type == "map":
+        ace_filename = Path(ace)
+        reorient_master_filename = find_reorient_master(ace_filename.parent)
+        output_filename = png_dir(ace_filename).joinpath(f"{ace_filename.stem}.{encode_for_filename(coloring)}.{size}.{image_type}")
+        if utils.older_than(output_filename, ace_filename, reorient_master_filename):
+            make_map(request, output=output_filename, ace_filename=ace_filename, coloring=coloring, size=int(size), reorient_master_filename=reorient_master_filename, save_chart=save_chart)
+    elif type == "pc":
+        ace1_filename = Path(ace1)
+        ace2_filename = Path(ace2)
+        output_filename = png_dir(ace1_filename).joinpath(f"pc-{ace1_filename.stem}-vs-{ace2_filename.stem}.{encode_for_filename(coloring)}.{size}.{image_type}")
+        if utils.older_than(output_filename, ace1_filename, ace2_filename):
+            make_pc(request, output=output_filename, ace1_filename=ace1_filename, ace2_filename=ace2_filename, coloring=coloring, size=int(size))
+    else:
+        output_filename = Path("/does-not-exist")
     if output_filename.exists():
         return output_filename.open("rb").read()
     else:
@@ -67,6 +76,25 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
             export_chart(request, ace_filename, drw.chart())
     except Exception as err:
         print(f"> ERROR: chart::make_map failed: {err}")
+
+# ----------------------------------------------------------------------
+
+def make_pc(request, output: Path, ace1_filename: Path, ace2_filename: Path, coloring: str, size: int):
+    try:
+        chart1 = get_chart(request, ace1_filename)
+        chart1.populate_from_seqdb()
+        chart2 = get_chart(request, ace2_filename)
+
+        drw = acmacs.ChartDraw(chart1)
+        request.app["clade_data"].chart_draw_reset(drw=drw, grey=sGrey, test_antigen_size=sTestAntigenSize, reference_antigen_size=sReferenceAntigenSize, serum_size=sSerumSize)
+        request.app["clade_data"].chart_draw_modify(drw=drw, mapi_key=coloring)
+        arrow_sizes, procrustes_data = drw.procrustes_arrows(common=acmacs.CommonAntigensSera(chart1, chart2), secondary_chart=chart2, threshold=0.3)
+        drw.title(lines=[f"RMS: {procrustes_data.rms:.4f}"], remove_all_lines=True)
+        drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
+        drw.calculate_viewport()
+        drw.draw(output, size=size, open=False)
+    except Exception as err:
+        print(f"> ERROR: chart::make_pc failed: {err}")
 
 # ----------------------------------------------------------------------
 

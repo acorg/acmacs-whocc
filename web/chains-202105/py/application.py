@@ -56,22 +56,19 @@ async def chain_data(request):
 # images
 # ======================================================================
 
-def bool_from_str(src):
-    return src.lower() in ["true", "yes", "1"]
-
-sMimeType = {
-    "png": "image/png",
-    "pdf": "application/pdf",
-    "ace": "application/octet-stream",
-}
-
 def image(request, image_type):
-    if request.query["type"] == "map":
-        from web_chains_202105.chart import get_map
-        args = {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in [["ace", str], ["coloring", str], ["size", int], ["save_chart", bool_from_str]]) if v is not None}
+    from web_chains_202105.chart import get_map
+    args = request_args(request)
+    if args["type"] == "map":
         headers = {
             "pid": str(os.getpid()),
             "Content-Disposition": f'inline; filename="{Path(args["ace"]).with_suffix("." + image_type).name}"',
+        }
+        return web.Response(body=get_map(request=request, image_type=image_type, **args), content_type=sMimeType[image_type], headers=headers)
+    elif args["type"] == "pc":
+        headers = {
+            "pid": str(os.getpid()),
+            "Content-Disposition": f'inline; filename="pc-{Path(args["ace1"]).stem}-vs-{Path(args["ace2"]).stem}.{image_type}"',
         }
         return web.Response(body=get_map(request=request, image_type=image_type, **args), content_type=sMimeType[image_type], headers=headers)
     else:
@@ -112,5 +109,31 @@ async def subtype_data(request):
         "tables": collect_tables_of_subtype(subtype_id),
         "subtype_id": subtype_id,
     })
+
+# ======================================================================
+# utils
+# ======================================================================
+
+def bool_from_str(src):
+    return src and src.lower() in ["true", "yes", "1"]
+
+sMimeType = {
+    "png": "image/png",
+    "pdf": "application/pdf",
+    "ace": "application/octet-stream",
+}
+
+sRequestArgTypes = [
+    ["type", str],
+    ["ace", str],
+    ["ace1", str],              # pc
+    ["ace2", str],              # pc
+    ["coloring", str],
+    ["size", int],
+    ["save_chart", bool_from_str]
+]
+
+def request_args(request):
+    return {kk: v for kk, v in ((k, t(request.query.get(k))) for k,t in sRequestArgTypes) if v is not None}
 
 # ======================================================================

@@ -33,3 +33,25 @@ export function map_td_with_title(data, merge_type, coloring, save_chart) {
 }
 
 // ----------------------------------------------------------------------
+
+// returns {title: "text", td: "text"}
+export function pc_td_with_title(data, merge_type1, merge_type2, coloring) {
+    const result = {};
+    if (data[merge_type1] && data[merge_type1].ace && data[merge_type2] && data[merge_type2].ace) {
+        const req = make_request_data({type: "pc", ace1: data[merge_type1].ace, ace2: data[merge_type2].ace, coloring: coloring, size: IMAGE_SIZE});
+        result.title = `<td>pc ${merge_type1} vs. ${merge_type2}<span class="map-title-space"></span><a href="pdf?${req}" download>pdf</a><span class="map-title-space"></span>coloring:${coloring}</td>`;
+        result.td = `<td><img src="png?${req}"></td>`;
+    }
+    return result.td ? result : null;
+}
+
+// ----------------------------------------------------------------------
+
+export function td_title_append(tr_title, tr, to_append) {
+    if (to_append) {
+        tr_title.append(to_append.title);
+        tr.append(to_append.td);
+    }
+}
+
+// ----------------------------------------------------------------------

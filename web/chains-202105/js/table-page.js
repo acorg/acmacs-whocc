@@ -54,13 +54,9 @@ function show_chain_maps(data) {
         const tr_title = $("<tr class='title'></tr>").appendTo(table);
         const tr = $("<tr class='image'></tr>").appendTo(table);
         for (let merge_type of ["incremental", "scratch"]) {
-            const td_title = MAPS.map_td_with_title(data, merge_type, coloring, coloring_no === 0);
-            if (td_title) {
-                tr_title.append(td_title.title);
-                tr.append(td_title.td);
-            }
+            MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data, merge_type, coloring, coloring_no === 0));
         }
-        // TODO: pc incremental vs. scratch
+        MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data, "incremental", "scratch", coloring)); // pc incremental vs. scratch
         for (let merge_type of ["incremental", "scratch"]) {
             // TODO: grid test
         }
