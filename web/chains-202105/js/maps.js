@@ -20,6 +20,8 @@ export function make_link(data) {
 
 // returns {title: "text", td: "text"}
 export function map_td_with_title(data, merge_type, coloring, save_chart) {
+    if (merge_type === "")
+        data = {"": data};
     const result = {};
     if (data[merge_type] && data[merge_type].ace) {
         const req = make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: IMAGE_SIZE, save_chart: save_chart ? 1 : 0}); // save_chart must be number to properly convert to bool!

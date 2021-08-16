@@ -31,11 +31,15 @@ function show_part(part_data, subtype_id) {
 // ----------------------------------------------------------------------
 
 function show_individual_table_maps(data) {
-    const tr = $("<table><tr></tr></table>").appendTo("body").find("tr");
+    const table = $("<table></table>").appendTo("body");
+    const tr_title = $("<tr class='title'></tr>").appendTo(table);
+    const tr = $("<tr class='image'></tr>").appendTo(table);
     table_page_data.coloring.forEach((coloring, coloring_no) => {
-        const req = MAPS.make_request_data({type: "map", ace: data.ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0})
-        const link = MAPS.make_link({ace: data.ace})
-        tr.append(`<td><a href="${link}" target="_blank"><img src="png?${req}"></a></td>`);
+        const td_title = MAPS.map_td_with_title(data, "", coloring, coloring_no === 0);
+        if (td_title) {
+            tr_title.append(td_title.title);
+            tr.append(td_title.td);
+        }
     });
     // TODO: grid test
     // TODO: serum correlation widget
