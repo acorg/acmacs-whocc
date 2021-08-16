@@ -47,14 +47,13 @@ function show_individual_table_maps(data) {
 function show_chain_maps(data) {
     const table = $("<table></table>").appendTo("body");
     table_page_data.coloring.forEach((coloring, coloring_no) => {
-        const tr_title = $("<tr></tr>").appendTo(table);
-        const tr = $("<tr></tr>").appendTo(table);
+        const tr_title = $("<tr class='title'></tr>").appendTo(table);
+        const tr = $("<tr class='image'></tr>").appendTo(table);
         for (let merge_type of ["incremental", "scratch"]) {
-            if (data[merge_type] && data[merge_type].ace) {
-                tr_title.append(`<td>${merge_type}</td>`);
-                const req = MAPS.make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: MAPS.IMAGE_SIZE, save_chart: coloring_no === 0})
-                const link = MAPS.make_link({ace: data[merge_type].ace})
-                tr.append(`<td><a href="${link}" target="_blank"><img src="png?${req}"></a></td>`);
+            const td_title = MAPS.map_td_with_title(data, merge_type, coloring, coloring_no === 0);
+            if (td_title) {
+                tr_title.append(td_title.title);
+                tr.append(td_title.td);
             }
         }
         // TODO: pc incremental vs. scratch

@@ -17,3 +17,17 @@ export function make_link(data) {
 }
 
 // ----------------------------------------------------------------------
+
+// returns {title: "text", td: "text"}
+export function map_td_with_title(data, merge_type, coloring, save_chart) {
+    const result = {};
+    if (data[merge_type] && data[merge_type].ace) {
+        const req = make_request_data({type: "map", ace: data[merge_type].ace, coloring: coloring, size: IMAGE_SIZE, save_chart: save_chart ? 1 : 0}); // save_chart must be number to properly convert to bool!
+        const link = make_link({ace: data[merge_type].ace});
+        result.title = `<td>${merge_type}<span class="map-title-space"></span><a href="ace?ace=${data[merge_type].ace}" download>ace</a> <a href="pdf?${req}" download>pdf</a><span class="map-title-space"></span>coloring:${coloring}</td>`;
+        result.td = `<td><a href="${link}" target="_blank"><img src="png?${req}"></a></td>`;
+    }
+    return result.td ? result : null;
+}
+
+// ----------------------------------------------------------------------

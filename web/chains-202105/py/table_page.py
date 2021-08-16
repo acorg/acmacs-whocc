@@ -31,6 +31,7 @@ def table_page(request, subtype_id, table_date):
         "js/table-page.js",
         ]
     stylesheets = [
+        "js/maps.css",
         "js/table-page.css",
         ]
 

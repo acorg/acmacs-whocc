@@ -31,6 +31,7 @@ def chain_page(request, subtype_id, chain_id):
         "js/chain-page.js",
         ]
     stylesheets = [
+        "js/maps.css",
         "js/chain-page.css",
         ]
 
