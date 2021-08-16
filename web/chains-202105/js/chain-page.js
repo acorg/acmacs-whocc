@@ -44,7 +44,7 @@ function show_maps(data) {
 // ----------------------------------------------------------------------
 
 function part_title(part_data, subtype_id) {
-    return `${part_data.step} ${part_data.date}`;
+    return `<a href="table?subtype_id=${subtype_id}&date=${part_data.date}" target="_blank">${part_data.step} ${part_data.date}</a>`;
 }
 
 // ----------------------------------------------------------------------
