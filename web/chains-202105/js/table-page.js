@@ -77,6 +77,12 @@ function show_chain_maps(data) {
             }
             if (data_chain.mcb) {
                 MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, "mcb", coloring, coloring_no === 0));
+                if (data.individual && data.individual[0]) {
+                    MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, "mcb", data.individual[0], "individual", coloring));
+                }
+                for (let merge_type of ["incremental", "scratch"]) {
+                    MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, merge_type, data_chain, "mcb", coloring));
+                }
             }
             for (let merge_type of ["incremental", "scratch"]) {
                 // TODO: grid test
