@@ -59,7 +59,7 @@ def collect_table_data(request, subtype_id, table_date):
     def collect_table_data_part():
         for patt in ["i-none", "i-1280", "f-*", "b-*"]:
             for subdir in sorted(Path(subtype_id).glob(patt), reverse=True):
-                entries = make_entries(subdir)
+                entries = make_entries(subdir, patt[0] == "i")
                 if entries:
                     yield {
                         "type": "individual" if patt[0] == "i" else "chain",
@@ -67,13 +67,15 @@ def collect_table_data(request, subtype_id, table_date):
                         **entries
                         }
 
-    def make_entries(subdir):
+    def make_entries(subdir, individual):
         entries = {}
         filenames = list(subdir.glob(f"*-{table_date}.*"))
         if not filenames and subdir.name[0] == "b": # workaround for the backward chain step naming problem
             filenames = list(subdir.glob(f"*.{table_date}-*"))
         for filename in filenames:
             key1, key2 = keys_for_filename(filename)
+            if individual and key1 == "scratch":
+                key1 = "individual"
             entries.setdefault(key1, {})[key2] = str(filename)
             if key2 == "ace":
                 chart = get_chart(request=request, filename=filename)

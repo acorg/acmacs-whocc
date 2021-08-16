@@ -42,14 +42,14 @@ function show_individual_table_maps(data, chain_data) {
     const tr = $("<tr class='image'></tr>").appendTo(table);
     data.individual.forEach((data_individual) => {
         table_page_data.coloring.forEach((coloring, coloring_no) => {
-            MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_individual, "scratch", coloring, coloring_no === 0));
+            MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_individual, "individual", coloring, coloring_no === 0));
         });
     });
     // procrustes
     data.individual.forEach((data_individual) => {
         data.chain.forEach((data_chain) => {
             for (let merge_type of ["incremental", "scratch"]) {
-                MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_individual, "scratch", data_chain, merge_type, table_page_data.coloring[0]));
+                MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_individual, "individual", data_chain, merge_type, table_page_data.coloring[0]));
             }
         });
     });
