@@ -55,6 +55,7 @@ CONFIG = {
         },
         "raxml-ng": {
             "slurm-nodelist": "i22",
+            "num_runs": 16,
         },
         "garli": {
             "slurm-nodelist": "i22",
@@ -128,6 +129,7 @@ CONFIG = {
         },
         "raxml-ng": {
             "slurm-nodelist": "i20",
+            "num_runs": 16,
         },
         "garli": {
             "slurm-nodelist": "i20",
@@ -154,7 +156,9 @@ CONFIG = {
             "args": ["--flu", "b", "--lineage", "vic", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
         },
         "raxml-ng": {
-            "slurm-nodelist": "i21",
+            # "slurm-nodelist": "i21",
+            "slurm-exclude-nodes": "i20,i22", # occupied by h1 and h3
+            "num_runs": (16 * 7),
         },
         "garli": {
             "slurm-nodelist": "i21",
@@ -187,6 +191,7 @@ CONFIG = {
         },
         "raxml-ng": {
             "slurm-nodelist": "i18",
+            "num_runs": 16,
         },
         "garli": {
             "slurm-nodelist": "i18",
@@ -195,10 +200,6 @@ CONFIG = {
     },
 
     # ----------------------------------------------------------------------
-
-    "raxml-ng": {
-        "num_runs": 16,
-    },
 
     "garli": {
         "num_runs": 16,
@@ -270,7 +271,6 @@ sRandomGen = random.SystemRandom()
 def raxml_ng(subtype, working_dir, source_fas, args):
 
     output_dir = get_output_dir(working_dir, "raxml-ng.")
-    node = args.node or CONFIG[subtype]['raxml-ng']['slurm-nodelist']
 
     raxml_cmd = [
         "/syn/bin/raxml-ng",
@@ -284,14 +284,6 @@ def raxml_ng(subtype, working_dir, source_fas, args):
         "--threads", "1",
     ]
     # "--silent", "--no-seq-check"
-    srun_cmd = [
-        "srun",
-        "--cpus-per-task=2",
-        "--nodes=1",
-        "--ntasks=1",
-        "--threads=1",
-        f"--nodelist={node}",
-    ]
 
     # ----------------------------------------------------------------------
 
@@ -299,19 +291,35 @@ def raxml_ng(subtype, working_dir, source_fas, args):
         return f"{output_dir.joinpath(run_id)}"
 
     def run_raxml_ng(run_id):
-        cmd = (srun_cmd + [f"--job-name=raxml-ng {subtype} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+        cmd = (srun_cmd() + [f"--job-name=raxml-ng {subtype} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
                + raxml_cmd + ["--prefix", prefix(run_id), "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
         with output_dir.joinpath("commands.txt").open("a") as commands_txt:
             print(" ".join(cmd), file=commands_txt)
         # print(cmd)
         subprocess.check_call(cmd)
 
+    def srun_cmd():
+        cmd = [
+            "srun",
+            "--cpus-per-task=2",
+            "--ntasks=1",
+            "--threads=1",
+        ]
+        raxml_config = CONFIG[subtype]["raxml-ng"]
+        if nodelist := raxml_config.get("slurm-nodelist"):
+            cmd.append(f"--nodelist={nodelist}")
+        if exclude := raxml_config.get("slurm-exclude-nodes"):
+            cmd.append(f"--exclude={exclude}")
+        return cmd
+
     # ----------------------------------------------------------------------
 
     def submit():
         failures = 0
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(CONFIG["raxml-ng"]["num_runs"]))}
+        num_runs = CONFIG[subtype]["raxml-ng"]["num_runs"]
+        print(f"submitting {num_runs} jobs")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_runs) as executor:
+            future_to_runid = {executor.submit(run_raxml_ng, run_id): run_id for run_id in (f"{ri:03d}" for ri in range(num_runs))}
             for future in concurrent.futures.as_completed(future_to_runid):
                 try:
                     future.result()
@@ -328,7 +336,7 @@ def raxml_ng(subtype, working_dir, source_fas, args):
     # ----------------------------------------------------------------------
 
     def results_available():
-        return len(list(output_dir.glob("*.raxml.bestTree"))) > (CONFIG["raxml-ng"]["num_runs"] / 2)
+        return len(list(output_dir.glob("*.raxml.bestTree"))) > (CONFIG[subtype]["raxml-ng"]["num_runs"] / 2)
 
     # ----------------------------------------------------------------------
 
