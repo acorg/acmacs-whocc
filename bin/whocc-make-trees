@@ -16,6 +16,8 @@ def main(args):
     working_dir = working_dir.resolve()
     copy_seqdb()
     source_fas = export_sequences(subtype=args.subtype, working_dir=working_dir)
+    if args.stop_after_export:
+        exit(0)
     # fork
     with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}") as email_data:
         best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas, args=args)
@@ -762,6 +764,7 @@ try:
     parser.add_argument("--node", default=None, choices=["o16", "o17", "i18", "19", "i20", "i21", "i22"])
     parser.add_argument("--base-seq-id", default=None)
     parser.add_argument("--working-subdir", default=None)
+    parser.add_argument("--stop-after-export", action="store_true", default=False)
 
     parser.add_argument("subtype", choices=["h1", "h3", "bvic", "byam"])
 
