@@ -1054,6 +1054,8 @@ std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no)
     auto result = ExtractorWithSerumRowsAbove::titer(ag_no, sr_no);
     if ((result == "<" || result == ">") && sr_no < serum_less_than_substitutions_.size())
         result = serum_less_than_substitutions_[sr_no];
+    else if (result == "ND")
+        result = "*";
     return result;
 
 } // acmacs::sheet::v1::ExtractorCrick::titer
