@@ -279,7 +279,9 @@ class Extractor:
 
 def main(args): # input_file :Path, output_dir :Path):
     input_file = Path(args.input[0])
-    if input_file.suffix == ".xz":
+    if input_file.suffix == ".zip":
+        reader = zip_extract_save_open(input_file)
+    elif input_file.suffix == ".xz":
         reader = csv.DictReader(lzma.open(input_file, mode="rt"), dialect="excel-tab")
     else:
         reader = csv.DictReader(input_file.open(), dialect="excel-tab")
@@ -514,6 +516,28 @@ def json_dumps(data, indent=2, indent_increment=None, toplevel=True, one_line_ma
         if "\n" in s and len(s) < one_line_max_width:
             s = make_one_line(data)
     return s
+
+# ----------------------------------------------------------------------
+
+def zip_extract_save_open(input_file: Path) -> csv.DictReader:
+    import zipfile, io
+    with zipfile.ZipFile(input_file) as zip:
+        files = zip.namelist()
+        if len(files) != 1:
+            raise RuntimeError(f"Unsupported number of files in {input_file}: ({len(files)}) {files}")
+        output_name = Path(os.environ["HOME"], "ac/whocc-tables/cdc-h3-hint/tsv", f"cdc-{monday()}.tsv.xz")
+        if not output_name.exists():
+            print(f">>> exporting {output_name}")
+            with lzma.open(output_name, "wb", preset = 9 | lzma.PRESET_EXTREME) as out:
+                out.write(zip.open(files[0], "r").read())
+        else:
+            print(f">> WARNING: {output_name} already exists, not overwriting")
+        return csv.DictReader(io.StringIO(zip.open(files[0], "r").read().decode("utf-8")), dialect="excel-tab")
+
+def monday():
+    day = datetime.date.today()
+    day -= datetime.timedelta(days=day.weekday())
+    return day.strftime("%Y%m%d")
 
 # ----------------------------------------------------------------------
 
