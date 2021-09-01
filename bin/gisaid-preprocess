@@ -47,6 +47,13 @@ class NameFixes:
             return mm["year"] + mm["next"]
         return cls.m_date_after_year.sub(repl, line)
 
+    m_lineage_after_year = re.compile(r"(?P<year>/20(?:1[89]|2[01]))[_\ ](?:VIC(?:TORIA)?|YAM(?:AGATA)?)(?P<next>_\|_a=)", re.I)
+    @classmethod
+    def f_lineage_after_year(cls, line):
+        def repl(mm):
+            return mm["year"] + mm["next"]
+        return cls.m_lineage_after_year.sub(repl, line)
+
     m_month_day_after_year = re.compile(r"(?P<year>/20(?:1[89]|2[01]))-[01]\d-[0-3]\d(?:\(H\dN\d\))?(?P<next>_\|_a=)", re.I)
     @classmethod
     def f_month_day_after_year(cls, line):
