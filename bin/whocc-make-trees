@@ -156,9 +156,10 @@ CONFIG = {
             "args": ["--flu", "b", "--lineage", "vic", "--recent", "8000", "--remove-nuc-duplicates", "--length", "1710", "--minimum-nuc-length", "1710", "--nuc-hamming-distance-mean-threshold", "140"],
         },
         "raxml-ng": {
-            # "slurm-nodelist": "i21",
-            "slurm-exclude-nodes": "i20,i22", # occupied by h1 and h3
-            "num_runs": (16 * 7),
+            "slurm-nodelist": "i21",
+            "num_runs": 16,
+            # "slurm-exclude-nodes": "i20,i22", # occupied by h1 and h3
+            # "num_runs": (16 * 7),
         },
         "garli": {
             "slurm-nodelist": "i21",
