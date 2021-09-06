@@ -50,6 +50,11 @@ CONFIG = {
                 # long branch 2021-0622
                 "AH1N1/DENMARK/1/2021_h541D5B4E",
                 "AH1N1/MANITOBA/2/2021_V_X1_h93388217",
+                # long branch 2021-0901, 54K and broken at 156-168, 172(del), 173-179
+                "AH1N1/INDIA/NIV-NICOBAR164/2020_OR_h3E9DE150",
+                "AH1N1/INDIA/NIV-NICOBAR106/2020_OR_h20A71E49",
+                "AH1N1/INDIA/NIV-NICOBAR163/2020_OR_hD2B6AA66",
+                "AH1N1/INDIA/NIV-NICOBAR91/2020_OR_hAC108AD7",
             ],
             "args": ["--flu", "h1", "--recent-matched", "5000,3000", "--remove-nuc-duplicates", "--host", "human", "--most-common-length", "--nuc-hamming-distance-mean-threshold", "140"],
         },
