@@ -1,4 +1,4 @@
-Time-stamp: <2021-08-16 08:49:58 eu>
+Time-stamp: <2021-09-11 10:04:24 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -74,6 +74,7 @@ seqdb3-scan --ncbi ~/ac/sequences/ncbi
 <H-d> whocc-hidb5-update --> ssh albertine whocc-hidb5-update && hidb-get-from-albertine
 
 #+BEGIN_SRC bash
+cat /r/gisaid_epiflu_sequence-2.fasta >>/r/gisaid_epiflu_sequence.fasta
 gisaid-preprocess /r/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
