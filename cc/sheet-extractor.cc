@@ -458,17 +458,20 @@ void acmacs::sheet::v1::Extractor::find_antigen_lab_id_column(warn_if_not_found 
 
 // ----------------------------------------------------------------------
 
-std::optional<acmacs::sheet::v1::nrow_t> acmacs::sheet::v1::Extractor::find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const
+std::optional<acmacs::sheet::v1::nrow_t> acmacs::sheet::v1::Extractor::find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf, std::optional<nrow_t> ignore) const
 {
     std::optional<nrow_t> found;
     for (nrow_t row{1}; row < antigen_rows()[0]; ++row) {
-        if (const auto num_columns = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](ncol_t col) { return sheet().matches(re, row, col); })); num_columns >= (number_of_sera() / 2)) {
-            found = row;
-            break;
-        }
-        else if (num_columns > 0) {
-            if (row_name == "id")
-                AD_WARNING("find_serum_row {} (too few columns): row:{} columns:{} number of sera: {}", row_name, row, num_columns, number_of_sera());
+        if (!ignore || row != *ignore) {
+            if (const auto num_columns = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this, re](ncol_t col) { return sheet().matches(re, row, col); }));
+                num_columns >= (number_of_sera() / 2)) {
+                found = row;
+                break;
+            }
+            else if (num_columns > 0) {
+                if (row_name == "id")
+                    AD_WARNING("find_serum_row {} (too few columns): row:{} columns:{} number of sera: {}", row_name, row, num_columns, number_of_sera());
+            }
         }
     }
 
@@ -1359,8 +1362,13 @@ bool acmacs::sheet::v1::ExtractorVIDRL::is_lab_id(const cell_t& cell) const
 
 void acmacs::sheet::v1::ExtractorVIDRL::find_serum_rows(warn_if_not_found winf)
 {
-    serum_name_row_ = find_serum_row(re_VIDRL_serum_name, "name", winf);
     find_serum_passage_row(re_serum_passage, winf);
+
+    // VIDRL serum name can be confused with the passage by
+    // re_VIDRL_serum_name, that is why serum_passage_row_ detected
+    // first and then ignored while looking for serum name row
+
+    serum_name_row_ = find_serum_row(re_VIDRL_serum_name, "name", winf, serum_passage_row_);
     find_serum_id_row(re_VIDRL_serum_id, winf);
 
 } // acmacs::sheet::v1::ExtractorVIDRL::find_serum_rows

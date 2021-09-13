@@ -92,7 +92,7 @@ namespace acmacs::sheet::inline v1
         virtual void find_antigen_passage_column(warn_if_not_found winf);
         virtual void find_antigen_lab_id_column(warn_if_not_found winf);
         virtual void find_serum_rows(warn_if_not_found) {}
-        virtual std::optional<nrow_t> find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf) const;
+        virtual std::optional<nrow_t> find_serum_row(const std::regex& re, std::string_view row_name, warn_if_not_found winf, std::optional<nrow_t> ignore = std::nullopt) const;
         virtual void exclude_control_sera(warn_if_not_found winf) = 0;
         virtual void adjust_titer_range(nrow_t /*row*/, column_range& /*cr*/) {}
 
