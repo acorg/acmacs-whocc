@@ -20,8 +20,10 @@ def main(args):
         exit(0)
     # fork
     with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}") as email_data:
-        best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas, args=args)
-        best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas, args=args)
+        prev_tree = "prev-tree.newick" if Path("prev-tree.newick").exists() else None
+        best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas, prev_tree=prev_tree, args=args)
+        if not args.no_garli:
+            best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas, args=args)
         tjz, pdf = generate_results(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, args=args)
         email_data["body"] += f"\n\n{tjz}\n\n{pdf}\n\n{str(pdf).replace('/syn/eu/ac/results/', 'https://notebooks.antigenic-cartography.org/eu/results/')}"
 
@@ -274,7 +276,7 @@ def check_cwd():
 
 sRandomGen = random.SystemRandom()
 
-def raxml_ng(subtype, working_dir, source_fas, args):
+def raxml_ng(subtype, working_dir, source_fas, prev_tree, args):
 
     output_dir = get_output_dir(working_dir, "raxml-ng.")
 
@@ -285,7 +287,7 @@ def raxml_ng(subtype, working_dir, source_fas, args):
         "--msa", str(source_fas),
         "--msa-format", "FASTA",
         "--outgroup", args.base_seq_id or CONFIG[subtype]["export"]["base"],
-        "--tree", "pars{1}",
+        "--tree", prev_tree if prev_tree else "pars{1}",
         "--log", "PROGRESS", # VERBOSE, DEBUG
         "--threads", "1",
     ]
@@ -779,6 +781,7 @@ try:
     parser.add_argument("--base-seq-id", default=None)
     parser.add_argument("--working-subdir", default=None)
     parser.add_argument("--stop-after-export", action="store_true", default=False)
+    parser.add_argument("--no-garli", action="store_true", default=False)
 
     parser.add_argument("subtype", choices=["h1", "h3", "bvic", "byam"])
 
