@@ -20,7 +20,11 @@ def main(args):
         exit(0)
     # fork
     with email.send_after(subject=f"{Path(sys.argv[0]).name} {args.subtype} {working_dir.name}") as email_data:
-        prev_tree = "prev-tree.newick" if Path("prev-tree.newick").exists() else None
+        prev_tree = working_dir.joinpath("prev-tree.newick")
+        if not prev_tree.exists():
+            prev_tree = None
+        else:
+            prev_tree = str(prev_tree.resolve())
         best_tree_file = raxml_ng(subtype=args.subtype, working_dir=working_dir, source_fas=source_fas, prev_tree=prev_tree, args=args)
         if not args.no_garli:
             best_tree_file = garli(subtype=args.subtype, working_dir=working_dir, best_tree_file=best_tree_file, source_fas=source_fas, args=args)
@@ -287,11 +291,15 @@ def raxml_ng(subtype, working_dir, source_fas, prev_tree, args):
         "--msa", str(source_fas),
         "--msa-format", "FASTA",
         "--outgroup", args.base_seq_id or CONFIG[subtype]["export"]["base"],
-        "--tree", prev_tree if prev_tree else "pars{1}",
         "--log", "PROGRESS", # VERBOSE, DEBUG
         "--threads", "1",
     ]
     # "--silent", "--no-seq-check"
+
+    if prev_tree:
+        raxml_cmd += ["--tree-constraint", str(prev_tree), "--tree", "rand{1}"]
+    else:
+        raxml_cmd += ["--tree", "pars{1}"]
 
     # ----------------------------------------------------------------------
 
@@ -299,8 +307,10 @@ def raxml_ng(subtype, working_dir, source_fas, prev_tree, args):
         return f"{output_dir.joinpath(run_id)}"
 
     def run_raxml_ng(run_id):
-        cmd = (srun_cmd() + [f"--job-name=raxml-ng {subtype} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
-               + raxml_cmd + ["--prefix", prefix(run_id), "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
+        cmd = (srun_cmd()
+               + [f"--job-name=raxml-ng {subtype} {run_id}", f"--output={output_dir.joinpath(run_id).with_suffix('.stdout')}", f"--error={output_dir.joinpath(run_id).with_suffix('.stderr')}"]
+               + raxml_cmd
+               + ["--prefix", prefix(run_id), "--seed", str(sRandomGen.randint(1, 0xFFFFFFF))])
         with output_dir.joinpath("commands.txt").open("a") as commands_txt:
             print(" ".join(cmd), file=commands_txt)
         # print(cmd)
