@@ -44,17 +44,23 @@ def main(args):
 # ----------------------------------------------------------------------
 
 def subprocess_check_call(cmd, **kw):
+    subprocess_print_cmd(cmd)
+    subprocess.check_call(cmd, **kw)
+
+# ----------------------------------------------------------------------
+
+def subprocess_print_cmd(cmd):
     if isinstance(cmd, list):
         cmds = ' '.join(f"'{en}'" for en in cmd)
         print(f"$ {cmds}")
     else:
         print(f"$ {cmd}")
-    subprocess.check_call(cmd, **kw)
 
 # ----------------------------------------------------------------------
 
 def name_from_xlsx(xlsx_filename):
     cmd = ["whocc-xlsx-to-torg", "-n", "-f", "{virus_type_lineage} {assay_low_rbc} {lab_low} {table_date}", "-s", str(detect_py()), str(xlsx_filename)]
+    subprocess_print_cmd(cmd)
     status = subprocess.run(cmd, stdout=subprocess.PIPE)
     if status.returncode:
         module_logger.warning(f"{' '.join(cmd)} FAILED\n{status.stdout.decode('utf-8')}")
@@ -96,6 +102,7 @@ def detect_dir(name):
     cmd = [whocc_tables_dir().joinpath("bin", "output-dir"), "--subtype", name.subtype, "--assay", name.assay, "--lab", name.lab]
     if name.rbc:
         cmd.extend(["--rbc", name.rbc])
+    subprocess_print_cmd(cmd)
     output_dir = subprocess.check_output(cmd)
     output_dir = Path(output_dir.decode("utf-8").strip())
     return output_dir
