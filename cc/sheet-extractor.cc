@@ -39,6 +39,7 @@ static const std::regex re_CDC_ha_group_label{R"(^\s*HA\s*GROUP\b)", acmacs::reg
 static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::icase};
 
 static const std::regex re_AC21_serum_index{"^[0-9]+$", acmacs::regex::icase};
+static const std::regex re_AC21_ID_label{"^\s*ID\s*$", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -848,6 +849,31 @@ acmacs::sheet::v1::ExtractorAc21::ExtractorAc21(std::shared_ptr<Sheet> a_sheet)
     lab("CNIC");
 
 } // acmacs::sheet::v1::ExtractorCDC::ExtractorAc21
+
+// ----------------------------------------------------------------------
+
+// bool acmacs::sheet::v1::ExtractorAc21::is_lab_id(const cell_t& cell) const
+// {
+//     return true;
+
+// } // acmacs::sheet::v1::ExtractorAc21::is_lab_id
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorAc21::find_antigen_lab_id_column(warn_if_not_found winf)
+{
+    if (const auto found = sheet().grep(re_AC21_ID_label, {nrow_t{5}, ncol_t{1}}, {antigen_rows_.front(), sheet().number_of_columns()}); !found.empty()) {
+        for (const auto& cell_match : found) {
+            if (fmt::format("{}", sheet().cell(cell_match.row - nrow_t{1}, cell_match.col)) == "Strain") {
+                antigen_lab_id_column_ = cell_match.col;
+                break;
+            }
+        }
+    }
+    if (!antigen_lab_id_column_)
+        AD_WARNING(winf == warn_if_not_found::yes, "Antigen lab_id column not found");
+
+} // acmacs::sheet::v1::ExtractorAc21::find_antigen_lab_id_column
 
 // ----------------------------------------------------------------------
 

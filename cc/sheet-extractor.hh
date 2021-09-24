@@ -182,8 +182,9 @@ namespace acmacs::sheet::inline v1
         const char* extractor_name() const override { return "[AC21]"; }
 
       protected:
+        // bool is_lab_id(const cell_t& cell) const override;
+        void find_antigen_lab_id_column(warn_if_not_found winf) override;
         void find_serum_rows(warn_if_not_found winf) override;
-
     };
 
     // ----------------------------------------------------------------------
