@@ -154,7 +154,7 @@ namespace acmacs::sheet::inline v1
         bool is_lab_id(const cell_t& cell) const override;
         void find_serum_rows(warn_if_not_found winf) override;
         void find_serum_columns(warn_if_not_found winf, const std::regex& re_serum_index);
-        void find_serum_index_row(warn_if_not_found winf);
+        void find_serum_index_row(warn_if_not_found winf, const std::regex& re_serum_index);
         void remove_redundant_antigen_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
         void adjust_titer_range(nrow_t row, column_range& cr) override;

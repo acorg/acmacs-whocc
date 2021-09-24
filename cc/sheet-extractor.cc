@@ -38,8 +38,8 @@ static const std::regex re_CDC_titer_label{R"(^\s*(BACK)?\s*TITER\b)", acmacs::r
 static const std::regex re_CDC_ha_group_label{R"(^\s*HA\s*GROUP\b)", acmacs::regex::icase};
 static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::icase};
 
-static const std::regex re_AC21_serum_index{"^[0-9]+$", acmacs::regex::icase};
-static const std::regex re_AC21_ID_label{"^\s*ID\s*$", acmacs::regex::icase};
+static const std::regex re_AC21_serum_index{R"(^[0-9]+$)", acmacs::regex::icase};
+static const std::regex re_AC21_ID_label{R"(^\s*ID\s*$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -667,30 +667,30 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t 
 
 void acmacs::sheet::v1::ExtractorCDC::find_serum_rows(warn_if_not_found winf)
 {
-    find_serum_index_row(winf);
+    find_serum_index_row(winf, re_CDC_serum_index);
     find_serum_columns(winf, re_CDC_serum_index);
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_rows
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::ExtractorCDC::find_serum_index_row(warn_if_not_found winf)
+void acmacs::sheet::v1::ExtractorCDC::find_serum_index_row(warn_if_not_found winf, const std::regex& re_serum_index)
 {
     fmt::memory_buffer report;
     for (nrow_t row{1}; row < antigen_rows()[0]; ++row) {
-        if (const size_t matches = static_cast<size_t>(ranges::count_if(serum_columns(), [row, this](ncol_t col) { return sheet().matches(re_CDC_serum_index, row, col); }));
+        if (const size_t matches = static_cast<size_t>(ranges::count_if(serum_columns(), [row, re_serum_index, this](ncol_t col) { return sheet().matches(re_serum_index, row, col); }));
             matches == number_of_sera()) {
             serum_index_row_ = row;
             break;
         }
         else if (matches)
-            fmt::format_to_mb(report, "    re_CDC_serum_index row:{} matches:{}\n", row, matches);
+            fmt::format_to_mb(report, "    re_serum_index row:{} matches:{}\n", row, matches);
     }
 
     if (serum_index_row_.has_value())
-        AD_LOG(acmacs::log::xlsx, "[CDC]: Serum index row: {}", serum_index_row_);
+        AD_LOG(acmacs::log::xlsx, "{} Serum index row: {}", extractor_name(), serum_index_row_);
     else
-        AD_WARNING(winf == warn_if_not_found::yes, "[CDC]: No serum index row found (number of sera: {})\n{}", number_of_sera(), fmt::to_string(report));
+        AD_WARNING(winf == warn_if_not_found::yes, "{} No serum index row found (number of sera: {})\n{}", extractor_name(), number_of_sera(), fmt::to_string(report));
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_index_row
 
@@ -879,7 +879,7 @@ void acmacs::sheet::v1::ExtractorAc21::find_antigen_lab_id_column(warn_if_not_fo
 
 void acmacs::sheet::v1::ExtractorAc21::find_serum_rows(warn_if_not_found winf)
 {
-    find_serum_index_row(winf);
+    find_serum_index_row(winf, re_AC21_serum_index);
     find_serum_columns(winf, re_AC21_serum_index);
 
 } // acmacs::sheet::v1::ExtractorAc21::find_serum_rows
