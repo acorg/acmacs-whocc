@@ -131,6 +131,8 @@ acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(
             result.rbc = detected[key].cast<std::string>();
         else if (key_s == "date")
             date = detected[key].cast<std::string>();
+        else if (key_s == "sheet_format")
+            result.sheet_format = detected[key].cast<std::string>();
         else if (key_s == "ignore")
             result.ignore = detected[key].cast<bool>();
         else

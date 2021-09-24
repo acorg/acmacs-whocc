@@ -23,6 +23,7 @@ namespace acmacs::whocc_xlsx::inline v1
         std::string subtype{};
         std::string lineage{};
         std::string rbc{};
+        std::string sheet_format{}; // "ac-21"
         date::year_month_day date{date::invalid_date()};
     };
 
@@ -38,7 +39,8 @@ template <> struct fmt::formatter<acmacs::whocc_xlsx::detect_result_t> : fmt::fo
     {
         if (detected.ignore)
             return format_to(ctx.out(), "[Sheet IGNORE]");
-        return format_to(ctx.out(), "[{} {}{} {} {} {}]", detected.lab, detected.subtype, detected.lineage, detected.assay, detected.rbc, detected.date);
+        return format_to(ctx.out(), "[{} {}{} {} {} {}{}]", detected.lab, detected.subtype, detected.lineage, detected.assay, detected.rbc, detected.date,
+                         detected.sheet_format.empty() ? detected.sheet_format : fmt::format(" ({})", detected.sheet_format));
     }
 };
 

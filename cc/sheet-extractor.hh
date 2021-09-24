@@ -84,6 +84,8 @@ namespace acmacs::sheet::inline v1
         virtual void force_serum_passage_row(nrow_t row);
         virtual void force_serum_id_row(nrow_t row);
 
+        virtual const char* extractor_name() const { return "[Extractor]"; }
+
       protected:
         virtual void find_titers(warn_if_not_found winf);
         virtual void find_antigen_name_column(warn_if_not_found winf);
@@ -146,9 +148,13 @@ namespace acmacs::sheet::inline v1
 
         void check_export_possibility() const override; // throws Error if exporting is not possible
 
+        const char* extractor_name() const override { return "[CDC]"; }
+
       protected:
         bool is_lab_id(const cell_t& cell) const override;
         void find_serum_rows(warn_if_not_found winf) override;
+        void find_serum_columns(warn_if_not_found winf, const std::regex& re_serum_index);
+        void find_serum_index_row(warn_if_not_found winf);
         void remove_redundant_antigen_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
         void adjust_titer_range(nrow_t row, column_range& cr) override;
@@ -162,10 +168,22 @@ namespace acmacs::sheet::inline v1
         std::vector<nrow_t> serum_rows_;
         std::optional<ncol_t> serum_index_column_, serum_name_column_, serum_id_column_, serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_, serum_passage_column_, serum_pool_column_;
 
-        void find_serum_index_row(warn_if_not_found winf);
-        void find_serum_columns(warn_if_not_found winf);
         void find_serum_column_label(const std::regex& re, std::optional<ncol_t>& col, std::string_view label_name);
         nrow_t find_serum_row_by_col(ncol_t col) const;
+    };
+
+    // ----------------------------------------------------------------------
+
+    class ExtractorAc21 : public ExtractorCDC
+    {
+      public:
+        ExtractorAc21(std::shared_ptr<Sheet> a_sheet);
+
+        const char* extractor_name() const override { return "[AC21]"; }
+
+      protected:
+        void find_serum_rows(warn_if_not_found winf) override;
+
     };
 
     // ----------------------------------------------------------------------
@@ -209,6 +227,8 @@ namespace acmacs::sheet::inline v1
 
         void check_export_possibility() const override; // throws Error if exporting is not possible
 
+        const char* extractor_name() const override { return "[Crick]"; }
+
       protected:
         void find_serum_rows(warn_if_not_found winf) override;
         void find_serum_name_rows(warn_if_not_found winf);
@@ -229,6 +249,8 @@ namespace acmacs::sheet::inline v1
         std::string titer_comment() const override;
         std::string titer(size_t ag_no, size_t sr_no) const override;
 
+        const char* extractor_name() const override { return "[CrickPRN]"; }
+
       protected:
         void find_serum_rows(warn_if_not_found winf) override;
 
@@ -248,6 +270,8 @@ namespace acmacs::sheet::inline v1
         serum_fields_t serum(size_t sr_no) const override;
         std::string titer(size_t ag_no, size_t sr_no) const override;
 
+        const char* extractor_name() const override { return "[NIID]"; }
+
       protected:
         void find_antigen_lab_id_column(warn_if_not_found winf) override;
         void find_serum_rows(warn_if_not_found winf) override;
@@ -264,6 +288,8 @@ namespace acmacs::sheet::inline v1
         ExtractorVIDRL(std::shared_ptr<Sheet> a_sheet);
 
         serum_fields_t serum(size_t sr_no) const override;
+
+        const char* extractor_name() const override { return "[VIDRL]"; }
 
       protected:
         bool is_lab_id(const cell_t& cell) const override;
