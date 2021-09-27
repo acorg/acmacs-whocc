@@ -267,8 +267,8 @@ template <acmacs::sheet::NRowCol nrowcol> inline std::string format(const number
 
 void acmacs::sheet::v1::Extractor::report_data_anchors() const
 {
-    AD_INFO("Sheet Data Anchors:\n  Antigen columns:\n    Name:    {}\n    Date:    {}\n    Passage: {}\n    LabId:   {}\n  Antigen rows: {}\n\n{}", //
-            antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_, format(make_ranges(antigen_rows_)), report_serum_anchors());
+    AD_INFO("Sheet Data Anchors:\n  Antigen columns:\n    Name:    {}\n    Date:    {}\n    Passage: {}\n    LabId:   {}\n  Antigen rows: {}\n  Number of antigens: {}\n\n{}", //
+            antigen_name_column_, antigen_date_column_, antigen_passage_column_, antigen_lab_id_column_, format(make_ranges(antigen_rows_)), antigen_rows_.size(), report_serum_anchors());
 
 } // acmacs::sheet::v1::Extractor::report_data_anchors
 
@@ -614,12 +614,22 @@ void acmacs::sheet::v1::ExtractorCDC::remove_redundant_antigen_rows(warn_if_not_
 
 // ----------------------------------------------------------------------
 
+bool acmacs::sheet::v1::ExtractorCDC::serum_index_matches(const cell_t& at_row, const cell_t& at_column) const
+{
+    if (is_empty(at_row) || is_empty(at_column))
+        return false;
+    return fmt::format("{}", at_row)[0] == fmt::format("{}", at_column)[0];
+
+} // acmacs::sheet::v1::ExtractorCDC::serum_index_matches
+
+// ----------------------------------------------------------------------
+
 acmacs::sheet::v1::nrow_t acmacs::sheet::v1::ExtractorCDC::find_serum_row_by_col(ncol_t col) const
 {
     if (serum_index_row_.has_value() && serum_index_column_.has_value()) {
-        if (const auto serum_index = fmt::format("{}", sheet().cell(*serum_index_row_, col)); !serum_index.empty()) {
+        if (const auto serum_index = sheet().cell(*serum_index_row_, col); !is_empty(serum_index)) {
             for (nrow_t row{serum_rows_[0]}; row < sheet().number_of_rows(); ++row) {
-                if (const auto index_cell = sheet().cell(row, *serum_index_column_); !is_empty(index_cell) && fmt::format("{}", index_cell)[0] == serum_index[0])
+                if (const auto index_cell = sheet().cell(row, *serum_index_column_); serum_index_matches(serum_index, index_cell))
                     return row;
             }
         }
@@ -810,12 +820,12 @@ void acmacs::sheet::v1::ExtractorCDC::adjust_titer_range(nrow_t row, column_rang
 
 std::string acmacs::sheet::v1::ExtractorCDC::report_serum_anchors() const
 {
-    return fmt::format("  Serum rows/columns:\n    Index:   {} -> {}\n    Rows:    {}\n    Name:    {}\n    Id:      {}\n"           //
-                       "    Treated: {}\n    Species: {}\n    Boosted: {}\n    Conc:    {}\n    Dilut:   {}\n"                       //
-                       "    Passage: {}\n    Pool:    {}\n  Serum columns:   {}\n",                                                  //
-                       serum_index_row_, serum_index_column_, format(make_ranges(serum_rows_)), serum_name_column_, serum_id_column_,                     //
-                       serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_, //
-                       serum_passage_column_, serum_pool_column_, format(make_ranges(serum_columns_)));
+    return fmt::format("  Serum rows/columns:\n    Index:   {} -> {}\n    Rows:    {}\n    Name:    {}\n    Id:      {}\n"            //
+                       "    Treated: {}\n    Species: {}\n    Boosted: {}\n    Conc:    {}\n    Dilut:   {}\n"                        //
+                       "    Passage: {}\n    Pool:    {}\n  Serum columns:   {}\n  Number of sera: {}\n",                                 //
+                       serum_index_row_, serum_index_column_, format(make_ranges(serum_rows_)), serum_name_column_, serum_id_column_, //
+                       serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_,  //
+                       serum_passage_column_, serum_pool_column_, format(make_ranges(serum_columns_)), serum_columns_.size());
 
 } // acmacs::sheet::v1::ExtractorCDC::report_serum_anchors
 
@@ -857,6 +867,14 @@ acmacs::sheet::v1::ExtractorAc21::ExtractorAc21(std::shared_ptr<Sheet> a_sheet)
 //     return true;
 
 // } // acmacs::sheet::v1::ExtractorAc21::is_lab_id
+
+// ----------------------------------------------------------------------
+
+bool acmacs::sheet::v1::ExtractorAc21::serum_index_matches(const cell_t& at_row, const cell_t& at_column) const
+{
+    return !is_empty(at_row) && fmt::format("{}", at_row) == fmt::format("{}", at_column);
+
+} // acmacs::sheet::v1::ExtractorAc21::serum_index_matches
 
 // ----------------------------------------------------------------------
 
@@ -922,8 +940,8 @@ void acmacs::sheet::v1::ExtractorWithSerumRowsAbove::exclude_control_sera(warn_i
 
 std::string acmacs::sheet::v1::ExtractorWithSerumRowsAbove::report_serum_anchors() const
 {
-    return fmt::format("  Serum rows:\n    Name:    {}\n    Passage: {}\n    Id:      {}\nSerum columns:   {}\n", //
-                       serum_name_row_, serum_passage_row_, serum_id_row_, format(make_ranges(serum_columns_)));
+    return fmt::format("  Serum rows:\n    Name:    {}\n    Passage: {}\n    Id:      {}\nSerum columns:   {}\n  Number of sera: {}\n", //
+                       serum_name_row_, serum_passage_row_, serum_id_row_, format(make_ranges(serum_columns_)), serum_columns_.size());
 
 } // acmacs::sheet::v1::ExtractorWithSerumRowsAbove::report_serum_anchors
 
@@ -1121,8 +1139,8 @@ std::string acmacs::sheet::v1::ExtractorCrick::titer(size_t ag_no, size_t sr_no)
 
 std::string acmacs::sheet::v1::ExtractorCrick::report_serum_anchors() const
 {
-    return fmt::format("  Serum rows:\n    Name:      {}+{}\n    Passage:   {}\n    Id:        {}\n    Less than: {}\nSerum columns:   {}\n", //
-                       serum_name_1_row_, serum_name_2_row_, serum_passage_row_, serum_id_row_, footnote_index_subst_, format(make_ranges(serum_columns_)));
+    return fmt::format("  Serum rows:\n    Name:      {}+{}\n    Passage:   {}\n    Id:        {}\n    Less than: {}\nSerum columns:   {}\n  Number of sera: {}\n", //
+                       serum_name_1_row_, serum_name_2_row_, serum_passage_row_, serum_id_row_, footnote_index_subst_, format(make_ranges(serum_columns_)), serum_columns_.size());
 
 } // acmacs::sheet::v1::ExtractorCrick::report_serum_anchors
 
@@ -1328,7 +1346,7 @@ bool acmacs::sheet::v1::ExtractorNIID::is_control_serum_cell(const cell_t& cell)
 
 std::string acmacs::sheet::v1::ExtractorNIID::report_serum_anchors() const
 {
-    return fmt::format("  Serum rows:\n    Name:    {}\nSerum columns:   {}\n", serum_name_row_, format(make_ranges(serum_columns_)));
+    return fmt::format("  Serum rows:\n    Name:    {}\nSerum columns:   {}\n  Number of sera: {}\n", serum_name_row_, format(make_ranges(serum_columns_)), serum_columns_.size());
 
 } // acmacs::sheet::v1::ExtractorNIID::report_serum_anchors
 

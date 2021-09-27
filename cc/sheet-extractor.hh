@@ -163,6 +163,8 @@ namespace acmacs::sheet::inline v1
 
         std::string report_serum_anchors() const override;
 
+        virtual bool serum_index_matches(const cell_t& at_row, const cell_t& at_column) const;
+
       private:
         std::optional<nrow_t> serum_index_row_;
         std::vector<nrow_t> serum_rows_;
@@ -180,6 +182,7 @@ namespace acmacs::sheet::inline v1
         ExtractorAc21(std::shared_ptr<Sheet> a_sheet);
 
         const char* extractor_name() const override { return "[AC21]"; }
+        bool serum_index_matches(const cell_t& at_row, const cell_t& at_column) const override;
 
       protected:
         // bool is_lab_id(const cell_t& cell) const override;
