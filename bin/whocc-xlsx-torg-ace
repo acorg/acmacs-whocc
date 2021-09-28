@@ -18,7 +18,7 @@ def main(args):
     for source in args.source:
         if len(args.source) > 1:
             sep = "> " + ("-" * 100)
-            prnt(f"{sep}\n{source}\n{sep}\n")
+            prnt(f"{sep}\n> {source}\n{sep}\n")
 
         if args.make_html:
             open_html(source)
