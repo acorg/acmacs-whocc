@@ -132,6 +132,28 @@ std::vector<acmacs::sheet::cell_match_t> acmacs::sheet::v1::Sheet::grep(const st
 } // acmacs::sheet::v1::Sheet::grep
 
 // ----------------------------------------------------------------------
+
+std::vector<acmacs::sheet::cell_match_t> acmacs::sheet::v1::Sheet::grepv(const std::regex& rex1, const std::regex& rex2, const cell_addr_t& min, const cell_addr_t& max) const
+{
+    std::vector<cell_match_t> result;
+    for (auto row = min.row; row < max.row; ++row) {
+        for (auto col = min.col; col < max.col; ++col) {
+            const auto cl1 = cell(row, col);
+            const auto cl2 = cell(row + nrow_t{1}, col);
+            // AD_DEBUG("Sheet::grep {} {} \"{}\"", row, col, cl);
+            std::smatch match;
+            if (matches(rex1, cl1) && matches(rex2, match, cl2)) {
+                cell_match_t cm{.row = row, .col = col, .matches = std::vector<std::string>(match.size())};
+                std::transform(std::cbegin(match), std::cend(match), std::begin(cm.matches), [](const auto& submatch) { return submatch.str(); });
+                result.push_back(std::move(cm));
+            }
+        }
+    }
+    return result;
+
+} // acmacs::sheet::v1::Sheet::grepv
+
+// ----------------------------------------------------------------------
 /// Local Variables:
 /// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
 /// End:

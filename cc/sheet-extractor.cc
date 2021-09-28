@@ -40,6 +40,14 @@ static const std::regex re_CDC_antigen_control{R"(\bCONTROL\b)", acmacs::regex::
 
 static const std::regex re_AC21_serum_index{R"(^[0-9]+$)", acmacs::regex::icase};
 static const std::regex re_AC21_ID_label{R"(^\s*ID\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_serum_label{R"(^\s*serum\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_date_label{R"(^\s*date\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_species_label{R"(^\s*SPECIES\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_treat_label{R"(^\s*treat\.?\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_type_label{R"(^\s*TYPE\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_batch_label{R"(^\s*BATCH\s*#?\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_comment_label{R"(^\s*COMMENT\s*$)", acmacs::regex::icase};
+static const std::regex re_AC21_empty{R"(^\s*$)", acmacs::regex::icase};
 
 static const std::regex re_CRICK_serum_name_1{"^([AB]/[A-Z '_-]+|NYMC\\s+X-[0-9]+[A-Z]*)$", acmacs::regex::icase};
 static const std::regex re_CRICK_serum_name_2{"^[A-Z0-9-/]+$", acmacs::regex::icase};
@@ -678,7 +686,8 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t 
 void acmacs::sheet::v1::ExtractorCDC::find_serum_rows(warn_if_not_found winf)
 {
     find_serum_index_row(winf, re_CDC_serum_index);
-    find_serum_columns(winf, re_CDC_serum_index);
+    find_serum_name_column(winf, re_CDC_serum_index);
+    find_serum_columns(winf);
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_rows
 
@@ -706,7 +715,7 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_index_row(warn_if_not_found win
 
 // ----------------------------------------------------------------------
 
-void acmacs::sheet::v1::ExtractorCDC::find_serum_columns(warn_if_not_found winf, const std::regex& re_serum_index)
+void acmacs::sheet::v1::ExtractorCDC::find_serum_name_column(warn_if_not_found winf, const std::regex& re_serum_index)
 {
     for (ncol_t col{0}; col < ncol_t{5} && !serum_name_column_; ++col) {
         serum_rows_.clear();
@@ -736,6 +745,12 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_columns(warn_if_not_found winf,
     else
         AD_WARNING("{} unexpected serum name column: {} -> no place for serum indexes", extractor_name(), serum_name_column_);
 
+} // acmacs::sheet::v1::ExtractorCDC::find_serum_name_column
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCDC::find_serum_columns(warn_if_not_found /*winf*/)
+{
     find_serum_column_label(re_CDC_lot_label, serum_id_column_, "LOT");
     find_serum_column_label(re_CDC_species_label, serum_species_column_, "SPECIES");
     find_serum_column_label(re_CDC_boosted_label, serum_boosted_column_, "BOOSTED");
@@ -767,7 +782,21 @@ void acmacs::sheet::v1::ExtractorCDC::find_serum_column_label(const std::regex& 
     if (const auto matches = sheet().grep(re, {serum_rows_[0] - nrow_t{1}, *serum_name_column_ + ncol_t{1}}, {serum_rows_[0], sheet().number_of_columns()}); matches.size() == 1)
         col = matches[0].col;
     else if (matches.size() > 1)
-        AD_WARNING("[CDC] unclear {} label matches: {}", label_name, matches);
+        AD_WARNING("{} unclear {} label matches: {}", extractor_name(), label_name, matches);
+
+} // acmacs::sheet::v1::ExtractorCDC::find_serum_column_label
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorCDC::find_serum_column_label(const std::regex& re1, const std::regex& re2, std::optional<ncol_t>& col, std::string_view label_name)
+{
+    const cell_addr_t min{serum_rows_[0] - nrow_t{2}, *serum_name_column_ + ncol_t{1}}, max{serum_rows_[0], sheet().number_of_columns()};
+    if (const auto matches = sheet().grepv(re1, re2, min, max); matches.size() == 1)
+        col = matches[0].col;
+    else if (matches.size() > 1)
+        AD_WARNING("{} unclear {} label matches: {}", extractor_name(), label_name, matches);
+    else
+        AD_WARNING("{} serum column {} not found in {}-{}", extractor_name(), label_name, min, max);
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_column_label
 
@@ -898,9 +927,19 @@ void acmacs::sheet::v1::ExtractorAc21::find_antigen_lab_id_column(warn_if_not_fo
 void acmacs::sheet::v1::ExtractorAc21::find_serum_rows(warn_if_not_found winf)
 {
     find_serum_index_row(winf, re_AC21_serum_index);
-    find_serum_columns(winf, re_AC21_serum_index);
+    find_serum_name_column(winf, re_AC21_serum_index);
+    find_serum_columns(winf);
 
 } // acmacs::sheet::v1::ExtractorAc21::find_serum_rows
+
+// ----------------------------------------------------------------------
+
+void acmacs::sheet::v1::ExtractorAc21::find_serum_columns(warn_if_not_found /*winf*/)
+{
+    find_serum_column_label(re_AC21_serum_label, re_AC21_ID_label, serum_id_column_, "SERUM-ID");
+    find_serum_column_label(re_AC21_serum_label, re_AC21_species_label, serum_species_column_, "SPECIES");
+
+} // acmacs::sheet::v1::ExtractorAc21::find_serum_columns
 
 // ----------------------------------------------------------------------
 

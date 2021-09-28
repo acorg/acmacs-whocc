@@ -136,6 +136,10 @@ namespace acmacs::sheet::inline v1
         cell_addr_t max_cell() const { return {number_of_rows(), number_of_columns()}; }
 
         std::vector<cell_match_t> grep(const std::regex& rex, const cell_addr_t& min, const cell_addr_t& max) const;
+
+        // finds sets of two cells, the second one is right below the the first one
+        // returns references to the second cells
+        std::vector<cell_match_t> grepv(const std::regex& rex1, const std::regex& rex2, const cell_addr_t& min, const cell_addr_t& max) const;
     };
 
 } // namespace acmacs::sheet::inline v1
@@ -189,6 +193,11 @@ template <> struct fmt::formatter<acmacs::sheet::ncol_t> : fmt::formatter<acmacs
         std::reverse(std::begin(nn), std::end(nn));
         return format_to(ctx.out(), "{}", nn);
     }
+};
+
+template <> struct fmt::formatter<acmacs::sheet::cell_addr_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
+{
+    template <typename FormatCtx> auto format(const acmacs::sheet::cell_addr_t& addr, FormatCtx& ctx) { return format_to(ctx.out(), "{}{}", addr.col, addr.row); }
 };
 
 template <> struct fmt::formatter<acmacs::sheet::cell_match_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>

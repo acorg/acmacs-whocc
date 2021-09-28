@@ -153,7 +153,10 @@ namespace acmacs::sheet::inline v1
       protected:
         bool is_lab_id(const cell_t& cell) const override;
         void find_serum_rows(warn_if_not_found winf) override;
-        void find_serum_columns(warn_if_not_found winf, const std::regex& re_serum_index);
+        virtual void find_serum_columns(warn_if_not_found winf);
+        virtual void find_serum_name_column(warn_if_not_found winf, const std::regex& re_serum_index);
+        void find_serum_column_label(const std::regex& re, std::optional<ncol_t>& col, std::string_view label_name);
+        void find_serum_column_label(const std::regex& re1, const std::regex& re2, std::optional<ncol_t>& col, std::string_view label_name);
         void find_serum_index_row(warn_if_not_found winf, const std::regex& re_serum_index);
         void remove_redundant_antigen_rows(warn_if_not_found winf) override;
         void exclude_control_sera(warn_if_not_found winf) override;
@@ -165,12 +168,10 @@ namespace acmacs::sheet::inline v1
 
         virtual bool serum_index_matches(const cell_t& at_row, const cell_t& at_column) const;
 
-      private:
         std::optional<nrow_t> serum_index_row_;
         std::vector<nrow_t> serum_rows_;
         std::optional<ncol_t> serum_index_column_, serum_name_column_, serum_id_column_, serum_treated_column_, serum_species_column_, serum_boosted_column_, serum_conc_column_, serum_dilut_column_, serum_passage_column_, serum_pool_column_;
 
-        void find_serum_column_label(const std::regex& re, std::optional<ncol_t>& col, std::string_view label_name);
         nrow_t find_serum_row_by_col(ncol_t col) const;
     };
 
@@ -188,6 +189,7 @@ namespace acmacs::sheet::inline v1
         // bool is_lab_id(const cell_t& cell) const override;
         void find_antigen_lab_id_column(warn_if_not_found winf) override;
         void find_serum_rows(warn_if_not_found winf) override;
+        void find_serum_columns(warn_if_not_found winf) override;
     };
 
     // ----------------------------------------------------------------------
