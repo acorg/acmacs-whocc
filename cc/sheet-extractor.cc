@@ -642,7 +642,7 @@ acmacs::sheet::v1::nrow_t acmacs::sheet::v1::ExtractorCDC::find_serum_row_by_col
             }
         }
     }
-    AD_WARNING("[CDC] cannot find serum for column {}", col);
+    AD_WARNING("{} cannot find serum for column {}", extractor_name(), col);
     return nrow_t{max_row_col};
 
 } // acmacs::sheet::v1::ExtractorCDC::find_serum_row_by_col
@@ -661,9 +661,9 @@ acmacs::sheet::v1::serum_fields_t acmacs::sheet::v1::ExtractorCDC::serum(size_t 
             return {};
         };
 
-        const auto make_serum_id = [](const std::string& src) {
-            if (!src.empty() && !acmacs::string::startswith(src, "CDC"))
-                return fmt::format("CDC {}", src);
+        const auto make_serum_id = [this](const std::string& src) {
+            if (!src.empty() && !acmacs::string::startswith(src, lab()))
+                return fmt::format("{} {}", lab(), src);
             else
                 return src;
         };
