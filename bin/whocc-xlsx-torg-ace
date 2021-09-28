@@ -15,31 +15,47 @@ class Error (Exception): pass
 # ======================================================================
 
 def main(args):
-    if args.make_html:
-        open_html(args.source[0])
-    names = [split_name(name) for name in name_from_xlsx(args.source[0]).split("\n") if name]
-    if not names:
-        raise Error("File provides no sheets with tables")
-    if args.output_dir:
-        output_dir = Path(args.output_dir)
-    else:
-        output_dirs = frozenset(detect_dir(name) for name in names)
-        if len(output_dirs) != 1:
-            raise RuntimeError(f"None or multiple output dirs {output_dirs} inferred from {name}")
-        output_dir = next(iter(output_dirs))
-    if not args.overwrite:
-        check_output_names(names, output_dir=output_dir)
-    xlsx_name = output_dir.joinpath("xlsx", make_xlsx_name(names))
-    copy_xlsx(args.source[0], xlsx_name)
-    if args.loglevel == logging.DEBUG:
-        debug = ["-v", "all"]
-    else:
-        debug = []
-    subprocess_check_call(["whocc-xlsx-to-torg", "-f", "{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}", "-s", detect_py(), "-s", output_dir.joinpath("whocc-xlsx-to-torg.py"), "-o", output_dir.joinpath("torg"), args.source[0]] + debug)
-    if len(names) == 1 and args.edit_torg:
-        edit_torg_make_ace(names[0], output_dir=output_dir, stop_on_torg=args.stop_on_torg)
-    elif not args.stop_on_torg:
-        make_all_ace(names, output_dir=output_dir)
+    for source in args.source:
+        if len(args.source) > 1:
+            sep = "> " + ("-" * 100)
+            prnt(f"{sep}\n{source}\n{sep}\n")
+
+        if args.make_html:
+            open_html(source)
+
+        names = [split_name(name) for name in name_from_xlsx(source).split("\n") if name]
+        if not names:
+            raise Error("File provides no sheets with tables")
+        if args.output_dir:
+            output_dir = Path(args.output_dir)
+            output_dir.joinpath("xlsx").mkdir(exist_ok=True)
+            output_dir.joinpath("torg").mkdir(exist_ok=True)
+        else:
+            output_dirs = frozenset(detect_dir(name) for name in names)
+            if len(output_dirs) != 1:
+                raise RuntimeError(f"None or multiple output dirs {output_dirs} inferred from {name}")
+            output_dir = next(iter(output_dirs))
+        if not args.overwrite:
+            check_output_names(names, output_dir=output_dir)
+        xlsx_name = output_dir.joinpath("xlsx", make_xlsx_name(names))
+        copy_xlsx(source, xlsx_name)
+        if args.loglevel == logging.DEBUG:
+            debug = ["-v", "all"]
+        else:
+            debug = []
+        subprocess_check_call([
+            "whocc-xlsx-to-torg",
+            "-f", "{virus_type_lineage}-{assay_low_rbc}-{lab_low}-{table_date}",
+            "-s", detect_py(),
+            *xlsx_to_torg_py(output_dir),
+            "-o", output_dir.joinpath("torg"),
+            source,
+            *debug
+        ])
+        if len(names) == 1 and args.edit_torg:
+            edit_torg_make_ace(names[0], output_dir=output_dir, stop_on_torg=args.stop_on_torg)
+        elif not args.stop_on_torg:
+            make_all_ace(names, output_dir=output_dir, check_by_hidb=args.check_by_hidb)
 
 # ----------------------------------------------------------------------
 
@@ -52,9 +68,9 @@ def subprocess_check_call(cmd, **kw):
 def subprocess_print_cmd(cmd):
     if isinstance(cmd, list):
         cmds = ' '.join(f"'{en}'" for en in cmd)
-        print(f"$ {cmds}")
+        prnt(f"$ {cmds}")
     else:
-        print(f"$ {cmd}")
+        prnt(f"$ {cmd}")
 
 # ----------------------------------------------------------------------
 
@@ -90,11 +106,21 @@ def split_name(name):
 
 # ----------------------------------------------------------------------
 
+def prnt(*args):
+    print(*args, file=sys.stderr)
+
 def whocc_tables_dir():
     return Path("~/ac/whocc-tables").expanduser()
 
 def detect_py():
     return whocc_tables_dir().joinpath("whocc-xlsx-to-torg.detect.py")
+
+def xlsx_to_torg_py(output_dir: Path):
+    fn = output_dir.joinpath("whocc-xlsx-to-torg.py")
+    if fn.exists():
+        return ["-s", str(fn)]
+    else:
+        return []
 
 # ----------------------------------------------------------------------
 
@@ -173,20 +199,20 @@ def edit_torg_make_ace(name, output_dir, stop_on_torg):
         except KeyboardInterrupt:
             break
         except Exception as err:
-            # print(err)
+            # prnt(err)
             pass
         make_ace(torg_filename, ace_filename, ace_prn_read=ace_prn_read, prn_remove_concentration=prn)
 
 # ----------------------------------------------------------------------
 
-def make_all_ace(names, output_dir):
+def make_all_ace(names, output_dir, check_by_hidb=True):
     for name in names:
         source = output_dir.joinpath("torg", name.stem + ".torg")
         ace_prn_read = None
         prn, prn_read_titers = is_chart_prn_with_read_titers(source)
         if prn_read_titers:
             ace_prn_read = output_dir.joinpath("prn-read", name.stem + ".ace")
-        make_ace(source, output_dir.joinpath(name.stem + ".ace"), ace_prn_read=ace_prn_read, prn_remove_concentration=prn)
+        make_ace(source, output_dir.joinpath(name.stem + ".ace"), ace_prn_read=ace_prn_read, prn_remove_concentration=prn, check_by_hidb=check_by_hidb)
 
 # ----------------------------------------------------------------------
 
@@ -205,25 +231,26 @@ def is_chart_prn_with_read_titers(source):
 
 # ----------------------------------------------------------------------
 
-def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False):
-    print(f"\n>>> {source}:11\n>>> {ace}:1")
+def make_ace(source, ace, ace_prn_read=None, prn_remove_concentration=False, check_by_hidb=True):
+    prnt(f"\n>>> {source}:11\n>>> {ace}:1")
     if ace_prn_read:
-        print(f">>> {ace_prn_read}:1")
-    print()
+        prnt(f">>> {ace_prn_read}:1")
+    prnt()
     # prn_rem_conc = # leads to duplicates for A/Singapore/INFIMH-16-0019/2016 10-4 and 10-6: "--prn-remove-concentration" if prn_remove_concentration else ""
     subprocess_check_call(["chart-torg-table-to-ace", source, ace]) # , prn_rem_conc
     subprocess_check_call(["chart-fix-names-passages", ace, ace]) # , "-v", "all"])
     subprocess_check_call(["chart-table", ace])
-    print("\n>>> populating with sequences")
+    prnt("\n>>> populating with sequences")
     subprocess_check_call(["seqdb3-chart-populate", "-n", ace])
-    print()
+    prnt()
     if ace_prn_read:
-        print("\n")
+        prnt("\n")
         subprocess_check_call(["chart-torg-table-to-ace", "--prn-read", source, ace_prn_read]) # , prn_rem_conc
         subprocess_check_call(["chart-fix-names-passages", ace_prn_read, ace_prn_read])
         subprocess_check_call(["chart-table", ace_prn_read])
-        print()
-    subprocess_check_call(["whocc-check-new-tables", ace])
+        prnt()
+    if check_by_hidb:
+        subprocess_check_call(["whocc-check-new-tables", ace])
 
 # ----------------------------------------------------------------------
 
@@ -241,9 +268,10 @@ try:
     parser.add_argument('-t', action='store_true', dest='stop_on_torg', default=False, help='Stop after generating torg file.')
     parser.add_argument('-f', action='store_true', dest='overwrite', default=False, help='overwrite exiting output files.')
     parser.add_argument('--no-html', action='store_false', dest='make_html', default=True, help='do not generate html.')
+    parser.add_argument('--no-hidb', action='store_false', dest='check_by_hidb', default=True)
     parser.add_argument('-o', dest='output_dir', default=None, help='force output_dir.')
 
-    parser.add_argument("source", nargs=1)
+    parser.add_argument("source", nargs='+')
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel, format="%(levelname)s %(asctime)s: %(message)s")
