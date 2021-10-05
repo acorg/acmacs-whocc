@@ -8,15 +8,39 @@ Output:
 - tree in the phylogenetic-tree-v3 (tjz) format
 """
 
-import sys, lzma, json, pprint, argparse
+import sys, lzma, json, functools, pprint, argparse
 from pathlib import Path
 
 # ----------------------------------------------------------------------
 
 def main(args: argparse.Namespace):
     tree, tree_index = read_tree(args.input_tree)
-    print(len(tree_index))
+    # print(len(tree_index))
     new_sequences = dict(read_fasta(args.new_sequences))
+    closest_data = find_closest(tree_index, new_sequences)
+
+# ----------------------------------------------------------------------
+
+def find_closest(tree_index: dict, new_sequences: dict):
+    data = {}
+    for name, seq in new_sequences.items():
+        order = sorted(([hamming_distance(seq, seq2), name2] for name2, seq2 in tree_index.items()), key=lambda en: en[0])
+        print(f"> {name}")
+        pprint.pprint(order[:5])
+        print()
+    return data
+
+# ----------------------------------------------------------------------
+
+def hamming_distance(seq1: str, seq2: str) -> int:
+    dist = 0
+    for i, nuc in enumerate(seq1):
+        if nuc != seq2[i]:
+            dist += 1
+    return dist
+
+# def hamming_distance(seq1: str, seq2: str) -> int: # slower
+#     return functools.reduce(lambda sum, en: sum + (1 if en[0] != en[1] else 0), zip(seq1, seq2), 0)
 
 # ----------------------------------------------------------------------
 
