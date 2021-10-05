@@ -1,0 +1,75 @@
+#! /usr/bin/env python3
+"""
+Adds new sequences to the existing tree
+Sources:
+- populated tree in the phylogenetic-tree-v3 (tjz) format
+- new nuc sequences (fasta)
+Output:
+- tree in the phylogenetic-tree-v3 (tjz) format
+"""
+
+import sys, lzma, json, pprint, argparse
+from pathlib import Path
+
+# ----------------------------------------------------------------------
+
+def main(args: argparse.Namespace):
+    tree, tree_index = read_tree(args.input_tree)
+    print(len(tree_index))
+    new_sequences = dict(read_fasta(args.new_sequences))
+
+# ----------------------------------------------------------------------
+
+def read_tree(filename: Path):
+    tree = json.load(opn(filename))
+    if tree.get("  version") != "phylogenetic-tree-v3":
+        raise RuntimeError("tree is in unknown format")
+
+    def make_index(root: dict):
+        if tt := root.get("t"):
+            for subtree in tt:
+                yield from make_index(subtree)
+        else:
+            try:
+                yield root["n"], root["N"]
+            except:
+                pprint.pprint(root)
+
+    index = dict(make_index(tree["tree"]))
+    return tree, index
+
+# ----------------------------------------------------------------------
+
+def opn(filename: Path, mode: str = "rt"):
+    if filename.suffix in [".xz", ".tjz"]:
+        return lzma.open(filename, mode=mode)
+    else:
+        return filename.open(mode=mode)
+
+# ----------------------------------------------------------------------
+
+def read_fasta(filename: Path):
+    name = None
+    seq = ""
+    for line in opn(filename):
+        line = line.strip()
+        if line[0] == ">":
+            if name:
+                yield name, seq
+                seq = ""
+            name = line[1:]
+        elif line:
+            seq += line
+    if name and seq:
+        yield name, seq
+
+# ----------------------------------------------------------------------
+
+parser = argparse.ArgumentParser(description="")
+parser.add_argument("input_tree", type=Path)
+parser.add_argument("new_sequences", type=Path)
+parser.add_argument("output_tree", type=Path)
+args = parser.parse_args()
+main(args)
+
+# ----------------------------------------------------------------------
