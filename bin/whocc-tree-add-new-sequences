@@ -24,9 +24,9 @@ def main(args: argparse.Namespace):
 def find_closest(tree_index: dict, new_sequences: dict):
     data = {}
     for name, seq in new_sequences.items():
-        order = sorted(([hamming_distance(seq, seq2), name2] for name2, seq2 in tree_index.items()), key=lambda en: en[0])
+        order = sorted(({"d": hamming_distance(seq, ref2["s"]), "n": name2, "c": ref2["c"], "p": ref2["p"]} for name2, ref2 in tree_index.items()), key=lambda en: en["d"] * 100.0 - en["c"])
         print(f"> {name}")
-        pprint.pprint(order[:5])
+        pprint.pprint([{k:v for k,v in en.items() if k != "p"} for en in order[:5]], width=150)
         print()
     return data
 
@@ -49,17 +49,17 @@ def read_tree(filename: Path):
     if tree.get("  version") != "phylogenetic-tree-v3":
         raise RuntimeError("tree is in unknown format")
 
-    def make_index(root: dict):
+    def make_index(root: dict, parent: dict):
         if tt := root.get("t"):
             for subtree in tt:
-                yield from make_index(subtree)
+                yield from make_index(subtree, parent=root)
         else:
             try:
-                yield root["n"], root["N"]
+                yield root["n"], {"s": root["N"], "c": root["c"], "p": parent}
             except:
                 pprint.pprint(root)
 
-    index = dict(make_index(tree["tree"]))
+    index = dict(make_index(tree["tree"], parent=None))  # name -> {"s": nuc seq, "c": cumulative edge, "p": parent node}
     return tree, index
 
 # ----------------------------------------------------------------------
