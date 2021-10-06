@@ -1,4 +1,4 @@
-# Time-stamp: <2021-06-22 14:51:15 eu>
+# Time-stamp: <2021-10-06 11:54:11 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
 * [2019-12-02 Mon] raxml-ng
 https://github.com/amkozlov/raxml-ng/releases
@@ -15,6 +15,18 @@ whocc-make-trees bvic
 whocc-make-trees byam
 #+END_SRC
 
+* raxml-ng
+
+** from scratch
+
+/syn/bin/raxml-ng --search --model GTR+G+I --msa source.fas --msa-format FASTA --outgroup B/VICTORIA/830/2013_MDCK2_hA7D58234 --tree 'pars{1}' --log PROGRESS --threads 1 --prefix raxml-ng.2021-0901-093522/000 --seed 246796241
+
+** from existing tree
+
+srun --cpus-per-task=2 --ntasks=1 --threads=1 --nodelist=i20
+--exclude=i20,i22
+D=raxml-ng.$(date +%Y-%m%d-%H%M%S); mkdir ${D}
+/syn/bin/raxml-ng --search --model GTR+G+I --msa prev-source.fas --msa-format FASTA --outgroup B/VICTORIA/830/2013_MDCK2_hA7D58234 --tree 'rand{1}' --tree-constraint prev-tree.newick --log PROGRESS --threads 1 --prefix raxml-ng.${D}/000 --seed ${RANDOM}
 
 * OLD [2019-12-02 Mon] Albertine and htcondor
 [[file:/scp:i19:~/AD/sources/acmacs-tree-maker/bin/make-trees][i19  ~/AD/sources/acmacs-tree-maker/bin/make-trees-2019]]

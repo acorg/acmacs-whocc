@@ -18,6 +18,8 @@ def main(args: argparse.Namespace):
     # print(len(tree_index))
     new_sequences = dict(read_fasta(args.new_sequences))
     closest_data = find_closest(tree_index, new_sequences)
+    insert_into_tree(closest_data)
+    write_tree(tree, args.output_tree)
 
 # ----------------------------------------------------------------------
 
@@ -25,9 +27,10 @@ def find_closest(tree_index: dict, new_sequences: dict):
     data = {}
     for name, seq in new_sequences.items():
         order = sorted(({"d": hamming_distance(seq, ref2["s"]), "n": name2, "c": ref2["c"], "p": ref2["p"]} for name2, ref2 in tree_index.items()), key=lambda en: en["d"] * 100.0 - en["c"])
+        data[name] = order[0]
         print(f"> {name}")
-        pprint.pprint([{k:v for k,v in en.items() if k != "p"} for en in order[:5]], width=150)
-        print()
+        # pprint.pprint([{k:v for k,v in en.items() if k != "p"} for en in order[:5]], width=150)
+        # print()
     return data
 
 # ----------------------------------------------------------------------
@@ -41,6 +44,12 @@ def hamming_distance(seq1: str, seq2: str) -> int:
 
 # def hamming_distance(seq1: str, seq2: str) -> int: # slower
 #     return functools.reduce(lambda sum, en: sum + (1 if en[0] != en[1] else 0), zip(seq1, seq2), 0)
+
+# ----------------------------------------------------------------------
+
+def insert_into_tree(closest_data: dict):
+    for name, en in closest_data.items():
+        en["p"]["t"].append({"n": name})
 
 # ----------------------------------------------------------------------
 
@@ -61,6 +70,11 @@ def read_tree(filename: Path):
 
     index = dict(make_index(tree["tree"], parent=None))  # name -> {"s": nuc seq, "c": cumulative edge, "p": parent node}
     return tree, index
+
+# ----------------------------------------------------------------------
+
+def write_tree(tree: dict, filename: Path):
+    json.dump(tree, opn(filename, "wt"), indent=1)
 
 # ----------------------------------------------------------------------
 
