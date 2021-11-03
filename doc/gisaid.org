@@ -1,4 +1,4 @@
-Time-stamp: <2021-09-11 10:04:24 eu>
+Time-stamp: <2021-11-03 15:30:49 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -21,6 +21,8 @@ Isolate name_|_a=Isolate ID_|_b=Type_|_c=Passage details/history_|_d=Lineage_|_e
 
 
 * [[https://www.ncbi.nlm.nih.gov/genomes/FLU/Database/nph-select.cgi?go=database][NCBI]] (not updated since 2020-10-13 ?)
+https://ftp.ncbi.nih.gov/genomes/INFLUENZA
+
 - Select sequence type: Nucleotide
 - Segment: HA
 
