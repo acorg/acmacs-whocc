@@ -1,10 +1,17 @@
-# Time-stamp: <2021-10-06 11:54:11 eu>
+# Time-stamp: <2021-11-16 15:07:12 eu>
 * Gisaid [[file:~/AD/sources/acmacs-whocc/doc/gisaid.org][instructions for downloading sequences from gisaid]] and making seqdb
 * [2019-12-02 Mon] raxml-ng
 https://github.com/amkozlov/raxml-ng/releases
 install as /syn/bin/raxml-ng
 
-* [2021-06-22 Tue] Oriane and slurm
+* <2021-11-16 Tue> SEQDB_V4, oriane and slurm
+
+#+BEGIN_SRC bash
+mkdir /syn/eu/ac/results/trees/$(date '+%Y-%m%d')
+cd /syn/eu/ac/results/trees/$(date '+%Y-%m%d')
+#+END_SRC
+
+* <2021-06-22 Tue> Oriane and slurm
 
 #+BEGIN_SRC bash
 mkdir /syn/eu/ac/results/trees/$(date '+%Y-%m%d')
