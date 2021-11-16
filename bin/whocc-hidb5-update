@@ -5,7 +5,11 @@ if [[ ! -d ${ACMACSD_ROOT} ]]; then
     exit 1
 fi
 
-DB_DIR=$ACMACSD_ROOT/data
+if [[ ! -d ${HIDB_V5} ]]; then
+    echo "HIDB_V5 not set or invalid (${HIDB_V5})" >&2
+    exit 1
+fi
+
 export PATH="${ACMACSD_ROOT}/bin:$HOME/bin:/usr/local/bin:$PATH"
 export TIME='<Time %E>'
 PROG=$(readlink -f $0)
@@ -48,7 +52,7 @@ echo $0 "$@"
 date
 echo H3
 echo
-DB=$DB_DIR/hidb5.h3
+DB=${HIDB_V5}/hidb5.h3
 # run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ace
 run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/h3-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
@@ -58,7 +62,7 @@ echo "=================================================================="
 date
 echo H1PDM
 echo
-DB=$DB_DIR/hidb5.h1
+DB=${HIDB_V5}/hidb5.h1
 # run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ace
 run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/h1pdm-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
@@ -68,7 +72,7 @@ echo "=================================================================="
 date
 echo B
 echo
-DB=$DB_DIR/hidb5.b
+DB=${HIDB_V5}/hidb5.b
 # run hidb5-make "${DB}.json.xz" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ace ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ace
 run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/b{,vic,yam}-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
