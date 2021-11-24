@@ -1,4 +1,4 @@
-Time-stamp: <2021-11-03 15:30:49 eu>
+Time-stamp: <2021-11-24 17:33:25 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -71,7 +71,21 @@ seqdb3-scan --ncbi ~/ac/sequences/ncbi
 #+END_SRC
 
 
-* Check downloaded fasta
+* seqdb-v4
+
+#+BEGIN_SRC bash
+dos2unix /r/gisaid_epiflu_sequence*.fasta
+~/ae/bin/seqdb-update -m a -n /r/gisaid_epiflu_sequence*.fasta
+no=0; for f in /r/gisaid_epiflu_sequence*.fasta; do no=$((no+1)); t=gisaid-$(date +%Y-%m%d)-${no}.fas.xz; xz -9ec ${f} >/r/${t}; mv -i /r/${t} ~/ac/sequences/; done
+~/ae/bin/seqdb-update -m a ~/ac/sequences/gisaid-$(date +%Y-%m%d)-*.fas.xz
+seqdb-put
+ssa
+#+END_SRC
+
+
+* seqdb-v3
+
+** Check downloaded fasta
 
 <H-d> whocc-hidb5-update --> ssh albertine whocc-hidb5-update && hidb-get-from-albertine
 
@@ -112,10 +126,10 @@ dos2unix /r/gisaid_epiflu_sequence.fasta
 seqdb3-scan --gisaid --all-subtypes-messages -m --print-not-aligned-for B /r/gisaid_epiflu_sequence.fasta
 #+END_SRC
 
-* Install into ~/ac/sequences/
+** Install into ~/ac/sequences/
 xz -9ecv /r/gisaid_epiflu_sequence.fixed.fasta >~/ac/sequences/gisaid-.fas.xz
 
-* generate seqdb
+** generate seqdb
 [[elisp:(eu-process "make-seqdb -H")][make-seqdb -H]]
 [[elisp:(eu-process "make-seqdb")][make-seqdb]]
 [[elisp:(eu-process "locations-distribute" "~/ac/acmacs/scripts/locations-distribute")][locations-distribute]]
