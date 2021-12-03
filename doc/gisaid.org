@@ -1,4 +1,4 @@
-Time-stamp: <2021-12-03 15:51:17 eu>
+Time-stamp: <2021-12-03 16:42:36 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -75,6 +75,7 @@ seqdb3-scan --ncbi ~/ac/sequences/ncbi
 
 #+BEGIN_SRC bash
 dos2unix /r/gisaid_epiflu_sequence*.fasta
+ln -sf ~/ac/sequences/ae.py /r
 ~/ae/bin/seqdb-update -m a -n /r/gisaid_epiflu_sequence*.fasta
 no=0; for f in /r/gisaid_epiflu_sequence*.fasta; do no=$((no+1)); t=gisaid-$(date +%Y-%m%d)-${no}.fas.xz; xz -9ec ${f} >/r/${t}; mv -i /r/${t} ~/ac/sequences/; done
 ~/ae/bin/seqdb-update -m a ~/ac/sequences/gisaid-$(date +%Y-%m%d)-*.fas.xz
