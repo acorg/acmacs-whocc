@@ -1,4 +1,4 @@
-Time-stamp: <2021-11-24 17:33:25 eu>
+Time-stamp: <2021-12-03 15:51:17 eu>
 * already downloaded from gisaid: ~/ac/sequences
 ls -l ~/ac/sequences/gis*.fas.xz
 
@@ -80,6 +80,13 @@ no=0; for f in /r/gisaid_epiflu_sequence*.fasta; do no=$((no+1)); t=gisaid-$(dat
 ~/ae/bin/seqdb-update -m a ~/ac/sequences/gisaid-$(date +%Y-%m%d)-*.fas.xz
 seqdb-put
 ssa
+#+END_SRC
+
+** re-build from scratch
+
+#+BEGIN_SRC bash
+env SEQDB_V4=/r ~/ae/bin/seqdb-update ~/ac/sequences/gisaid-{19,201,2020}*.fas.xz ~/ac/sequences/gisaid-20210101-20210917.fas.xz ~/ac/sequences/n*.fas.xz ~/ac/sequences/ncbi ~/ac/sequences/gisaid-202?-*.fas.xz
+--> 5m
 #+END_SRC
 
 
