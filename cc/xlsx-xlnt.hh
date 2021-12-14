@@ -63,6 +63,16 @@ namespace acmacs::xlsx::inline v1
                 return date::year{dt.year} / date::month{static_cast<unsigned>(dt.month)} / dt.day;
             }
 
+            static inline bool is_date(const ::xlnt::cell& cell)
+            {
+                try {
+                    return cell.is_date();
+                }
+                catch (...) {
+                    return false; // xlnt throws when xlsx format is unsupported in some aspect
+                }
+            }
+
             acmacs::sheet::cell_t cell(sheet::nrow_t row, sheet::ncol_t col) const override // row and col are zero based
             {
                 const ::xlnt::cell_reference ref{static_cast<::xlnt::column_t::index_t>(*col + 1), static_cast<::xlnt::row_t>(*row + 1)};
@@ -83,7 +93,7 @@ namespace acmacs::xlsx::inline v1
                         else
                             return acmacs::sheet::cell::empty{};
                     case ::xlnt::cell_type::number:
-                        if (cell.is_date())
+                        if (is_date(cell))
                             return make_date(cell.value<::xlnt::datetime>(), row, col);
                         else if (const auto vald = cell.value<double>(); !float_equal(vald, std::round(vald)))
                             return vald;
