@@ -145,6 +145,3 @@ acmacs::whocc_xlsx::v1::detect_result_t acmacs::whocc_xlsx::v1::py_sheet_detect(
 } // acmacs::whocc_xlsx::v1::py_sheet_detect
 
 // ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:

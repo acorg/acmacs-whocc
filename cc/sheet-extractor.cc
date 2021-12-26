@@ -1485,6 +1485,3 @@ void acmacs::sheet::v1::ExtractorVIDRL::find_serum_rows(warn_if_not_found winf)
 } // acmacs::sheet::v1::ExtractorVIDRL::find_serum_rows
 
 // ----------------------------------------------------------------------
-/// Local Variables:
-/// eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-/// End:
