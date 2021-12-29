@@ -1,5 +1,8 @@
 #! /bin/bash
 if [ "$HOSTNAME" != "i19" ]; then
-    mkdir -p ~/AD/data
-    rsync -av albertine:'AD/data/hidb5.*.{json.xz,hidb5b}' ~/AD/data
+    if [[ -z ${HIDB_V5} ]]; then
+        echo HIDB_V5 is not set >&2
+        exit 1
+    fi
+    rsync -av albertine:'/syn/eu/acmacs-data/hidb5.*.{json.xz,hidb5b}' "${HIDB_V5}"
 fi
