@@ -1,4 +1,4 @@
-# Time-stamp: <2022-01-20 15:15:48 eu>
+# Time-stamp: <2022-01-20 15:37:18 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -37,8 +37,8 @@ gcop ~/AD/sources/acmacs-py 'chains-202105' && gcop ~/AD/sources/acmacs-whocc 'c
 
   ln -s ~/AD/sources ${ACMACSD_ROOT}
   e ${ACMACSD_ROOT}/sources/acmacs-whocc-data/conf/clades.mapi
-  make -C ${ACMACSD_ROOT}/sources/acmacs-whocc-data
-  make -C ${ACMACSD_ROOT}/sources/acmacs-whocc/web/chains-202105 CHAINS_ROOT=/syn/eu/ac/results/chains-202105
+  make -C ${ACMACSD_ROOT}/sources/acmacs-whocc-data && make -C ${ACMACSD_ROOT}/sources/acmacs-whocc/web/chains-202105 CHAINS_ROOT=/syn/eu/ac/results/chains-202105
+  restart gunicorn
 
 - update acmacs core (oriane)
 
