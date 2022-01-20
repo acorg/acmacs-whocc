@@ -1,4 +1,4 @@
-import os, threading, re, pprint
+import os, threading, re, pprint, subprocess
 from pathlib import Path
 import acmacs
 from acmacs_py import utils, mapi_utils
@@ -10,6 +10,10 @@ def get_chart(request, filename :Path):
     charts = request.app["charts"]
     chart = charts.get(filename_s)
     if not chart:
+        try:
+            subprocess.call([str(Path(os.environ["AE_ROOT"], "bin", "seqdb-chart-populate")), filename_s])
+        except Exception as err:
+            print(f"> {filename_s}: cannot populate with seqdb4: {err}", file=sys.stderr)
         chart = charts[filename_s] = acmacs.Chart(filename_s)
     return chart
 
@@ -62,7 +66,7 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
         chart = get_chart(request, ace_filename)
         if reorient_master_filename:
             chart.orient_to(master=get_chart(request, reorient_master_filename))
-        chart.populate_from_seqdb()
+        # chart.populate_from_seqdb()
 
         drw = acmacs.ChartDraw(chart)
         request.app["clade_data"].chart_draw_reset(drw=drw, grey=sGrey, test_antigen_size=sTestAntigenSize, reference_antigen_size=sReferenceAntigenSize, serum_size=sSerumSize)
@@ -82,7 +86,7 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
 def make_pc(request, output: Path, ace1_filename: Path, ace2_filename: Path, coloring: str, size: int):
     try:
         chart1 = get_chart(request, ace1_filename)
-        chart1.populate_from_seqdb()
+        # chart1.populate_from_seqdb()
         chart2 = get_chart(request, ace2_filename)
 
         drw = acmacs.ChartDraw(chart1)

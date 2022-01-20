@@ -1,4 +1,4 @@
-# Time-stamp: <2021-08-13 12:05:01 eu>
+# Time-stamp: <2022-01-20 14:12:03 eu>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -125,9 +125,6 @@ gunicorn -c ${CHAINS_ROOT}/gunicorn/gunicorn.conf.py application:app
     # auth data
 </Location>
 #+END_SRC
-
-
-
 
 
 * -------------------- local vars ----------------------------------------------------------------------
