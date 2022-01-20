@@ -10,6 +10,3 @@ install:
 	rsync -av --copy-unsafe-links --exclude __pycache__ --exclude '.*' --exclude chain202105 $(ACMACSD_ROOT)/sources/acmacs-py/py/acmacs_py $(CHAINS_ROOT)/py
 
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:
