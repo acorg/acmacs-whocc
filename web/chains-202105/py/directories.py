@@ -1,4 +1,4 @@
-import json
+import sys, os, json
 from pathlib import Path
 from acmacs_py.mapi_utils import MapiSettings
 

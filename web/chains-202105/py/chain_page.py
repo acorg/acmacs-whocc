@@ -1,4 +1,4 @@
-import re, json, pprint
+import sys, re, json, pprint
 from pathlib import Path
 from aiohttp import web
 from web_chains_202105 import utils
@@ -81,7 +81,14 @@ def collect_chain_data(request, subtype_id, chain_id):
             part["individual"] = {"ace": str(individual_files[0])}
         return part
 
-    return {
+    def find_chain_setup():
+        setup_file = Path(subtype_id, chain_id + ".setup.json")
+        if setup_file.exists():
+            return json.load(setup_file.open())
+        else:
+            return {}
+
+    chain_data = {
         "subtype_id": subtype_id,
         "chain_id": chain_id,
         "parts": collect_chain_data_part(),
@@ -89,5 +96,12 @@ def collect_chain_data(request, subtype_id, chain_id):
         "type": "" if chain_id[0] == "f" else " backward",
         **utils.format_subtype(request=request, subtype_id=subtype_id)
     }
+
+    for setup_key, setup_value in find_chain_setup().items():
+        if setup_key and setup_key[0] != "?" and setup_value and (not isinstance(setup_value, str) or setup_value[0] != "?"):
+            chain_data[setup_key] = setup_value
+    print(f">>>> collect_chain_data chain_data: {chain_data}", file=sys.stderr)
+
+    return chain_data
 
 # ======================================================================

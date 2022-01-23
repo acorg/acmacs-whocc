@@ -87,12 +87,13 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
         drw.title(lines=["{stress}"])
         drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
         drw.calculate_viewport()
+        print(f">>> drawing {output}", file=sys.stderr)
         drw.draw(output, size=size, open=False)
         if save_chart:
             # print(f">>> [{os.getpid()}.{threading.get_native_id()}] exporting chart {coloring} {ace_filename} save:{save_chart} {type(save_chart)} {save_chart == True}")
             export_chart(request, ace_filename, drw.chart())
     except Exception as err:
-        print(f"> ERROR: chart::make_map failed: {err}")
+        print(f"> ERROR: chart::make_map failed: {err}", file=sys.stderr)
 
 # ----------------------------------------------------------------------
 
