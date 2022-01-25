@@ -10,23 +10,25 @@ def get_chart(request, filename :Path, populate_seqdb: bool = True):
     charts = request.app["charts"]
     chart = charts.get(filename_s)
     if not chart:
-        if populate_seqdb:
-            lock_filename = filename.with_suffix(".lock")
-            try:
-                for loop_count in range(1000):
-                    if not lock_filename.exists():
-                        break;
-                    time.sleep(0.2)
-                if lock_filename.exists():
-                    print(f">> {filename} still locked with {lock_filename} ", file=sys.stderr)
-                lock_filename.touch(exist_ok=True)
-                start = datetime.datetime.now()
-                subprocess.call([str(Path(os.environ["AE_ROOT"], "bin", "seqdb-chart-populate")), filename_s])
-                print(f">>>> [{os.getpid()}] {filename_s}: populating with seqdb4 <{datetime.datetime.now() - start}>", file=sys.stderr)
-            except Exception as err:
-                print(f"> {filename_s}: cannot populate with seqdb4: {err}", file=sys.stderr)
-            finally:
-                lock_filename.unlink(missing_ok=True)
+        # use /syn/eu/ac/results/chains-202105/bin/populate.sh *.ace to re-populate using parallel
+        #
+        # if populate_seqdb:
+        #     lock_filename = filename.with_suffix(".lock")
+        #     try:
+        #         for loop_count in range(1000):
+        #             if not lock_filename.exists():
+        #                 break;
+        #             time.sleep(0.2)
+        #         if lock_filename.exists():
+        #             print(f">> {filename} still locked with {lock_filename} ", file=sys.stderr)
+        #         lock_filename.touch(exist_ok=True)
+        #         start = datetime.datetime.now()
+        #         subprocess.call([str(Path(os.environ["AE_ROOT"], "bin", "seqdb-chart-populate")), filename_s])
+        #         print(f">>>> [{os.getpid()}] {filename_s}: populating with seqdb4 <{datetime.datetime.now() - start}>", file=sys.stderr)
+        #     except Exception as err:
+        #         print(f"> {filename}: cannot populate with seqdb4: {err}", file=sys.stderr)
+        #     finally:
+        #         lock_filename.unlink(missing_ok=True)
         chart = charts[filename_s] = acmacs.Chart(filename_s)
     return chart
 
