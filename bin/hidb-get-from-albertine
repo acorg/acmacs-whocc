@@ -1,8 +1,12 @@
 #! /bin/bash
-if [ "$HOSTNAME" != "i19" ]; then
-    if [[ -z ${HIDB_V5} ]]; then
-        echo HIDB_V5 is not set >&2
-        exit 1
-    fi
-    rsync -av albertine:'/syn/eu/acmacs-data/hidb5.*.json.xz' albertine:'/syn/eu/acmacs-data/hidb5.*.hidb5b' "${HIDB_V5}"
-fi
+echo "OBSOLETE! Use ~/whocc-data/hidb5-download" >&2
+exit 1
+
+
+# if [ "$HOSTNAME" != "i19" ]; then
+#     if [[ -z ${HIDB_V5} ]]; then
+#         echo HIDB_V5 is not set >&2
+#         exit 1
+#     fi
+#     rsync -av albertine:'/syn/eu/acmacs-data/hidb5.*.json.xz' albertine:'/syn/eu/acmacs-data/hidb5.*.hidb5b' "${HIDB_V5}"
+# fi
