@@ -18,11 +18,13 @@ if [ "$(uname)" == "Linux" ]; then
     export LD_LIBRARY_PATH="${ACMACSD_ROOT}/lib:${LD_LIBRARY_PATH}"
 fi
 
+TABLES_ROOT=/syn/eu/ac/whocc-tables
+
 if [[ $# -eq 1 ]]; then
     LOG="$1"
 else
     LOG=/syn/eu/log/whocc-hidb5-update.log
-    echo "LOG: $LOG" >&2
+    echo "LOG: /ssh:$(hostname):$LOG" >&2
 fi
 
 # ----------------------------------------------------------------------
@@ -53,8 +55,7 @@ date
 echo H3
 echo
 DB=${HIDB_V5}/hidb5.h3
-# run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H3/{CDC,MELB,NIID,NIMR}/*.ace
-run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/h3-*/*.ace
+run hidb5-make "${DB}.json.xz" ${TABLES_ROOT}/h3-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 
 echo
@@ -63,8 +64,7 @@ date
 echo H1PDM
 echo
 DB=${HIDB_V5}/hidb5.h1
-# run hidb5-make "${DB}.json.xz" ~/ac/ace-store/H1PDM/{CDC,MELB,NIID,NIMR}/*.ace
-run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/h1pdm-*/*.ace
+run hidb5-make "${DB}.json.xz" ${TABLES_ROOT}/h1pdm-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 
 echo
@@ -73,8 +73,7 @@ date
 echo B
 echo
 DB=${HIDB_V5}/hidb5.b
-# run hidb5-make "${DB}.json.xz" ~/ac/ace-store/B/{CDC,NIID,NIMR}/*.ace ~/ac/ace-store/B/MELB/{yamagata,victoria}/*.ace
-run hidb5-make "${DB}.json.xz" ~/ac/whocc-tables/b{,vic,yam}-*/*.ace
+run hidb5-make "${DB}.json.xz" ${TABLES_ROOT}/b{,vic,yam}-*/*.ace
 run hidb5-convert "${DB}.json.xz" "${DB}.hidb5b"
 echo
 date
