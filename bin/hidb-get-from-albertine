@@ -1,5 +1,5 @@
 #! /bin/bash
-echo "OBSOLETE! Use ~/whocc-data/hidb5-download" >&2
+echo "OBSOLETE! Use ~/acmacs-data/hidb5-download" >&2
 exit 1
 
 
