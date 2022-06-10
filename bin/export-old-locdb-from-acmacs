@@ -1,2 +1,0 @@
-#! /bin/sh
-aw -u alpha location.py --debug --direct --export-json ~/GH/locationdb/data/locationdb.json.xz
