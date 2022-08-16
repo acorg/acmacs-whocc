@@ -88,6 +88,8 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
         drw = acmacs.ChartDraw(chart)
         request.app["clade_data"].chart_draw_reset(drw=drw, grey=sGrey, test_antigen_size=sTestAntigenSize, reference_antigen_size=sReferenceAntigenSize, serum_size=sSerumSize)
         request.app["clade_data"].chart_draw_modify(drw=drw, mapi_key=coloring)
+        if drw.chart().titers().number_of_layers() > 1:
+            mark_recent_layer(drw=drw)
         drw.title(lines=["{stress}"])
         drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
         drw.calculate_viewport()
@@ -117,6 +119,13 @@ def make_pc(request, output: Path, ace1_filename: Path, ace2_filename: Path, col
         drw.draw(output, size=size, open=False)
     except Exception as err:
         print(f"> ERROR: chart::make_pc failed: {err}")
+
+# ----------------------------------------------------------------------
+
+def mark_recent_layer(drw: acmacs.ChartDraw):
+    selected = drw.chart().select_antigens(lambda ag: False)
+    # print(f"===== {selected.size()} {selector} {args}")
+    drw.modify(selected, outline_width=3, order="raise")
 
 # ----------------------------------------------------------------------
 
