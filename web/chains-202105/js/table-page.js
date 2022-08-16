@@ -20,18 +20,19 @@ function main() {
 // ----------------------------------------------------------------------
 
 function show_parts(parts, key, subtype_id) {
-    const part_title_text = part_title(parts[key][0], subtype_id);
-    if (part_title_text)
-        $("body").append(`<hr>\n<h3>${part_title_text} ${parts[key][0].date} (${parts[key][0].chain_id})</h3>`);
-    switch (key) {
-    case "individual":
-        show_individual_table_maps(parts);
-        break;
-    case "chain":
-        show_chain_maps(parts);
-        break;
+    for (var part of parts[key]) {
+        const part_title_text = part_title(part, subtype_id);
+        if (part_title_text)
+            $("body").append(`<hr>\n<h3><a href="chain?subtype_id=${subtype_id}&chain_id=${part.chain_id}" target="_blank">${part_title_text} ${part.date} (${part.chain_id})</a></h3>`);
+        switch (key) {
+        case "individual":
+            show_individual_table_maps(parts);
+            break;
+        case "chain":
+            show_chain_maps(part, parts);
+            break;
+        }
     }
-
 }
 
 // ----------------------------------------------------------------------
@@ -60,34 +61,32 @@ function show_individual_table_maps(data, chain_data) {
 
 // ----------------------------------------------------------------------
 
-function show_chain_maps(data) {
-    data.chain.forEach((data_chain) => {
-        const table = $("<table></table>").appendTo("body");
-        table_page_data.coloring.forEach((coloring, coloring_no) => {
-            const tr_title = $("<tr class='title'></tr>").appendTo(table);
-            const tr = $("<tr class='image'></tr>").appendTo(table);
+function show_chain_maps(data_chain, data) {
+    const table = $("<table></table>").appendTo("body");
+    table_page_data.coloring.forEach((coloring, coloring_no) => {
+        const tr_title = $("<tr class='title'></tr>").appendTo(table);
+        const tr = $("<tr class='image'></tr>").appendTo(table);
+        for (let merge_type of ["incremental", "scratch"]) {
+            MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, merge_type, coloring, coloring_no === 0));
+        }
+        MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, "incremental", data_chain, "scratch", coloring)); // pc incremental vs. scratch
+        if (data.individual && data.individual[0]) {
             for (let merge_type of ["incremental", "scratch"]) {
-                MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, merge_type, coloring, coloring_no === 0));
+                MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, merge_type, data.individual[0], "individual", coloring));
             }
-            MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, "incremental", data_chain, "scratch", coloring)); // pc incremental vs. scratch
+        }
+        if (data_chain.mcb) {
+            MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, "mcb", coloring, coloring_no === 0));
             if (data.individual && data.individual[0]) {
-                for (let merge_type of ["incremental", "scratch"]) {
-                    MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, merge_type, data.individual[0], "individual", coloring));
-                }
-            }
-            if (data_chain.mcb) {
-                MAPS.td_title_append(tr_title, tr, MAPS.map_td_with_title(data_chain, "mcb", coloring, coloring_no === 0));
-                if (data.individual && data.individual[0]) {
-                    MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, "mcb", data.individual[0], "individual", coloring));
-                }
-                for (let merge_type of ["incremental", "scratch"]) {
-                    MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, merge_type, data_chain, "mcb", coloring));
-                }
+                MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, "mcb", data.individual[0], "individual", coloring));
             }
             for (let merge_type of ["incremental", "scratch"]) {
-                // TODO: grid test
+                MAPS.td_title_append(tr_title, tr, MAPS.pc_td_with_title(data_chain, merge_type, data_chain, "mcb", coloring));
             }
-        });
+        }
+        for (let merge_type of ["incremental", "scratch"]) {
+            // TODO: grid test
+        }
     });
 }
 
@@ -100,11 +99,13 @@ function part_title(part_data, subtype_id) {
     case "chain":
         switch (part_data.chain_id[0]) {
         case "f":
-            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="_blank">Chain</a>`;
+            return "Chain"; // `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="_blank">Chain</a>`;
         case "b":
-            return `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="_blank">Backward chain</a>`;
+            return "Backward chain"; // `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="_blank">Backward chain</a>`;
+        default:
+            return "? Chain"; // `<a href="chain?subtype_id=${subtype_id}&chain_id=${part_data.chain_id}" target="_blank">? Chain</a>`;
         }
-        break;
+
     }
     return null;
 }
