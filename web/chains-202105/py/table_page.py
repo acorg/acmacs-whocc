@@ -103,7 +103,7 @@ def collect_table_data(request, subtype_id, table_date):
         "subtype_id": subtype_id,
         "table_date": table_date,
         "parts": [part_data for part_data in collect_table_data_part() if part_data],
-        **utils.format_subtype(request=request, subtype_id=subtype_id)
+        **utils.format_subtype(request=request, subtype_id=subtype_id, date_range=[table_date, table_date])
     }
 
 # ----------------------------------------------------------------------

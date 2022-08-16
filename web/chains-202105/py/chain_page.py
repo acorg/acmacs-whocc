@@ -88,13 +88,14 @@ def collect_chain_data(request, subtype_id, chain_id):
         else:
             return {}
 
+    chain_parts = collect_chain_data_part()
     chain_data = {
         "subtype_id": subtype_id,
         "chain_id": chain_id,
-        "parts": collect_chain_data_part(),
+        "parts": chain_parts,
         # "type": "Chain" if chain_id[0] == "f" else "Backward chain",
         "type": "" if chain_id[0] == "f" else " backward",
-        **utils.format_subtype(request=request, subtype_id=subtype_id)
+        **utils.format_subtype(request=request, subtype_id=subtype_id, date_range=sorted([chain_parts[0]["date"], chain_parts[-1]["date"]]))
     }
 
     for setup_key, setup_value in find_chain_setup().items():
