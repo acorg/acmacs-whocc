@@ -16,11 +16,13 @@ class CladeData:
         names = sorted(name for name in self.mapi_settings.names() if name.startswith(subtype_prefix))
         if date_range[1] < "2018":
             # use old clades only
-            names = list(filter(lambda cn: "-v" not in cn, names))
+            filtered_names = list(filter(lambda cn: "-v" not in cn, names))
         elif date_range[0] >= "2018":
             # use new clades only
-            names = list(filter(lambda cn: "-v" in cn, names))
-        return names
+            filtered_names = list(filter(lambda cn: "-v" in cn, names))
+        else:
+            filtered_names = []
+        return filtered_names or names
 
     def chart_draw_modify(self, *args, **kw):
         self.mapi_settings.chart_draw_modify(*args, **kw)
@@ -36,7 +38,8 @@ class VaccineData:
         self.data = json.load(Path("vaccines.json").open())
 
     def for_subtype(self, subtype):
-        return self.data.get(subtype)
+        print(f">>>> VaccineData {subtype}", file=sys.stderr)
+        return self.data.get(subtype, [])
 
 # ======================================================================
 
