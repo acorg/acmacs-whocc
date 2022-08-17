@@ -88,8 +88,7 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
         drw = acmacs.ChartDraw(chart)
         request.app["clade_data"].chart_draw_reset(drw=drw, grey=sGrey, test_antigen_size=sTestAntigenSize, reference_antigen_size=sReferenceAntigenSize, serum_size=sSerumSize)
         request.app["clade_data"].chart_draw_modify(drw=drw, mapi_key=coloring)
-        if drw.chart().titers().number_of_layers() > 1:
-            mark_recent_layer(drw=drw)
+        mark_recent_layer(drw=drw)
         drw.title(lines=["{stress}"])
         drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
         drw.calculate_viewport()
@@ -123,9 +122,22 @@ def make_pc(request, output: Path, ace1_filename: Path, ace2_filename: Path, col
 # ----------------------------------------------------------------------
 
 def mark_recent_layer(drw: acmacs.ChartDraw):
-    selected = drw.chart().select_antigens(lambda ag: False)
-    # print(f"===== {selected.size()} {selector} {args}")
-    drw.modify(selected, outline_width=3, order="raise")
+    titers = drw.chart().titers()
+    last_layer = titers.number_of_layers() - 1
+    if last_layer > 1:
+
+        def is_last_layer_ag(ag):
+            layers = titers.layers_with_antigen(ag.no)
+            return len(layers) > 0 and layers[-1] == last_layer
+
+        def is_last_layer_sr(sr):
+            layers = titers.layers_with_serum(sr.no)
+            return len(layers) > 0 and layers[-1] == last_layer
+
+        selected = drw.chart().select_antigens(is_last_layer_ag)
+        drw.modify(selected, outline_width=3, order="raise")
+        selected = drw.chart().select_sera(is_last_layer_sr)
+        drw.modify(selected, outline_width=3, outline="black", order="raise")
 
 # ----------------------------------------------------------------------
 
