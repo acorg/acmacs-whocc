@@ -28,9 +28,20 @@ class CladeData:
     def chart_draw_reset(self, *args, **kw):
         self.mapi_settings.chart_draw_reset(*args, **kw)
 
+# ----------------------------------------------------------------------
+
+class VaccineData:
+
+    def __init__(self):
+        self.data = json.load(Path("vaccines.json").open())
+
+    def for_subtype(self, subtype):
+        return self.data.get(subtype)
+
 # ======================================================================
 
 def load(app):
     app["clade_data"] = CladeData()
+    app["vaccine_data"] = VaccineData()
 
 # ======================================================================

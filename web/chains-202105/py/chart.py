@@ -89,6 +89,7 @@ def make_map(request, output :Path, ace_filename :Path, coloring :str, size :int
         request.app["clade_data"].chart_draw_reset(drw=drw, grey=sGrey, test_antigen_size=sTestAntigenSize, reference_antigen_size=sReferenceAntigenSize, serum_size=sSerumSize)
         request.app["clade_data"].chart_draw_modify(drw=drw, mapi_key=coloring)
         mark_recent_layer(drw=drw)
+        mark_vaccines(request, drw=drw)
         drw.title(lines=["{stress}"])
         drw.legend(offset=[-10, -10], label_size=-1, point_size=-1, title=[])
         drw.calculate_viewport()
@@ -138,6 +139,25 @@ def mark_recent_layer(drw: acmacs.ChartDraw):
         drw.modify(selected, outline_width=3, order="raise")
         selected = drw.chart().select_sera(is_last_layer_sr)
         drw.modify(selected, outline_width=3, outline="black", order="raise")
+
+# ----------------------------------------------------------------------
+
+def mark_vaccines(request, drw: acmacs.ChartDraw):
+    titers = drw.chart().titers()
+    if titers.number_of_layers() > 1:
+        def layers(no):
+            return len(titers.layers_with_antigen(no))
+    else:
+        def layers(no):
+            return 0
+
+    subtype = drw.chart().subtype_lineage().lower()
+    for vc in request.app["vaccine_data"].for_subtype(subtype):
+        selected = drw.chart().select_antigens(lambda ag: ag.name == vc)
+        if selected:
+            data = sorted(({"no": no, "layers": layers(no), "cell": ag.is_cell()} for no, ag in selected), key=lambda en: f"{0 if en['cell'] else 1}-{10000-en['layers']:05d}")
+            # print(f">>>> {vc:50s} {data}", file=sys.stderr)
+            drw.modify(drw.chart().select_antigens(lambda ag: ag.no == data[0]["no"]), fill="blue", size=24, order="raise", label=acmacs.PointLabel(format="{location_abbreviated}/{year2}"))
 
 # ----------------------------------------------------------------------
 
