@@ -38,7 +38,7 @@ class VaccineData:
         self.data = json.load(Path("vaccines.json").open())
 
     def for_subtype(self, subtype):
-        print(f">>>> VaccineData {subtype}", file=sys.stderr)
+        # print(f">>>> VaccineData {subtype}", file=sys.stderr)
         return self.data.get(subtype, [])
 
 # ======================================================================
