@@ -41,7 +41,7 @@ def export_chart(request, filename :Path, chart :acmacs.Chart):
     charts = request.app["charts"]
     charts[filename_s] = chart
     # to avoid race of writing and reading the file by multiple processes, save it into another filename and then rename
-    export_filename = filename.with_suffix(f".{os.getpid()}.ace")
+    export_filename = filename.with_suffix(f".~{os.getpid()}~.ace")
     chart.export(export_filename)
     os.rename(str(export_filename), filename_s)
     # print(f">>> [{os.getpid()}.{threading.get_native_id()}] {filename} re-written")

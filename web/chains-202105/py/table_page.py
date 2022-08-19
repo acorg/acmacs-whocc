@@ -69,7 +69,7 @@ def collect_table_data(request, subtype_id, table_date):
 
     def make_entries(subdir, individual):
         entries = {}
-        filenames = list(subdir.glob(f"*{table_date}.*"))
+        filenames = [fn for fn in subdir.glob(f"*{table_date}.*") if "~" not in str(fn)]  # ignore temp files (with ~pid~ infix) made by export chart
         if not filenames and subdir.name[0] == "b": # workaround for the backward chain step naming problem
             filenames = list(subdir.glob(f"*.{table_date}-*"))
         for filename in filenames:
