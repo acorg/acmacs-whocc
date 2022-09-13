@@ -12,7 +12,10 @@ except Exception as err:
 # ----------------------------------------------------------------------
 
 def main(args):
-    chunk_size = 1000
+    if args.number_of_optimizations < 5000:
+        chunk_size = math.ceil(args.number_of_optimizations / 5)
+    else:
+        chunk_size = 1000
     number_of_chunks = math.ceil(args.number_of_optimizations / chunk_size)
     with tempfile.TemporaryDirectory(prefix="slurm", dir=args.output_chart.parent) as intermediate_results_dir:
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -58,10 +61,12 @@ def main(args):
 
 def chart_relax(source, output, number_of_optimizations, number_of_dimensions, minimum_column_basis, keep_projections):
     threads = 32
-    return subprocess.run(map(str, [
+    cmd = list(map(str, [
         "srun", "--ntasks=1", "-N1", f"--cpus-per-task={threads}",
-        "chart-relax", "-n", number_of_optimizations, "-d", number_of_dimensions, "-m", minimum_column_basis, "--keep-projections", keep_projections, "--threads", threads, source, output
-    ]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        "chart-relax", "-n", number_of_optimizations, "-d", number_of_dimensions, "-m", minimum_column_basis, "--keep-projections", keep_projections, source, output
+    ]))
+    logging.info(" ".join(cmd))
+    return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 # ----------------------------------------------------------------------
 
