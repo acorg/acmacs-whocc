@@ -87,6 +87,3 @@ execute_this_script(main, {
     })
 
 # ======================================================================
-### Local Variables:
-### eval: (if (fboundp 'eu-rename-buffer) (eu-rename-buffer))
-### End:
