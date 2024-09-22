@@ -43,16 +43,16 @@ class TiterData
 template <> struct fmt::formatter<TiterData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
     template <typename FormatCtx> auto format(const TiterData& value, FormatCtx& ctx)
     {
-        format_to(ctx.out(), "{{");
+        fmt::format_to(ctx.out(), "{{");
         bool first{true};
         for (const auto& en : value.titers()) {
             if (first)
                 first = false;
             else
-                format_to(ctx.out(), ", ");
-            format_to(ctx.out(), "<{}>: <{}>", en.first, en.second);
+                fmt::format_to(ctx.out(), ", ");
+            fmt::format_to(ctx.out(), "<{}>: <{}>", en.first, en.second);
         }
-        return format_to(ctx.out(), "}}");
+        return fmt::format_to(ctx.out(), "}}");
     }
 };
 

@@ -263,8 +263,8 @@ template <acmacs::sheet::NRowCol nrowcol> inline std::string format(const number
 //     {
 //         std::string prefix;
 //         for (const auto& en : rngs) {
-//             format_to(ctx.out(), "{}", prefix);
-//             format_to(ctx.out(), "{}-{}", en.first, en.second);
+//             fmt::format_to(ctx.out(), "{}", prefix);
+//             fmt::format_to(ctx.out(), "{}-{}", en.first, en.second);
 //             prefix = " ";
 //         }
 //         return ctx.out();

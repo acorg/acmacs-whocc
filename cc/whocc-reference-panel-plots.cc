@@ -163,9 +163,9 @@ template <> struct fmt::formatter<AntigenSerumData> : fmt::formatter<acmacs::fmt
     template <typename FormatCtx> auto format(const AntigenSerumData& aData, FormatCtx& ctx) const
     {
         constexpr const int titer_width = 7;
-        format_to(ctx.out, "[{:>{}}({})]", *aData.median.first, titer_width, aData.median.second);
+        fmt::format_to(ctx.out, "[{:>{}}({})]", *aData.median.first, titer_width, aData.median.second);
         for (const auto& element : aData.titer_per_table)
-            format_to(ctx.out, "{:>{}}({})", *element.first, titer_width, element.second);
+            fmt::format_to(ctx.out, "{:>{}}({})", *element.first, titer_width, element.second);
         return ctx.out();
     }
 };

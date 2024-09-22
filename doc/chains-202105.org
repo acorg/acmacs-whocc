@@ -1,4 +1,4 @@
-# Time-stamp: <2022-02-18 14:09:06 eu>
+# Time-stamp: <2024-02-11 12:25:00 eskepne>
 keywords: whocc chains
 * <2021-06-03 Thu>
 
@@ -34,6 +34,13 @@ gcop ~/AD/sources/acmacs-py 'chains-202105' && gcop ~/AD/sources/acmacs-whocc 'c
   localhost: [[file:$ACMACSD_ROOT/sources/acmacs-whocc/web/chains-202105/js]]
 
 - clades (oriane)
+
+  Clades are to be difined in /syn/eu/acmacs-data/clades.json
+  If clades.mapi has
+  "select": {"clade": "F (1)"
+  That "F (1)" must have corresponding entry in /syn/eu/acmacs-data/clades.json
+
+  cp /syn/eu/AD/sources/acmacs-whocc-data/conf/clades.mapi /syn/eu/ac/results/chains-202105/clades.mapi
 
   ln -s ~/AD/sources ${ACMACSD_ROOT}
   e ${ACMACSD_ROOT}/sources/acmacs-whocc-data/conf/clades.mapi

@@ -22,12 +22,12 @@ struct AntigenData
 template <> struct fmt::formatter<AntigenData> : fmt::formatter<acmacs::fmt_helper::default_formatter> {
     template <typename FormatCtx> auto format(const AntigenData& ag, FormatCtx& ctx)
     {
-        format_to(ctx.out(), "{} {}", ag.no, *ag.antigen_chart);
+        fmt::format_to(ctx.out(), "{} {}", ag.no, *ag.antigen_chart);
         if (ag.antigen_hidb)
-            format_to(ctx.out(), "\n{}", hidb::report_tables(*ag.hidb, ag.antigen_hidb->tables(), hidb::report_tables::recent, "    "));
+            fmt::format_to(ctx.out(), "\n{}", hidb::report_tables(*ag.hidb, ag.antigen_hidb->tables(), hidb::report_tables::recent, "    "));
         if (ag.antigen_seqdb) {
             if (const auto& clades = ag.antigen_seqdb.seq().clades; !clades.empty())
-                format_to(ctx.out(), "\n    clades: {}", clades);
+                fmt::format_to(ctx.out(), "\n    clades: {}", clades);
         }
         return ctx.out();
     }

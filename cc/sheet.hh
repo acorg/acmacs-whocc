@@ -153,17 +153,17 @@ template <> struct fmt::formatter<acmacs::sheet::cell_t> : fmt::formatter<acmacs
         std::visit(
             [&ctx]<typename Content>(const Content& arg) {
                 if constexpr (std::is_same_v<Content, acmacs::sheet::cell::empty>)
-                    ; // format_to(ctx.out(), "<empty>");
+                    ; // fmt::format_to(ctx.out(), "<empty>");
                 else if constexpr (std::is_same_v<Content, acmacs::sheet::cell::error>)
-                    format_to(ctx.out(), "<error>");
+                    fmt::format_to(ctx.out(), "<error>");
                 else if constexpr (std::is_same_v<Content, bool>)
-                    format_to(ctx.out(), "{}", arg);
+                    fmt::format_to(ctx.out(), "{}", arg);
                 else if constexpr (std::is_same_v<Content, std::string> || std::is_same_v<Content, double> || std::is_same_v<Content, long>)
-                    format_to(ctx.out(), "{}", arg);
+                    fmt::format_to(ctx.out(), "{}", arg);
                 else if constexpr (std::is_same_v<Content, date::year_month_day>)
-                    format_to(ctx.out(), "{}", date::display(arg));
+                    fmt::format_to(ctx.out(), "{}", date::display(arg));
                 else
-                    format_to(ctx.out(), "<*unknown*>");
+                    fmt::format_to(ctx.out(), "<*unknown*>");
             },
             cell);
         return ctx.out();
@@ -174,7 +174,7 @@ template <> struct fmt::formatter<acmacs::sheet::nrow_t> : fmt::formatter<acmacs
 {
     template <typename FormatCtx> auto format(acmacs::sheet::nrow_t row, FormatCtx& ctx)
     {
-        return format_to(ctx.out(), "{}", *row + 1);
+        return fmt::format_to(ctx.out(), "{}", *row + 1);
     }
 };
 
@@ -191,25 +191,25 @@ template <> struct fmt::formatter<acmacs::sheet::ncol_t> : fmt::formatter<acmacs
             coll = coll / 26 - 1;
         }
         std::reverse(std::begin(nn), std::end(nn));
-        return format_to(ctx.out(), "{}", nn);
+        return fmt::format_to(ctx.out(), "{}", nn);
     }
 };
 
 template <> struct fmt::formatter<acmacs::sheet::cell_addr_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
 {
-    template <typename FormatCtx> auto format(const acmacs::sheet::cell_addr_t& addr, FormatCtx& ctx) { return format_to(ctx.out(), "{}{}", addr.col, addr.row); }
+    template <typename FormatCtx> auto format(const acmacs::sheet::cell_addr_t& addr, FormatCtx& ctx) { return fmt::format_to(ctx.out(), "{}{}", addr.col, addr.row); }
 };
 
 template <> struct fmt::formatter<acmacs::sheet::cell_match_t> : fmt::formatter<acmacs::fmt_helper::default_formatter>
 {
-    template <typename FormatCtx> auto format(const acmacs::sheet::cell_match_t& match, FormatCtx& ctx) { return format_to(ctx.out(), "{}{}:{}", match.row, match.col, match.matches); }
+    template <typename FormatCtx> auto format(const acmacs::sheet::cell_match_t& match, FormatCtx& ctx) { return fmt::format_to(ctx.out(), "{}{}:{}", match.row, match.col, match.matches); }
 };
 
 template <acmacs::sheet::NRowCol nrowcol> struct fmt::formatter<acmacs::sheet::range<nrowcol>> : fmt::formatter<acmacs::fmt_helper::default_formatter>
 {
     template <typename FormatCtx> auto format(const acmacs::sheet::range<nrowcol>& rng, FormatCtx& ctx)
     {
-        return format_to(ctx.out(), "{}:{}", rng.first, rng.second);
+        return fmt::format_to(ctx.out(), "{}:{}", rng.first, rng.second);
     }
 };
 
@@ -218,9 +218,9 @@ template <acmacs::sheet::NRowCol nrowcol> struct fmt::formatter<std::optional<nr
     template <typename FormatCtx> auto format(std::optional<nrowcol> rowcol, FormatCtx& ctx)
     {
         if (rowcol.has_value())
-            return format_to(ctx.out(), "{}", *rowcol);
+            return fmt::format_to(ctx.out(), "{}", *rowcol);
         else
-            return format_to(ctx.out(), "{}", "**no-value**");
+            return fmt::format_to(ctx.out(), "{}", "**no-value**");
     }
 };
 

@@ -38,8 +38,8 @@ template <> struct fmt::formatter<acmacs::whocc_xlsx::detect_result_t> : fmt::fo
     template <typename FormatCtx> auto format(const acmacs::whocc_xlsx::detect_result_t& detected, FormatCtx& ctx)
     {
         if (detected.ignore)
-            return format_to(ctx.out(), "[Sheet IGNORE]");
-        return format_to(ctx.out(), "[{} {}{} {} {} {}{}]", detected.lab, detected.subtype, detected.lineage, detected.assay, detected.rbc, detected.date,
+            return fmt::format_to(ctx.out(), "[Sheet IGNORE]");
+        return fmt::format_to(ctx.out(), "[{} {}{} {} {} {}{}]", detected.lab, detected.subtype, detected.lineage, detected.assay, detected.rbc, detected.date,
                          detected.sheet_format.empty() ? detected.sheet_format : fmt::format(" ({})", detected.sheet_format));
     }
 };
